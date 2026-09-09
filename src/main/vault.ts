@@ -42,6 +42,7 @@ export class Vault extends EventEmitter {
     this.sync.branch = await this.git.currentBranch()
     this.sync.remote = this.config.remote
     const snap = await this.index.load()
+    if (!existsSync(join(this.root, 'README.md'))) await this.writeReadme()
     this.index.watch()
     void this.refreshSyncStatus()
     return snap
@@ -57,7 +58,6 @@ export class Vault extends EventEmitter {
     if (!existsSync(vaultDir)) await fs.mkdir(join(vaultDir, 'templates'), { recursive: true })
     const gi = join(this.root, '.gitignore')
     if (!existsSync(gi)) await fs.writeFile(gi, '.DS_Store\n.obsidian/workspace*\n')
-    if (!existsSync(join(this.root, 'README.md'))) await this.writeReadme()
     if (!existsSync(join(vaultDir, 'templates', 'adr.md'))) {
       await fs.writeFile(
         join(vaultDir, 'templates', 'adr.md'),
@@ -124,7 +124,7 @@ export class Vault extends EventEmitter {
     let committed = false
     if (req.commit) {
       const message = isNew ? `add: ${fm.title}` : moved ? `move: ${fm.title}` : `update: ${fm.title}`
-      await this.git.commitPaths([target, ...(moved ? [req.existingPath!] : [])], message)
+      await this.git.commitPaths([target], message)
       await this.writeReadme()
       await this.git.commitPaths(['README.md'], message, { amend: true })
       committed = true
@@ -151,7 +151,7 @@ export class Vault extends EventEmitter {
     const title = this.index.get(relPath)?.title ?? relPath
     await this.git.mv(relPath, dest)
     this.index.remove(relPath)
-    await this.git.commitPaths([relPath, dest], `trash: ${title}`)
+    await this.git.commitPaths([dest], `trash: ${title}`)
     await this.writeReadme()
     await this.git.commitPaths(['README.md'], '', { amend: true })
     this.schedulePush()
@@ -196,22 +196,29 @@ export class Vault extends EventEmitter {
     await fs.mkdir(join(this.root, toSlug), { recursive: true })
     const touched: string[] = []
     for (const d of docs) {
-      const dest = await this.uniquePath(`${toSlug}/${d.path.split('/').pop()}`)
-      if (fromSlug !== toSlug) await this.git.mv(d.path, dest)
-      const raw = await fs.readFile(join(this.root, dest), 'utf8')
+      const dest = fromSlug === toSlug ? d.path : await this.uniquePath(`${toSlug}/${d.path.split('/').pop()}`)
+      const raw = await fs.readFile(join(this.root, d.path), 'utf8')
       const { frontmatter, body, extra } = parseDoc(raw)
-      if (frontmatter) await fs.writeFile(join(this.root, dest), composeDoc({ ...frontmatter, project: to }, body, extra))
-      this.index.remove(d.path)
-      await this.index.refreshFile(dest)
-      touched.push(d.path, dest)
+      const next = frontmatter ? composeDoc({ ...frontmatter, project: to }, body, extra) : raw
+      if (dest !== d.path) {
+        await fs.rename(join(this.root, d.path), join(this.root, dest))
+        this.index.remove(d.path)
+      }
+      await fs.writeFile(join(this.root, dest), next)
+      touched.push(dest)
     }
-    try {
-      await fs.rmdir(join(this.root, fromSlug))
-    } catch {
-      /* not empty or same */
+    if (fromSlug !== toSlug) {
+      try {
+        await fs.rmdir(join(this.root, fromSlug))
+      } catch {
+        /* not empty (non-md files) — leave it */
+      }
     }
+    for (const p of touched) await this.index.refreshFile(p)
     await this.writeReadme()
-    await this.git.commitPaths([...new Set([...touched, 'README.md'])], `rename project: ${from} → ${to}`)
+    // git detects the moves as renames on its own; one commit covers both folders.
+    await this.git.git.add(['-A', '--', fromSlug, toSlug, 'README.md'])
+    await this.git.git.commit(`rename project: ${from} → ${to}`)
     this.schedulePush()
     this.emit('index', this.index.snapshot())
     return { moved: docs.length }

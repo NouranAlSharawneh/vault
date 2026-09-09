@@ -124,7 +124,9 @@ export class VaultGit {
     return r.commit
   }
 
+  /** Stages `from` first so untracked (never-committed) files can be moved too. */
   async mv(from: string, to: string): Promise<void> {
+    await this.git.add([from])
     await this.git.mv(from, to)
   }
 
@@ -186,11 +188,15 @@ export class VaultGit {
   }
 
   async log(path: string, max = 50): Promise<CommitInfo[]> {
-    const l = await this.git.log({ file: path, maxCount: max, '--follow': null } as never)
-    return l.all.map((c) => ({
-      sha: c.hash, shortSha: c.hash.slice(0, 7), message: c.message, date: c.date,
-      relative: relativeTime(new Date(c.date).getTime()), author: c.author_name,
-    }))
+    const SEP = '\u001f'
+    const out = await this.git.raw(['log', `--max-count=${max}`, '--follow', `--format=%H${SEP}%aI${SEP}%an${SEP}%s`, '--', path])
+    return out
+      .split('\n')
+      .filter(Boolean)
+      .map((line) => {
+        const [sha, date, author, message] = line.split(SEP)
+        return { sha, shortSha: sha.slice(0, 7), message, date, relative: relativeTime(new Date(date).getTime()), author }
+      })
   }
 
   async show(path: string, sha: string): Promise<string> {
