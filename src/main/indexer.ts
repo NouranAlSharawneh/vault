@@ -79,7 +79,7 @@ export class VaultIndex extends EventEmitter {
   }
 
   /** Free-text search → ranked paths with a snippet from the body. */
-  query(text: string, limit = 50): Array<{ path: string; score: number; snippet: string | null }> {
+  query(text: string, limit = 100): Array<{ path: string; score: number; snippet: string | null }> {
     if (!text.trim()) return []
     const results = this.search.search(text)
     return results.slice(0, limit).map((r) => ({ path: r.id as string, score: r.score, snippet: this.snippet(r.id as string, text) }))
@@ -123,6 +123,7 @@ export class VaultIndex extends EventEmitter {
 
   /** Re-read one file (after we wrote it, or the watcher saw it). */
   async refreshFile(relPath: string): Promise<DocMeta | null> {
+    if (relPath === 'README.md' || SKIP_DIRS.has(relPath.split('/')[0])) return null
     const abs = join(this.root, relPath)
     if (!existsSync(abs)) {
       this.remove(relPath)
@@ -131,6 +132,10 @@ export class VaultIndex extends EventEmitter {
     const meta = await this.parseFile(relPath)
     if (meta) await this.indexBody(relPath)
     return meta
+  }
+
+  private isDocPath(relPath: string): boolean {
+    return relPath.endsWith('.md') && relPath !== 'README.md' && !SKIP_DIRS.has(relPath.split('/')[0]) && !relPath.startsWith('.')
   }
 
   remove(relPath: string): void {
@@ -160,7 +165,7 @@ export class VaultIndex extends EventEmitter {
     })
     const onFs = (p: string) => {
       const rel = relative(this.root, p)
-      if (!rel.endsWith('.md') || SKIP_DIRS.has(rel.split(sep)[0])) return
+      if (!rel.endsWith('.md') || rel === 'README.md' || SKIP_DIRS.has(rel.split(sep)[0])) return
       this.pendingFs.add(rel)
       if (this.fsTimer) clearTimeout(this.fsTimer)
       this.fsTimer = setTimeout(() => void this.flushFs(), 300)
@@ -210,7 +215,7 @@ export class VaultIndex extends EventEmitter {
     for (const c of changed) {
       if (c.oldPath) this.remove(c.oldPath)
       if (c.status === 'D') this.remove(c.path)
-      else if (c.path.endsWith('.md')) toParse.add(c.path)
+      else if (this.isDocPath(c.path)) toParse.add(c.path)
     }
     // 3. uncommitted edits (mtime/size differ or new)
     const files = await this.walk()
