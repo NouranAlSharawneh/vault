@@ -1,0 +1,43 @@
+import { DEFAULT_HOTKEY } from "@shared/constants";
+import type { MenuSectionData } from "../app/menu/menu.types";
+
+/** Application menu, as plain data. Behaviour lives in `app/menu.ts`. */
+export const APP_MENU: MenuSectionData[] = [
+  {
+    label: "File",
+    items: [
+      { label: "New Document", accelerator: "CmdOrCtrl+N", action: "newDocument" },
+      { label: "Capture from Clipboard", accelerator: DEFAULT_HOTKEY, action: "capture" },
+      { label: "Save", accelerator: "CmdOrCtrl+Enter", action: { shortcut: "save" } },
+      { type: "separator" },
+      { label: "Open Vault Window", accelerator: "CmdOrCtrl+Shift+V", action: "openMain" },
+      { type: "separator" },
+      { role: "close" },
+    ],
+  },
+  { role: "editMenu" },
+  {
+    label: "View",
+    items: [
+      { label: "Search…", accelerator: "CmdOrCtrl+K", action: { shortcut: "search" } },
+      {
+        label: "Toggle Sidebar",
+        accelerator: "CmdOrCtrl+\\",
+        action: { shortcut: "toggleSidebar" },
+      },
+      { label: "History", accelerator: "CmdOrCtrl+Y", action: { shortcut: "history" } },
+      { type: "separator" },
+      { role: "reload" },
+      { role: "toggleDevTools" },
+      { type: "separator" },
+      { role: "togglefullscreen" },
+    ],
+  },
+  { role: "windowMenu" },
+  {
+    label: "Help",
+    items: [{ label: "Vault on GitHub", action: "openOnGitHub" }],
+  },
+];
+
+export const VAULT_REPO = "NouranAlSharawneh/vault";
