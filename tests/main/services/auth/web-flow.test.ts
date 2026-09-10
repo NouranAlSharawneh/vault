@@ -35,7 +35,12 @@ beforeAll(async () => {
       res.end(
         JSON.stringify(
           ok
-            ? { access_token: "gho_test", token_type: "bearer" }
+            ? {
+                access_token: "gho_test",
+                token_type: "bearer",
+                refresh_token: "ghr_test",
+                expires_in: 28_800,
+              }
             : { error: "bad_verification_code" },
         ),
       );
@@ -53,10 +58,28 @@ describe("web flow end-to-end", () => {
     const token = await runWebFlow({ clientId: "cid", clientSecret: "sekret" }, (s) =>
       statuses.push(s),
     );
-    expect(token).toBe("gho_test");
+    expect(token.accessToken).toBe("gho_test");
+    // Without these an expiring token can never be renewed and the user is made to
+    // authorize again the next day.
+    expect(token.refreshToken).toBe("ghr_test");
+    expect(token.expiresAt).toBeGreaterThan(Date.now());
     expect(statuses).toEqual(["waiting", "exchanging", "ok"]);
     expect(opened[0]).toContain("https://github.com/login/oauth/authorize?client_id=cid");
     expect(received.redirect_uri).toMatch(/^http:\/\/127\.0\.0\.1:4783\d\/callback$/);
+  });
+
+  it("joins a flow already in flight instead of opening a second browser tab", async () => {
+    // React StrictMode mounts the sign-in screen twice in dev. Starting a second flow
+    // would issue a fresh `state`, so authorizing the first tab failed as a mismatch.
+    opened.length = 0;
+    const config = { clientId: "cid", clientSecret: "sekret" };
+    const [a, b] = await Promise.all([
+      runWebFlow(config, () => undefined),
+      runWebFlow(config, () => undefined),
+    ]);
+    expect(opened).toHaveLength(1);
+    expect(a.accessToken).toBe("gho_test");
+    expect(b).toBe(a);
   });
 
   it("refuses to run without a client secret", async () => {

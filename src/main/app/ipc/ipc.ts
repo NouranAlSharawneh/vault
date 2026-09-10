@@ -50,7 +50,12 @@ export function registerIpcHandlers(): void {
 
   // ---- auth
   handle("auth:state", () => session.auth);
-  handle("auth:signInWithToken", (token) => session.signIn(token.trim(), "pat"));
+  handle("auth:signInWithToken", (token) =>
+    session.signIn(
+      { accessToken: token.trim(), refreshToken: null, expiresAt: null, refreshExpiresAt: null },
+      "pat",
+    ),
+  );
   handle("auth:methods", () => {
     const cfg = getOAuthConfig();
     return { oauth: !!cfg?.clientSecret, device: !!cfg };
