@@ -130,7 +130,15 @@ Repo layout: `README.md` (generated index), `<project-slug>/<title-slug>.md`, `_
 - Search grammar parsed into an AST (`project:`, `tags:`, `created:`, `source:`, `is:`) and applied as MiniSearch filters, so saved views are just query strings.
 - Project colours derived deterministically from slug hash (no state to store).
 
-## 10. Risks & how they're handled
+## 10. M5 scope
+
+- **History drawer** (`git log --follow` per doc, diff view, restore), **conflict sheet** (mine / theirs / both), **saved searches** (`.vault/views.yml`), **templates**, project rename, trash + purge, **Settings** (hotkey, push debounce, vault folder).
+- **Asset capture.** The clipboard carries text only, so relative images in a captured doc (`![…](docs/hero.gif)`) can't resolve on their own. Two inputs, one core:
+  1. Text capture that references relative images: the sheet shows "N images referenced — choose the folder they're relative to", remembers the folder per source project, and on save copies the files into `<project>/assets/`, rewrites the links, and commits doc + assets in one commit.
+  2. A `.md` file copied in Finder or dropped onto the sheet (`public.file-url`): the path is known, so images next to it resolve with no prompt.
+  - Guardrails: warn before committing any asset over 10 MB (GitHub refuses >100 MB; git never forgets); remote `https:` images are left as links by default (vendoring is opt-in).
+
+## 11. Risks & how they're handled
 
 | Risk                                                  | Mitigation                                                                                                                  |
 | ----------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
