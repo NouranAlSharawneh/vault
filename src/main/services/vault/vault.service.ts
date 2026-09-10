@@ -1,8 +1,9 @@
 import { promises as fs, existsSync } from "node:fs";
-import { dirname, join, sep } from "node:path";
+import { basename, dirname, join, sep } from "node:path";
 import { EventEmitter } from "node:events";
 import { parse as parseYaml, stringify as stringifyYaml } from "yaml";
 import {
+  ASSETS_DIR,
   DEFAULT_BRANCH,
   GIT_IDENTITY,
   INBOX_SLUG,
@@ -38,7 +39,7 @@ import type {
   TrashedDoc,
   VaultConfig,
 } from "@shared/types";
-import { importAssets } from "../assets";
+import { importAssets, orphanedAssets } from "../assets";
 import { classifyPushError } from "./classify-push-error";
 import { GitService } from "../git/git.service";
 import { IndexerService } from "../indexer/indexer.service";
@@ -289,25 +290,44 @@ export class VaultService extends EventEmitter {
     return { path: target, meta, committed: true };
   }
 
-  /** Delete one trashed doc — or the whole `.trash/` folder — for good, in one commit. */
-  async purgeTrash(path?: string): Promise<{ removed: number }> {
+  /**
+   * Delete one trashed doc — or the whole `.trash/` folder — for good, in one commit,
+   * taking the images that only it was using with it. Trashing deliberately leaves those
+   * behind so a restore can find them; this is the last moment anything can.
+   */
+  async purgeTrash(path?: string): Promise<{ removed: number; assets: string[] }> {
     if (path) {
       assertInTrash(path);
       const meta = await this.index.readMeta(path);
-      if (!meta) return { removed: 0 };
-      await this.git.removeTree(path);
-      await fs.rm(join(this.root, path), { force: true });
+      if (!meta) return { removed: 0, assets: [] };
+      const assets = await orphanedAssets(this.root, [path]);
+      await this.removeAll([path, ...assets]);
       await this.git.commitPaths([], `purge: ${meta.title}`);
       this.schedulePush();
-      return { removed: 1 };
+      return { removed: 1, assets };
     }
-    const removed = (await this.listTrash()).length;
-    if (!existsSync(join(this.root, TRASH_DIR))) return { removed: 0 };
-    await this.git.removeTree(TRASH_DIR);
-    await fs.rm(join(this.root, TRASH_DIR), { recursive: true, force: true });
+    const trashed = await this.listTrash();
+    const removed = trashed.length;
+    if (!existsSync(join(this.root, TRASH_DIR))) return { removed: 0, assets: [] };
+    const assets = await orphanedAssets(
+      this.root,
+      trashed.map((t) => t.path),
+    );
+    await this.removeAll([TRASH_DIR, ...assets]);
     await this.git.commitPaths([], `purge: trash (${removed} ${removed === 1 ? "doc" : "docs"})`);
     this.schedulePush();
-    return { removed };
+    return { removed, assets };
+  }
+
+  /** Drop paths from git and from disk, then any `assets/` folder left with nothing in it. */
+  private async removeAll(paths: string[]): Promise<void> {
+    for (const p of paths) {
+      await this.git.removeTree(p);
+      await fs.rm(join(this.root, p), { recursive: true, force: true });
+    }
+    for (const dir of new Set(paths.map(dirname).filter((d) => basename(d) === ASSETS_DIR))) {
+      await fs.rmdir(join(this.root, dir)).catch(() => undefined);
+    }
   }
 
   async history(relPath: string): Promise<CommitInfo[]> {

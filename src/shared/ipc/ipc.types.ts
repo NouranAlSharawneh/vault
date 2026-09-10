@@ -68,7 +68,7 @@ export interface IpcInvoke {
   "trash:read": (path: string) => DocContent;
   "trash:restore": (path: string) => SaveResult;
   /** One trashed doc, or the whole folder when no path is given. */
-  "trash:purge": (path?: string) => { removed: number };
+  "trash:purge": (path?: string) => { removed: number; assets: string[] };
 
   "project:rename": (from: string, to: string) => { moved: number };
   "project:list": () => string[];
