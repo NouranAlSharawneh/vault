@@ -346,7 +346,11 @@ await win.waitForSelector('button:has-text("Restore")');
 await win.waitForTimeout(300);
 await win.screenshot({ path: join(out, "smoke-15-trash-view.png") });
 await win.click('button:has-text("Delete forever")');
-await win.waitForSelector("text=Deleted “Concorde” forever", { timeout: 10000 });
+// The doc's image is referenced by nothing else, so the purge takes it too.
+await win.waitForSelector("text=Deleted “Concorde” and 1 image forever", { timeout: 10000 });
+await win.waitForTimeout(500);
+if (existsSync(join(root, "_inbox", "assets", "hero-flyin.gif")))
+  throw new Error("orphaned asset survived the purge");
 const purge = execSync("git log --oneline -1", { cwd: root }).toString().trim();
 if (!purge.includes("purge: Concorde")) throw new Error("purge commit not found: " + purge);
 await win.keyboard.press("Control+,");
