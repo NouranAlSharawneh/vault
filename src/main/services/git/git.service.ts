@@ -28,12 +28,9 @@ export class GitService {
   private static authArgsFor(token: string | null): string[] {
     if (!token) return [];
     const basic = Buffer.from(`x-access-token:${token}`).toString("base64");
-    return [
-      "-c",
-      `http.https://github.com/.extraheader=AUTHORIZATION: basic ${basic}`,
-      "-c",
-      "credential.helper=",
-    ];
+    // An explicit Authorization header wins over any credential helper, so none needs disabling
+    // (simple-git refuses `-c credential.helper=` anyway).
+    return ["-c", `http.https://github.com/.extraheader=AUTHORIZATION: basic ${basic}`];
   }
 
   /** Args that authenticate a single network command. */

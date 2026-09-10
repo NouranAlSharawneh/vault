@@ -1,5 +1,5 @@
-import { Placeholder } from "@/features/placeholder/placeholder.component";
+import { Capture } from "@/features/capture/capture.component";
 
 export function CaptureRoute() {
-  return <Placeholder name="Capture sheet" dark />;
+  return <Capture />;
 }

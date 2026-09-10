@@ -51,7 +51,7 @@ export const REPO_MAX_PAGES = 5;
 // ---- windows ------------------------------------------------------------------------
 export const MAIN_WINDOW = { width: 1280, height: 820, minWidth: 860, minHeight: 560 } as const;
 export const EDITOR_WINDOW = { width: 1100, height: 760, minWidth: 720, minHeight: 480 } as const;
-export const CAPTURE_WINDOW = { width: 720, height: 520 } as const;
+export const CAPTURE_WINDOW = { width: 720, height: 430 } as const;
 export const TRAFFIC_LIGHTS = { x: 14, y: 16 } as const;
 export const PAPER_BG = "#fdfcfa";
 export const OVERLAY_BG = "#1e1d1b";

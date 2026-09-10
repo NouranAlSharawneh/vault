@@ -127,5 +127,42 @@ await win.click('button[aria-label="toggle sidebar"]');
 await win.waitForTimeout(300);
 await win.screenshot({ path: join(out, "smoke-10-hidden.png") });
 await win.click('button[aria-label="toggle sidebar"]');
+// ---- M4: the ⌥Space sheet, driven through main (xvfb has no global hotkey)
+await app.evaluate(async ({ clipboard }) => {
+  await clipboard.writeText(
+    "# Edge POP inventory\n\nRegion, capacity and provider for each point of presence.\n\n- fra1\n- ams2\n",
+  );
+});
+const capture = await app.evaluate(({ BrowserWindow }) => {
+  const w = BrowserWindow.getAllWindows().find((x) => x.webContents.getURL().includes("#capture"));
+  if (!w) return false;
+  w.show();
+  return true;
+});
+if (!capture) throw new Error("capture window missing");
+const sheet = app.windows().find((w) => /#capture/.test(w.url()));
+sheet.on("console", (m) => m.type() === "error" && errors.push("capture: " + m.text()));
+await app.evaluate(async ({ BrowserWindow, clipboard }) => {
+  const w = BrowserWindow.getAllWindows().find((x) => x.webContents.getURL().includes("#capture"));
+  const text = await clipboard.readText();
+  w.webContents.send("capture:shown", {
+    text,
+    words: 12,
+    lines: 6,
+    looksLikeMarkdown: true,
+    detectedSource: "claude",
+    detectedTitle: "Edge POP inventory",
+  });
+});
+await sheet.waitForSelector("text=Capture from clipboard");
+await sheet.waitForSelector("text=Edge POP inventory");
+await sheet.waitForTimeout(400);
+await sheet.screenshot({ path: join(out, "smoke-11-capture.png") });
+await sheet.keyboard.press("Control+Enter");
+await sheet.waitForSelector("text=committed", { timeout: 15000 });
+await sheet.screenshot({ path: join(out, "smoke-12-capture-saved.png") });
+const log2 = execSync("git log --oneline -1", { cwd: root }).toString().trim();
+console.log("capture commit:", log2);
+if (!log2.includes("add: Edge POP inventory")) throw new Error("capture commit not found: " + log2);
 console.log("errors:", errors.length ? errors : "none");
 await app.close();
