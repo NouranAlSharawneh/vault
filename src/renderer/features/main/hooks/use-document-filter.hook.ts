@@ -5,6 +5,13 @@ import type { FilteredDocs, ListFilter } from "../main.types";
 
 const DEFAULT: ListFilter = { collection: "all", project: null, tags: [], sort: "newest" };
 
+/** Settings links here as `#main?trash`; consume the flag so a later ⌘\ doesn't re-apply it. */
+function initialFilter(): ListFilter {
+  if (!window.location.hash.includes("?trash")) return DEFAULT;
+  window.history.replaceState(null, "", "#main");
+  return { ...DEFAULT, collection: "trash" };
+}
+
 export function applyFilter(
   index: IndexSnapshot | null,
   f: ListFilter,
@@ -47,7 +54,7 @@ function sorter(sort: ListFilter["sort"]): (a: DocMeta, b: DocMeta) => number {
 
 /** Sidebar selection + tag chips + sort → the visible document list. */
 export function useDocumentFilter(index: IndexSnapshot | null, trash: TrashedDoc[] = []) {
-  const [filter, setFilter] = useState<ListFilter>(DEFAULT);
+  const [filter, setFilter] = useState<ListFilter>(initialFilter);
   const result = useMemo(() => applyFilter(index, filter, trash), [index, filter, trash]);
 
   const selectProject = (slug: string | null) =>

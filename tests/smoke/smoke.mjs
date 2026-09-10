@@ -255,8 +255,11 @@ if (!existsSync(join(root, "_inbox", "concorde.md")))
 await win.keyboard.press("Control+Backspace");
 await win.waitForSelector("text=Moved “Concorde” to trash", { timeout: 10000 });
 await win.click('button[aria-label="dismiss"]');
-await win.click("text=Trash");
-await win.waitForSelector("text=Deleted documents wait here", { timeout: 5000 }).catch(() => null);
+// Trash has no sidebar row any more — it is reached from Settings.
+await win.keyboard.press("Control+,");
+await win.waitForSelector("text=Back to vault");
+await win.click('button:has-text("View trash")');
+await win.waitForSelector("text=Concorde >> nth=0", { timeout: 5000 });
 await win.click("text=Concorde >> nth=0");
 await win.waitForSelector('button:has-text("Restore")');
 await win.waitForTimeout(300);

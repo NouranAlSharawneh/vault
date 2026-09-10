@@ -10,7 +10,7 @@ export async function resolveAssets(baseDir: string | null, refs: string[]): Pro
       const name = basename(ref);
       const ext = name.split(".").pop()?.toLowerCase() ?? "";
       if (!(ext in ASSET_MIME)) return { ref, name, status: "unsupported", bytes: 0 };
-      if (!baseDir) return { ref, name, status: "missing", bytes: 0 };
+      if (!baseDir) return { ref, name, status: "unknown", bytes: 0 };
       try {
         const abs = isAbsolute(ref) ? ref : resolve(baseDir, ref);
         const st = await fs.stat(abs);

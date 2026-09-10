@@ -54,7 +54,8 @@ export interface AssetRef {
   /** As written in the markdown, e.g. `docs/hero.gif`. */
   ref: string;
   name: string;
-  status: "found" | "missing" | "unsupported";
+  /** `unknown` = no base folder chosen yet, so nothing has been looked for. */
+  status: "found" | "missing" | "unsupported" | "unknown";
   bytes: number;
 }
 

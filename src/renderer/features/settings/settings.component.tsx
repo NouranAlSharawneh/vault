@@ -101,10 +101,18 @@ export function Settings() {
               label="Trash"
               description={
                 s.trashCount
-                  ? `${plural(s.trashCount, "document")} waiting. Emptying removes them from git for good.`
+                  ? `${plural(s.trashCount, "document")} waiting. You can restore from the trash view; emptying removes them from git for good.`
                   : "Empty."
               }
             >
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={!s.trashCount}
+                onClick={() => (window.location.hash = "main?trash")}
+              >
+                View trash
+              </Button>
               <Button
                 variant="danger"
                 size="sm"
