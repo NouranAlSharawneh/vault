@@ -1,10 +1,13 @@
 import { useEffect, useState } from "react";
-import type { DocContent } from "@shared/types";
+import type { DocContent, DocMeta } from "@shared/types";
 import { api } from "@/lib/api";
 import type { LoadedDocument } from "../main.types";
 
-/** Loads a document's body whenever the selected path changes. */
-export function useDocument(path: string | null): DocContent | null {
+/**
+ * Loads a document's body whenever the selected path changes. Metadata is taken from
+ * the live index when available so star/tag changes show without a reload.
+ */
+export function useDocument(path: string | null, live?: DocMeta[]): DocContent | null {
   const [loaded, setLoaded] = useState<LoadedDocument | null>(null);
 
   useEffect(() => {
@@ -18,5 +21,7 @@ export function useDocument(path: string | null): DocContent | null {
     };
   }, [path]);
 
-  return path && loaded?.path === path ? loaded.doc : null;
+  if (!path || loaded?.path !== path || !loaded.doc) return null;
+  const fresh = live?.find((d) => d.path === path);
+  return fresh ? { ...loaded.doc, meta: fresh } : loaded.doc;
 }

@@ -1,4 +1,5 @@
 import { app, BrowserWindow, screen } from "electron";
+import { CAPTURE_WINDOW, OVERLAY_BG } from "@shared/constants";
 import { COMMON_WINDOW_OPTIONS, IS_MAC, loadRoute } from "./load-route";
 import { getMainWindow } from "./main.window";
 import { editorWindowCount } from "./editor.window";
@@ -10,8 +11,7 @@ export function getCaptureWindow(): BrowserWindow {
   if (captureWin && !captureWin.isDestroyed()) return captureWin;
   captureWin = new BrowserWindow({
     ...COMMON_WINDOW_OPTIONS,
-    width: 720,
-    height: 520,
+    ...CAPTURE_WINDOW,
     frame: false,
     resizable: false,
     movable: true,
@@ -19,7 +19,7 @@ export function getCaptureWindow(): BrowserWindow {
     skipTaskbar: true,
     hasShadow: true,
     transparent: IS_MAC,
-    backgroundColor: IS_MAC ? "#00000000" : "#1e1d1b",
+    backgroundColor: IS_MAC ? "#00000000" : OVERLAY_BG,
     vibrancy: IS_MAC ? "hud" : undefined,
     visualEffectState: "active",
     fullscreenable: false,

@@ -1,4 +1,5 @@
 import { BrowserWindow, shell } from "electron";
+import { MAIN_WINDOW, PAPER_BG, TRAFFIC_LIGHTS } from "@shared/constants";
 import { COMMON_WINDOW_OPTIONS, IS_MAC, loadRoute } from "./load-route";
 
 let mainWin: BrowserWindow | null = null;
@@ -18,14 +19,11 @@ export function openMainWindow(route = "main"): BrowserWindow {
   }
   mainWin = new BrowserWindow({
     ...COMMON_WINDOW_OPTIONS,
-    width: 1280,
-    height: 820,
-    minWidth: 860,
-    minHeight: 560,
+    ...MAIN_WINDOW,
     title: "Vault",
     titleBarStyle: IS_MAC ? "hiddenInset" : "default",
-    trafficLightPosition: { x: 14, y: 16 },
-    backgroundColor: "#fdfcfa",
+    trafficLightPosition: TRAFFIC_LIGHTS,
+    backgroundColor: PAPER_BG,
     vibrancy: IS_MAC ? "sidebar" : undefined,
   });
   mainWin.once("ready-to-show", () => mainWin?.show());
