@@ -31,7 +31,13 @@ export function applyFilter(
     title = index.projects.find((p) => p.slug === f.project)?.name ?? f.project;
   } else if (f.collection === "recent") {
     docs = docs.filter((d) => Math.max(Date.parse(d.created), d.mtime) >= cutoff);
-    title = "Recent";
+    // Recent is an ordering, not just a window: sorted by when you last touched a doc,
+    // which is also why it offers no sort control. A stored "title" order from another
+    // collection must not silently reorder it.
+    return {
+      docs: [...docs].sort((a, b) => touchedAt(b) - touchedAt(a)),
+      title: "Recent",
+    };
   } else if (f.collection === "starred") {
     docs = docs.filter((d) => d.starred);
     title = "Starred";
@@ -40,6 +46,8 @@ export function applyFilter(
   docs = [...docs].sort(sorter(f.sort));
   return { docs, title };
 }
+
+const touchedAt = (d: DocMeta) => Math.max(Date.parse(d.created), d.mtime);
 
 function sorter(sort: ListFilter["sort"]): (a: DocMeta, b: DocMeta) => number {
   switch (sort) {

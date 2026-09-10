@@ -23,6 +23,11 @@ const PNG_1x1 =
   "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==";
 mkdirSync(join(root, "research-log", "assets"), { recursive: true });
 writeFileSync(join(root, "research-log", "assets", "hero.png"), Buffer.from(PNG_1x1, "base64"));
+// Badges on one line must stay on one line (Tailwind's preflight makes img a block).
+writeFileSync(
+  join(root, "research-log", "badges.md"),
+  "# Badges\n\n![a](assets/hero.png) ![b](assets/hero.png) ![c](assets/hero.png)\n\n---\n\n```yaml\ntitle: Badges\nproject: Research log\ntags: [spec]\ncreated: 2026-01-02T10:00:00Z\nsource: manual\n```\n",
+);
 writeFileSync(
   join(root, "research-log", "with-image.md"),
   "# With image\n\n![hero](assets/hero.png)\n\n---\n\n```yaml\ntitle: With image\nproject: Research log\ntags: [spec]\ncreated: 2026-01-01T10:00:00Z\nsource: manual\n```\n",
@@ -148,6 +153,59 @@ await win.click('button:has-text("Preview")');
 const img = await win.waitForSelector(".prose-doc img", { timeout: 5000 });
 await win.waitForFunction((el) => el.complete && el.naturalWidth > 0, img, { timeout: 5000 });
 console.log("image src:", await img.getAttribute("src"));
+await win.keyboard.press("Control+K");
+await win.waitForSelector('input[aria-label="search"]');
+await win.keyboard.type("badges");
+await win.waitForSelector('[role="dialog"] >> text=Badges', { timeout: 5000 });
+await win.waitForTimeout(200);
+await win.keyboard.press("Enter");
+await win.waitForSelector('[role="dialog"]', { state: "detached" });
+await win.waitForSelector(".prose-doc img");
+const rows = await win.evaluate(() =>
+  [...document.querySelectorAll(".prose-doc img")].map((el) => el.getBoundingClientRect().top),
+);
+if (rows.length !== 3) throw new Error("expected 3 badges, got " + rows.length);
+if (new Set(rows).size !== 1)
+  throw new Error("badges wrapped onto separate lines: " + rows.join(", "));
+console.log("badges inline on one row:", rows.length);
+// Mermaid diagrams get zoom controls, like GitHub's.
+await win.keyboard.press("Control+K");
+await win.waitForSelector('input[aria-label="search"]');
+await win.keyboard.type("rate limit");
+await win.waitForSelector('[role="dialog"] >> text=Rate limiting', { timeout: 5000 });
+await win.waitForTimeout(200);
+await win.keyboard.press("Enter");
+await win.waitForSelector('[role="dialog"]', { state: "detached" });
+await win.waitForSelector(".mermaid-block svg", { timeout: 20000 });
+const widthOf = () =>
+  win.evaluate(() => document.querySelector(".mermaid-canvas svg").getBoundingClientRect().width);
+const before = await widthOf();
+await win.click('button[aria-label="zoom in"]');
+await win.click('button[aria-label="zoom in"]');
+await win.waitForSelector('button[aria-label="reset zoom"]:has-text("150%")', { timeout: 5000 });
+await win.waitForTimeout(200);
+const after = await widthOf();
+// The label moving is not enough: the diagram itself has to grow.
+if (!(after > before * 1.4)) throw new Error(`zoom did nothing: ${before} -> ${after}`);
+console.log("mermaid diagram width:", Math.round(before), "->", Math.round(after));
+// Zoomed past the pane, the diagram must be draggable — scrollbars alone are not enough.
+for (let i = 0; i < 8; i++) await win.click('button[aria-label="zoom in"]');
+const pane = await win.waitForSelector(".mermaid-block .cursor-grab", { timeout: 5000 });
+const box = await pane.boundingBox();
+await win.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+await win.mouse.down();
+await win.mouse.move(box.x + box.width / 2 - 120, box.y + box.height / 2, { steps: 8 });
+await win.mouse.up();
+const scrolled = await win.evaluate(
+  () => document.querySelector(".mermaid-block .overflow-auto").scrollLeft,
+);
+if (scrolled <= 0) throw new Error("drag did not pan the diagram, scrollLeft=" + scrolled);
+console.log("mermaid pan scrollLeft:", Math.round(scrolled));
+await win.waitForTimeout(300);
+await win.screenshot({ path: join(out, "smoke-17-mermaid-zoom.png") });
+await win.click('button[aria-label="reset zoom"]');
+await win.waitForSelector('button[aria-label="reset zoom"]:has-text("100%")', { timeout: 5000 });
+console.log("mermaid zoom: 150% then reset");
 // ---- M4: the ⌃⌥V sheet, driven through main (xvfb has no global hotkey)
 await app.evaluate(async ({ clipboard }) => {
   await clipboard.writeText(
