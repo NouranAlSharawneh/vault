@@ -1,10 +1,5 @@
 import { getSettings } from "./settings.store";
-
-export interface OAuthConfig {
-  clientId: string;
-  /** Required for the web flow's code exchange; optional for device flow. */
-  clientSecret: string | null;
-}
+import type { OAuthConfig } from "./oauth-config.types";
 
 /**
  * OAuth App credentials. Read from the build-time env (`MAIN_VITE_*` in `.env`, see

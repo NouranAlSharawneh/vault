@@ -1,12 +1,5 @@
 import { githubOAuth, NetworkError } from "../axios";
-import type { RawDeviceToken } from "./github.types";
-
-export interface ExchangeParams {
-  clientId: string;
-  clientSecret: string;
-  code: string;
-  redirectUri: string;
-}
+import type { ExchangeParams, RawDeviceToken } from "./github.types";
 
 /** Step 2 of the web flow: trade the one-time `code` for an access token. */
 export async function exchangeCode({

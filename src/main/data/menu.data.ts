@@ -36,7 +36,11 @@ export const APP_MENU: MenuSectionData[] = [
   { role: "windowMenu" },
   {
     label: "Help",
-    items: [{ label: "Vault on GitHub", action: "openOnGitHub" }],
+    items: [
+      { label: "Vault on GitHub", action: "openOnGitHub" },
+      { type: "separator" },
+      { label: "Reset Vault (sign out & forget vault)…", action: "resetApp" },
+    ],
   },
 ];
 

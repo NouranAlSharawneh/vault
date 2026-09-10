@@ -1,7 +1,6 @@
 import type { InternalAxiosRequestConfig } from "axios";
 import { GITHUB_API_VERSION, USER_AGENT } from "@shared/constants";
-
-export type TokenProvider = () => string | null;
+import type { TokenProvider } from "./axios.types";
 
 /** Attaches the GitHub bearer token (when present) and the headers GitHub requires. */
 export function createRequestInterceptor(getToken: TokenProvider) {

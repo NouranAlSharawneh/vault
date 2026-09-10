@@ -37,7 +37,8 @@ export function SignIn({ onBack, onLocal }: SignInProps) {
         {methods.oauth ? (
           <Button
             variant="primary"
-            className="h-9 justify-center text-base"
+            size="lg"
+            className="justify-center"
             onClick={() => setMode("web")}
           >
             <GitHubMark size={14} /> Continue with GitHub <ArrowRight size={13} />
@@ -45,35 +46,30 @@ export function SignIn({ onBack, onLocal }: SignInProps) {
         ) : (
           <Button
             variant="primary"
-            className="h-9 justify-center text-base"
+            size="lg"
+            className="justify-center"
             onClick={() => setMode("token")}
           >
             <KeyRound size={14} /> Paste a token <ArrowRight size={13} />
           </Button>
         )}
-        <div className="flex items-center justify-center gap-4 text-xs text-ink-3">
+        <div className="flex items-center justify-center gap-4">
           {methods.device && (
-            <button
-              className="inline-flex items-center gap-1 hover:text-ink"
-              onClick={() => setMode("device")}
-            >
+            <Button variant="subtle" onClick={() => setMode("device")}>
               <Smartphone size={11} /> Use a device code
-            </button>
+            </Button>
           )}
           {methods.oauth && (
-            <button
-              className="inline-flex items-center gap-1 hover:text-ink"
-              onClick={() => setMode("token")}
-            >
+            <Button variant="subtle" onClick={() => setMode("token")}>
               <KeyRound size={11} /> Paste a token instead
-            </button>
+            </Button>
           )}
         </div>
       </div>
       <div className="mt-6 flex items-center justify-between">
-        <button className="text-xs text-ink-4 hover:text-ink-2" onClick={onBack}>
+        <Button variant="subtle" onClick={onBack}>
           Back
-        </button>
+        </Button>
         <Button variant="outline" onClick={onLocal}>
           Skip for now
         </Button>

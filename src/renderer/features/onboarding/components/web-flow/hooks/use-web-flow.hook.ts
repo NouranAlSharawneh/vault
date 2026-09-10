@@ -2,11 +2,9 @@ import { useCallback, useEffect, useState } from "react";
 import type { WebFlowStatus } from "@shared/types";
 import { errorMessage } from "@/helpers";
 import { api, on } from "@/lib/api";
+import type { WebFlowState } from "../web-flow.types";
 
-interface WebFlowState {
-  status: WebFlowStatus;
-  message?: string;
-}
+const FAILED_STATUSES: WebFlowStatus[] = ["error", "timeout", "cancelled", "denied"];
 
 /** Kicks off the browser-based flow on mount and mirrors main's progress events. */
 export function useWebFlow() {
@@ -31,7 +29,6 @@ export function useWebFlow() {
     setAttempt((n) => n + 1);
   }, []);
 
-  const failed =
-    state.status === "error" || state.status === "timeout" || state.status === "cancelled";
+  const failed = FAILED_STATUSES.includes(state.status);
   return { ...state, failed, retry };
 }

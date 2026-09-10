@@ -6,12 +6,10 @@ import {
   OAUTH_LOOPBACK_PORTS,
   OAUTH_TIMEOUT_MS,
 } from "@shared/constants";
-import type { WebFlowStatus } from "@shared/types";
 import { buildAuthorizeUrl, exchangeCode } from "../../network/github";
-import type { OAuthConfig } from "../../store/oauth-config";
+import type { OAuthConfig } from "../../store/oauth-config.types";
+import type { WebFlowReporter } from "./web-flow.types";
 import { startLoopbackServer } from "./loopback-server";
-
-export type WebFlowReporter = (status: WebFlowStatus, message?: string) => void;
 
 let active: { close: () => void } | null = null;
 
@@ -49,7 +47,15 @@ export async function runWebFlow(config: OAuthConfig, report: WebFlowReporter): 
     return token;
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
-    report(msg === "cancelled" ? "cancelled" : msg === "timeout" ? "timeout" : "error", msg);
+    const status =
+      msg === "cancelled"
+        ? "cancelled"
+        : msg === "timeout"
+          ? "timeout"
+          : msg === "access_denied"
+            ? "denied"
+            : "error";
+    report(status, msg);
     throw e;
   } finally {
     server.close();

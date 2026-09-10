@@ -1,10 +1,5 @@
 import { GITHUB_WEB, OAUTH_SCOPE } from "@shared/constants";
-
-export interface AuthorizeParams {
-  clientId: string;
-  redirectUri: string;
-  state: string;
-}
+import type { AuthorizeParams } from "./github.types";
 
 /** The URL that shows GitHub's "Authorize <app>" page. */
 export function buildAuthorizeUrl({ clientId, redirectUri, state }: AuthorizeParams): string {

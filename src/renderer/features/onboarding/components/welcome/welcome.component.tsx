@@ -16,15 +16,16 @@ export function Welcome({ onNext, onLocal }: WelcomeProps) {
         database, no account, no lock-in.
       </p>
       <div className="mt-8 flex items-center gap-3">
-        <Button variant="primary" className="h-9 px-4 text-base" onClick={onNext}>
+        <Button variant="primary" size="lg" onClick={onNext}>
           Connect GitHub <ArrowRight size={14} />
         </Button>
-        <button
-          className="text-sm text-ink-3 underline decoration-line-2 underline-offset-4 hover:text-ink"
+        <Button
+          variant="subtle"
+          className="text-sm underline decoration-line-2 underline-offset-4"
           onClick={onLocal}
         >
           Start local, connect later
-        </button>
+        </Button>
       </div>
       <div className="mt-14 grid grid-cols-3 gap-4 text-xs text-ink-3">
         {WELCOME_FEATURES.map((f) => (

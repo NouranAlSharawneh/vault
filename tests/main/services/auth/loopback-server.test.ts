@@ -31,7 +31,7 @@ describe("loopback server", () => {
     await fetch(
       `${server.redirectUri}?error=access_denied&error_description=The+user+denied&state=abc`,
     );
-    await expect(server.code).rejects.toThrow("The user denied");
+    await expect(server.code).rejects.toThrow("access_denied");
     server.close();
   });
 

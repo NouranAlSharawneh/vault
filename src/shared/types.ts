@@ -150,7 +150,8 @@ export interface AuthMethods {
   device: boolean;
 }
 
-export type WebFlowStatus = "waiting" | "exchanging" | "ok" | "cancelled" | "timeout" | "error";
+export type WebFlowStatus =
+  "waiting" | "exchanging" | "ok" | "denied" | "cancelled" | "timeout" | "error";
 
 export interface AuthState {
   status: "signed-out" | "signed-in" | "expired";

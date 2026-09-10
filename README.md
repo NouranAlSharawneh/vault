@@ -42,4 +42,5 @@ See `ARCHITECTURE.md` for the full design and code conventions.
 npm run lint        # eslint
 npm run format      # prettier
 npm run smoke       # headless Electron walk-through (needs xvfb)
+npm run reset       # wipe app data (settings, token, cache) → next launch starts at onboarding
 ```

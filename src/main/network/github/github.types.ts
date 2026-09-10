@@ -1,3 +1,5 @@
+import type { DeviceCodeSession } from "@shared/types";
+
 /** Raw GitHub REST shapes — mapped to `@shared/types` before leaving this folder. */
 export interface RawGitHubUser {
   login: string;
@@ -30,3 +32,18 @@ export interface RawDeviceToken {
   error?: string;
   interval?: number;
 }
+
+export interface AuthorizeParams {
+  clientId: string;
+  redirectUri: string;
+  state: string;
+}
+
+export interface ExchangeParams {
+  clientId: string;
+  clientSecret: string;
+  code: string;
+  redirectUri: string;
+}
+
+export type DeviceFlowStart = DeviceCodeSession & { deviceCode: string };

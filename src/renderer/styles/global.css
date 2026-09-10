@@ -196,6 +196,12 @@ input {
   .btn:disabled {
     @apply pointer-events-none opacity-50;
   }
+  .btn-link {
+    @apply inline-flex items-center gap-1 text-xs text-cherry transition-colors hover:underline disabled:pointer-events-none disabled:opacity-50;
+  }
+  .btn-subtle {
+    @apply text-ink-4 hover:text-ink-2 hover:no-underline;
+  }
   .icon-btn {
     @apply inline-flex h-7 w-7 items-center justify-center rounded-sm text-ink-3 transition-colors hover:bg-paper-3 hover:text-ink;
   }

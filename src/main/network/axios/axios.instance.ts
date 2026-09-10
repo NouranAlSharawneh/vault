@@ -1,17 +1,11 @@
 import axios, { type AxiosInstance } from "axios";
 import { GITHUB_API, GITHUB_WEB, NETWORK_TIMEOUT_MS } from "@shared/constants";
-import { createRequestInterceptor, type TokenProvider } from "./request.interceptor";
-import { createResponseInterceptor, type AuthExpiredHandler } from "./response.interceptor";
+import { createRequestInterceptor } from "./request.interceptor";
+import { createResponseInterceptor } from "./response.interceptor";
+import type { NetworkOptions } from "./axios.types";
 
 let api: AxiosInstance | null = null;
 let oauth: AxiosInstance | null = null;
-
-export interface NetworkOptions {
-  getToken: TokenProvider;
-  onAuthExpired?: AuthExpiredHandler;
-  /** Override hosts (tests point these at a local fake). */
-  baseUrls?: { api?: string; oauth?: string };
-}
 
 /** Wire the shared instances once at startup. */
 export function configureNetwork(opts: NetworkOptions): void {
