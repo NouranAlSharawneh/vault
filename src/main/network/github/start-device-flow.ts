@@ -1,9 +1,6 @@
-import type { DeviceCodeSession } from "@shared/types";
 import { OAUTH_SCOPE } from "@shared/constants";
 import { githubOAuth } from "../axios";
-import type { RawDeviceCode } from "./github.types";
-
-export type DeviceFlowStart = DeviceCodeSession & { deviceCode: string };
+import type { DeviceFlowStart, RawDeviceCode } from "./github.types";
 
 /**
  * Step 1 of OAuth device flow. Needs an OAuth App client ID (free to register at

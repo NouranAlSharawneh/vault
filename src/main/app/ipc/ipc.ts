@@ -4,6 +4,7 @@ import { homedir } from "node:os";
 import { join } from "node:path";
 import { DEFAULT_BRANCH, DEFAULT_HOTKEY, DEFAULT_PUSH_DEBOUNCE_MS } from "@shared/constants";
 import type { InvokeChannel, IpcInvoke } from "@shared/ipc";
+import type { IpcHandler } from "./ipc.types";
 import type { VaultConfig } from "@shared/types";
 import { NetworkError } from "../../network/axios";
 import {
@@ -17,16 +18,14 @@ import { readClipboard } from "../../services/capture/capture.service";
 import { GitService } from "../../services/git/git.service";
 import { getSettings, updateSettings } from "../../store/settings.store";
 import { loadToken } from "../../store/token.store";
+import { getOAuthConfig } from "../../store/oauth-config";
+import { cancelWebFlow, runWebFlow } from "../../services/auth/web-flow.service";
 import { broadcast, hideCaptureWindow, openEditorWindow, openMainWindow } from "../../windows";
 import { registerHotkey } from "../hotkey/hotkey";
 import { session } from "../session/session";
 
-type Handler<C extends InvokeChannel> = (
-  ...args: Parameters<IpcInvoke[C]>
-) => ReturnType<IpcInvoke[C]> | Promise<ReturnType<IpcInvoke[C]>>;
-
 /** Typed `ipcMain.handle` that normalises errors so the renderer sees a plain message. */
-function handle<C extends InvokeChannel>(channel: C, fn: Handler<C>): void {
+function handle<C extends InvokeChannel>(channel: C, fn: IpcHandler<C>): void {
   ipcMain.handle(channel, async (_event, ...args: unknown[]) => {
     try {
       return await fn(...(args as Parameters<IpcInvoke[C]>));
@@ -39,10 +38,6 @@ function handle<C extends InvokeChannel>(channel: C, fn: Handler<C>): void {
 
 let deviceAbort: AbortController | null = null;
 
-function githubClientId(): string | null {
-  return process.env.VAULT_GITHUB_CLIENT_ID || getSettings().githubClientId;
-}
-
 export function registerIpcHandlers(): void {
   handle("app:version", () => app.getVersion());
   handle("app:platform", () => process.platform);
@@ -50,9 +45,25 @@ export function registerIpcHandlers(): void {
   // ---- auth
   handle("auth:state", () => session.auth);
   handle("auth:signInWithToken", (token) => session.signIn(token.trim(), "pat"));
-  handle("auth:deviceAvailable", () => !!githubClientId());
+  handle("auth:methods", () => {
+    const cfg = getOAuthConfig();
+    return { oauth: !!cfg?.clientSecret, device: !!cfg };
+  });
+  handle("auth:deviceAvailable", () => !!getOAuthConfig());
+  handle("auth:webStart", () => {
+    const cfg = getOAuthConfig();
+    if (!cfg) throw new Error("No GitHub OAuth App configured. See .env.example.");
+    // Fire-and-forget: progress arrives on auth:webStatus, the token via auth:state.
+    void runWebFlow(cfg, (status, message) => broadcast("auth:webStatus", { status, message }))
+      .then((token) => session.signIn(token, "oauth"))
+      .catch((e: unknown) => {
+        if (!(e instanceof Error && (e.message === "cancelled" || e.message === "timeout")))
+          console.warn("web flow failed", e);
+      });
+  });
+  handle("auth:webCancel", () => cancelWebFlow());
   handle("auth:deviceStart", async () => {
-    const clientId = githubClientId();
+    const clientId = getOAuthConfig()?.clientId;
     if (!clientId) throw new Error("No GitHub OAuth client ID configured. Paste a token instead.");
     deviceAbort?.abort();
     deviceAbort = new AbortController();

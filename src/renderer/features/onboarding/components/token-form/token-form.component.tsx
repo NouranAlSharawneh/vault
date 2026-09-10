@@ -17,12 +17,13 @@ export function TokenForm({ onBack }: TokenFormProps) {
       <ol className="mt-3 list-decimal space-y-1.5 pl-4 text-sm text-ink-2">
         <li>
           Open{" "}
-          <button
-            className="text-cherry underline underline-offset-2"
+          <Button
+            variant="link"
+            className="text-sm underline"
             onClick={() => api("github:openInBrowser", TOKEN_SETTINGS_PATH)}
           >
             github.com/{TOKEN_SETTINGS_PATH}
-          </button>
+          </Button>
         </li>
         <li>
           Repository access: <b>Only select repositories</b> → your vault repo (create it first if
@@ -47,9 +48,9 @@ export function TokenForm({ onBack }: TokenFormProps) {
       />
       {error && <div className="mt-2 text-xs text-cherry">{error}</div>}
       <div className="mt-5 flex items-center justify-between">
-        <button className="text-xs text-ink-4 hover:text-ink-2" onClick={onBack}>
+        <Button variant="subtle" onClick={onBack}>
           Back
-        </button>
+        </Button>
         <Button
           variant="primary"
           loading={busy}

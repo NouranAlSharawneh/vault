@@ -1,25 +1,38 @@
 import { cx } from "@/helpers";
 import { Spinner } from "../spinner/spinner.component";
-import type { ButtonProps, ButtonVariant } from "./button.types";
+import type { ButtonProps, ButtonSize, ButtonVariant } from "./button.types";
 
 const VARIANT_CLASS: Record<ButtonVariant, string> = {
-  default: "",
-  primary: "btn-primary",
-  ghost: "btn-ghost",
-  outline: "btn-outline",
+  default: "btn",
+  primary: "btn btn-primary",
+  outline: "btn btn-outline",
+  ghost: "btn btn-ghost",
+  link: "btn-link",
+  subtle: "btn-link btn-subtle",
 };
 
+const SIZE_CLASS: Record<ButtonSize, string> = {
+  sm: "h-6 px-2 text-xs",
+  md: "",
+  lg: "h-9 px-4 text-base",
+};
+
+/** The one button. `className` is merged last so callers can override anything. */
 export function Button({
   variant = "default",
+  size = "md",
   loading,
   className,
   children,
   disabled,
+  type = "button",
   ...rest
 }: ButtonProps) {
+  const inline = variant === "link" || variant === "subtle";
   return (
     <button
-      className={cx("btn", VARIANT_CLASS[variant], className)}
+      type={type}
+      className={cx(VARIANT_CLASS[variant], !inline && SIZE_CLASS[size], className)}
       disabled={disabled || loading}
       {...rest}
     >

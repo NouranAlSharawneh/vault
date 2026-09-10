@@ -21,7 +21,15 @@ for (let i = 0; i < 800; i++) {
 const out = process.env.SMOKE_OUT ?? "/tmp";
 const app = await electron.launch({
   args: ["."],
-  env: { ...process.env, HOME: home, NODE_ENV: "production", ELECTRON_DISABLE_SANDBOX: "1" },
+  env: {
+    ...process.env,
+    HOME: home,
+    NODE_ENV: "production",
+    ELECTRON_DISABLE_SANDBOX: "1",
+    // Fake OAuth App so the sign-in screen shows every method (no network is hit).
+    VAULT_GITHUB_CLIENT_ID: "smoke-client-id",
+    VAULT_GITHUB_CLIENT_SECRET: "smoke-client-secret",
+  },
 });
 await app.firstWindow();
 let win = null;
@@ -35,7 +43,16 @@ win.on("console", (m) => m.type() === "error" && errors.push(m.text()));
 win.on("pageerror", (e) => errors.push("PAGEERROR: " + e.message));
 await win.waitForSelector("text=Connect GitHub", { timeout: 15000 });
 await win.screenshot({ path: join(out, "smoke-1-welcome.png") });
-await win.click("text=Start local, connect later");
+await win.click("text=Connect GitHub");
+await win.waitForSelector("text=What GitHub will ask you to approve");
+await win.waitForTimeout(400);
+await win.screenshot({ path: join(out, "smoke-1b-signin.png") });
+await win.click("text=Continue with GitHub");
+await win.waitForSelector("text=Approve Vault on GitHub");
+await win.waitForTimeout(400);
+await win.screenshot({ path: join(out, "smoke-1c-webflow.png") });
+await win.click("text=Use another method");
+await win.click("text=Skip for now");
 await win.waitForSelector("text=Where should the vault live?");
 await win.screenshot({ path: join(out, "smoke-2-repo.png") });
 await win.click('button:has-text("Continue")');

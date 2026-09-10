@@ -1,7 +1,6 @@
 import { isAxiosError, type AxiosError, type AxiosResponse } from "axios";
 import { NetworkError } from "./network-error";
-
-export type AuthExpiredHandler = () => void;
+import type { AuthExpiredHandler } from "./axios.types";
 
 /** Unwraps successful responses; converts every failure into a `NetworkError`. */
 export function createResponseInterceptor(onAuthExpired?: AuthExpiredHandler) {
