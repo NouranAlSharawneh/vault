@@ -89,6 +89,8 @@ export interface IpcInvoke {
   "assets:chooseFolder": (defaultPath?: string) => string | null;
 
   "capture:readClipboard": () => ClipboardCapture;
+  /** Hide the sheet and open the just-saved document in the main window. */
+  "capture:reveal": (path: string) => void;
   "capture:hide": () => void;
   "capture:openEditor": (draft: EditorDraft) => void;
 
@@ -110,6 +112,8 @@ export interface IpcEvents {
   "auth:webStatus": { status: WebFlowStatus; message?: string };
   "capture:shown": ClipboardCapture;
   "editor:open": { path?: string; draft?: EditorDraft };
+  /** Select this document in the main window, clearing filters so it is in the list. */
+  "doc:reveal": string;
   shortcut: "search" | "new" | "toggleSidebar" | "history" | "save" | "trash" | "settings";
   navigate: string;
 }

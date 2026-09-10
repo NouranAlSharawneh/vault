@@ -1,7 +1,7 @@
 import type { EventChannel, InvokeChannel } from "./ipc.types";
 
 /** Allow-list enforced by the preload so the renderer can only reach declared channels. */
-export const INVOKE_CHANNELS: InvokeChannel[] = [
+export const INVOKE_CHANNELS = [
   "auth:state",
   "auth:signInWithToken",
   "auth:deviceStart",
@@ -49,6 +49,7 @@ export const INVOKE_CHANNELS: InvokeChannel[] = [
   "assets:resolve",
   "assets:chooseFolder",
   "capture:readClipboard",
+  "capture:reveal",
   "capture:hide",
   "capture:openEditor",
   "window:openMain",
@@ -57,9 +58,9 @@ export const INVOKE_CHANNELS: InvokeChannel[] = [
   "app:platform",
   "app:openExternal",
   "app:reset",
-];
+] as const satisfies readonly InvokeChannel[];
 
-export const EVENT_CHANNELS: EventChannel[] = [
+export const EVENT_CHANNELS = [
   "index:changed",
   "index:progress",
   "sync:status",
@@ -68,6 +69,16 @@ export const EVENT_CHANNELS: EventChannel[] = [
   "auth:webStatus",
   "capture:shown",
   "editor:open",
+  "doc:reveal",
   "shortcut",
   "navigate",
-];
+] as const satisfies readonly EventChannel[];
+
+/**
+ * Compile-time guard: a channel declared in `ipc.types` but missing from the allow-lists
+ * above fails at runtime with "Unknown channel", which only a smoke run would catch.
+ * Here it is a type error instead — `AssertNever` rejects any left-over channel name.
+ */
+type AssertNever<T extends never> = T;
+export type UnlistedInvoke = AssertNever<Exclude<InvokeChannel, (typeof INVOKE_CHANNELS)[number]>>;
+export type UnlistedEvent = AssertNever<Exclude<EventChannel, (typeof EVENT_CHANNELS)[number]>>;

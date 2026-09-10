@@ -82,11 +82,12 @@ export function useCapture() {
         assets: assets.request,
       });
       setState((s) => ({ ...s, phase: "saved", savedPath: res.path }));
-      setTimeout(hide, CAPTURE_SAVED_FLASH_MS);
+      // Flash the committed path, then hand the new doc to the main window.
+      setTimeout(() => void api("capture:reveal", res.path), CAPTURE_SAVED_FLASH_MS);
     } catch (e) {
       setState((s) => ({ ...s, phase: "error", error: errorMessage(e) }));
     }
-  }, [state.clip, state.phase, state.form, title, hide, assets.request]);
+  }, [state.clip, state.phase, state.form, title, assets.request]);
 
   const openInEditor = useCallback(() => {
     if (!state.clip?.text.trim()) {

@@ -1,7 +1,7 @@
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Button, Empty, SplitPane, Toast } from "@/components/ui";
 import { cx } from "@/helpers";
-import { api } from "@/lib/api";
+import { api, on } from "@/lib/api";
 import { useApp } from "@/stores/app";
 import { useToast } from "@/stores/toast";
 import type { ReaderView } from "./main.types";
@@ -29,12 +29,24 @@ export function Main() {
   const dismissToast = useToast((s) => s.dismiss);
   const sidebar = useSidebarState();
   const list = useDocumentFilter(index, trash);
+  const { showAll } = list;
   const [selected, setSelected] = useState<string | null>(null);
   const [view, setView] = useState<ReaderView>("preview");
   const [paletteOpen, setPaletteOpen] = useState(false);
   const inTrash = list.filter.collection === "trash";
   const doc = useDocument(selected, inTrash ? trash.map((t) => t.meta) : index?.docs);
   const trashActions = useTrashActions(doc?.meta ?? null, setSelected);
+
+  // A capture lands as `doc:reveal`: drop back to All documents so the new doc is in
+  // the list, then select it. The index arrives on its own event, so order doesn't matter.
+  useEffect(
+    () =>
+      on("doc:reveal", (path) => {
+        showAll();
+        setSelected(path);
+      }),
+    [showAll],
+  );
 
   const openPalette = useCallback(() => setPaletteOpen(true), []);
   const openSettings = useCallback(() => (window.location.hash = "settings"), []);

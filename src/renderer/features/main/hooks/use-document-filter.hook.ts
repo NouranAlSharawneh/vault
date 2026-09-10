@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import type { DocMeta, IndexSnapshot, TrashedDoc } from "@shared/types";
 import { RECENT_DAYS } from "@/constants";
 import type { FilteredDocs, ListFilter } from "../main.types";
@@ -67,7 +67,18 @@ export function useDocumentFilter(index: IndexSnapshot | null, trash: TrashedDoc
       tags: f.tags.includes(tag) ? f.tags.filter((t) => t !== tag) : [...f.tags, tag],
     }));
   const clearTags = () => setFilter((f) => ({ ...f, tags: [] }));
+  /** Back to an unfiltered list, keeping the chosen sort. Stable, so effects can depend on it. */
+  const showAll = useCallback(() => setFilter((f) => ({ ...DEFAULT, sort: f.sort })), []);
   const setSort = (sort: ListFilter["sort"]) => setFilter((f) => ({ ...f, sort }));
 
-  return { filter, ...result, selectProject, selectCollection, toggleTag, clearTags, setSort };
+  return {
+    filter,
+    ...result,
+    selectProject,
+    selectCollection,
+    toggleTag,
+    clearTags,
+    setSort,
+    showAll,
+  };
 }

@@ -184,6 +184,10 @@ await sheet.waitForSelector("text=committed", { timeout: 15000 });
 await sheet.screenshot({ path: join(out, "smoke-12-capture-saved.png") });
 const log2 = execSync("git log --oneline -1", { cwd: root }).toString().trim();
 console.log("capture commit:", log2);
+// The sheet hands the new doc straight to the main window.
+await win.waitForSelector("text=_inbox/edge-pop-inventory.md", { timeout: 10000 });
+await win.waitForTimeout(300);
+await win.screenshot({ path: join(out, "smoke-12b-capture-opened.png") });
 if (!log2.includes("add: Edge POP inventory")) throw new Error("capture commit not found: " + log2);
 // ---- M5: asset capture through the capture sheet (a source folder with the image)
 const srcDir = join(home, "concorde");

@@ -211,6 +211,13 @@ export function registerIpcHandlers(): void {
   });
   handle("capture:readClipboard", () => readClipboard());
   handle("capture:hide", () => hideCaptureWindow());
+  handle("capture:reveal", (path) => {
+    hideCaptureWindow();
+    const win = openMainWindow();
+    const send = () => win.webContents.send("doc:reveal", path);
+    if (win.webContents.isLoading()) win.webContents.once("did-finish-load", send);
+    else send();
+  });
   handle("capture:openEditor", (draft) => {
     hideCaptureWindow();
     const win = openEditorWindow();
