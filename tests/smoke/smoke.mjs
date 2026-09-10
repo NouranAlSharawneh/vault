@@ -190,7 +190,7 @@ const srcDir = join(home, "concorde");
 mkdirSync(join(srcDir, "docs"), { recursive: true });
 writeFileSync(
   join(srcDir, "docs", "hero-flyin.gif"),
-  Buffer.from("R0lGODlhAQABAAAAACw=", "base64"),
+  Buffer.from("R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7", "base64"),
 );
 await app.evaluate(async ({ clipboard }) => {
   await clipboard.writeText(
@@ -220,7 +220,7 @@ await sheet.waitForSelector('[data-testid="asset-panel"] >> text=1 found');
 await sheet.waitForTimeout(300);
 await sheet.screenshot({ path: join(out, "smoke-13-capture-assets.png") });
 await sheet.keyboard.press("Control+Enter");
-await sheet.waitForSelector("text=committed", { timeout: 15000 });
+await sheet.waitForSelector("text=committed _inbox/concorde.md", { timeout: 15000 });
 const concorde = readFileSync(join(root, "_inbox", "concorde.md"), "utf8");
 if (!concorde.includes("![hero](assets/hero-flyin.gif)"))
   throw new Error("asset link not rewritten:\n" + concorde);
@@ -273,7 +273,7 @@ await win.keyboard.press("Control+Alt+J");
 await win.waitForSelector("kbd:has-text('J')", { timeout: 5000 });
 await win.waitForTimeout(400);
 await win.screenshot({ path: join(out, "smoke-16-settings.png") });
-const cfg = JSON.parse(readFileSync(join(home, ".config", "vault", "config.json"), "utf8"));
+const cfg = JSON.parse(readFileSync(join(home, ".config", "Vault", "config.json"), "utf8"));
 if (cfg.vault.hotkey !== "Control+Alt+J") throw new Error("hotkey not saved: " + cfg.vault.hotkey);
 await win.click("text=Back to vault");
 await win.waitForSelector("text=All documents");
