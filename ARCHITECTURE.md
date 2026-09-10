@@ -4,22 +4,34 @@
 
 ## 1. Stack (all free / OSS)
 
-| Layer | Choice | Why |
-|---|---|---|
-| Shell | **Electron 44** + **electron-vite 5** | All-JS, built-in `globalShortcut`, `clipboard`, `safeStorage` (Keychain-backed on macOS), `Tray`. No Rust toolchain needed. |
-| UI | **React 19 + TypeScript**, **Tailwind v4**, `lucide-react` icons | Fast to iterate, matches the team's skills. |
-| State | **zustand** | Tiny, no boilerplate, works well with IPC-fed stores. |
-| Editor | **CodeMirror 6** (`@codemirror/lang-markdown`) | Lightweight, keyboard-first, markdown-aware. |
-| Preview | `react-markdown` + `remark-gfm` + `shiki` (code) + `mermaid` (diagrams) | Renders client-side; file on disk stays plain text. |
-| Search | **MiniSearch** (in-memory) | Full-text + field boosting over ~5k docs in ms; disposable index. |
-| Git | **simple-git** wrapping the system `git` | Free, no libgit2 build step. Requires git on PATH (macOS ships it via Xcode CLT). |
-| Frontmatter | `gray-matter` | Battle-tested YAML frontmatter parse/stringify. |
-| Watcher | `chokidar` | Picks up edits made in Obsidian/vim/github pulls. |
-| Secrets | Electron `safeStorage` → encrypted blob in `userData` | Uses macOS Keychain for the key; no `keytar` (unmaintained). |
-| Tests | vitest (core logic), Playwright + Electron (smoke) | |
-| Packaging | electron-builder (dmg, unsigned for now — signing costs $99/yr, skipped) | |
+| Layer       | Choice                                                                   | Why                                                                                                                         |
+| ----------- | ------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------- |
+| Shell       | **Electron 44** + **electron-vite 5**                                    | All-JS, built-in `globalShortcut`, `clipboard`, `safeStorage` (Keychain-backed on macOS), `Tray`. No Rust toolchain needed. |
+| UI          | **React 19 + TypeScript**, **Tailwind v4**, `lucide-react` icons         | Fast to iterate, matches the team's skills.                                                                                 |
+| State       | **zustand**                                                              | Tiny, no boilerplate, works well with IPC-fed stores.                                                                       |
+| Editor      | **CodeMirror 6** (`@codemirror/lang-markdown`)                           | Lightweight, keyboard-first, markdown-aware.                                                                                |
+| Preview     | `react-markdown` + `remark-gfm` + `shiki` (code) + `mermaid` (diagrams)  | Renders client-side; file on disk stays plain text.                                                                         |
+| Search      | **MiniSearch** (in-memory)                                               | Full-text + field boosting over ~5k docs in ms; disposable index.                                                           |
+| Git         | **simple-git** wrapping the system `git`                                 | Free, no libgit2 build step. Requires git on PATH (macOS ships it via Xcode CLT).                                           |
+| Frontmatter | `gray-matter`                                                            | Battle-tested YAML frontmatter parse/stringify.                                                                             |
+| Watcher     | `chokidar`                                                               | Picks up edits made in Obsidian/vim/github pulls.                                                                           |
+| Secrets     | Electron `safeStorage` → encrypted blob in `userData`                    | Uses macOS Keychain for the key; no `keytar` (unmaintained).                                                                |
+| Tests       | vitest (core logic), Playwright + Electron (smoke)                       |                                                                                                                             |
+| Packaging   | electron-builder (dmg, unsigned for now — signing costs $99/yr, skipped) |                                                                                                                             |
 
-## 2. Process model
+## 2. Code conventions
+
+- **Formatting / linting**: Prettier (double quotes, semicolons, 100 cols, Tailwind class sorting) + ESLint flat config (typescript-eslint strict, react-hooks, react-refresh). Husky pre-commit runs lint-staged → typecheck → tests.
+- **TypeScript**: strict, no `any`, unused locals/params are errors, `noImplicitReturns`, no deprecated options (no `baseUrl`; `paths` are relative to the tsconfig).
+- **Tailwind v4**: only canonical utilities. Every size/colour/radius/shadow is a token in `global.css` `@theme`, so there are no `[arbitrary]` values.
+- **Folders**
+  - `src/shared/` — `types.ts` (cross-process domain types), `constants/` (one file with every constant), `helpers/` (one function per file), `frontmatter/`, `query/`, `ipc/`.
+  - `src/main/` — `index.ts` (lifecycle only), `app/<name>/` (session, ipc, hotkey, menu, tray), `network/axios/` (instance + request/response interceptors + `NetworkError`), `network/github/` (one call per file), `services/<name>/` (git, indexer, vault, capture), `store/`, `windows/`, `data/` (static menu/tray data).
+  - `src/renderer/src/` — `app/`, `routes/<name>/` (thin) → `features/<name>/` (`<name>.component.tsx`, `<name>.types.ts`, `hooks/`, `components/<child>/`), `components/ui/<name>/`, `stores/<name>/`, `helpers/`, `constants/`, `data/`, `lib/api/`.
+  - Types live beside the file that owns them (`*.types.ts`); only truly shared types go in `src/shared/types.ts`.
+  - `tests/` at the repo root mirrors `src/` (`tests/shared/…`, `tests/main/services/…`, `tests/smoke/`).
+
+## 3. Process model
 
 ```
 ┌──────────────── main (Node) ────────────────┐
@@ -43,11 +55,12 @@
 ```
 
 Rules:
+
 - Renderer never touches `fs`, `git`, or the network. `contextIsolation: true`, `nodeIntegration: false`, `sandbox: true`.
 - All shared types live in `src/shared/` (frontmatter schema, IPC contract, query grammar AST).
 - Main pushes `index:changed`, `sync:status`, `auth:expired` events; renderer subscribes once.
 
-## 3. Data model — the file *is* the record
+## 4. Data model — the file _is_ the record
 
 ```yaml
 ---
@@ -55,22 +68,22 @@ title: Rate limiting at the edge
 project: Atlas API
 tags: [spec, infra]
 created: 2026-09-09T14:22:10Z
-source: claude          # claude | chatgpt | github | manual | other
-starred: true           # omitted when false
+source: claude # claude | chatgpt | github | manual | other
+starred: true # omitted when false
 ---
 # Rate limiting at the edge
 ```
 
 Repo layout: `README.md` (generated index), `<project-slug>/<title-slug>.md`, `_inbox/` for no-project docs, `.trash/` (scanner skips), `.vault/views.yml`, `.vault/templates/`.
 
-## 4. Index & cache (D3 from the PRD)
+## 5. Index & cache (D3 from the PRD)
 
 - **Cold start**: walk `*.md`, read only the frontmatter block (stop at closing `---`), build `DocMeta[]`. Body text indexed lazily in a background pass in chunks of 50 files via `setImmediate`.
 - **Warm start**: load `~/Library/Application Support/Vault/index-<repoId>.json` `{ headSha, files: {path: {mtime,size,meta}} }`, then `git diff --name-status <headSha> HEAD` + a stat pass for uncommitted edits; re-parse only those.
 - **Live**: chokidar on the vault folder (ignoring `.git`, `.trash`), debounced 300 ms, plus `Rescan` action.
 - Cache is disposable; deleting it costs one cold scan. Nothing lives there that isn't derivable from the repo.
 
-## 5. Save path (M2)
+## 6. Save path (M2)
 
 1. Compose frontmatter → prepend to body.
 2. Path = `<project-slug>/<title-slug>.md`, de-dup with `-2`, `-3`.
@@ -79,20 +92,20 @@ Repo layout: `README.md` (generated index), `<project-slug>/<title-slug>.md`, `_
 5. Update in-memory index immediately (UI reflects without rescan).
 6. Push on a **3 s debounce** (Q6 resolved). On failure the commit stays local; doc shows amber "not pushed"; push queue retries with backoff and on network regain. `git status -sb` ahead-count drives the badge.
 
-## 6. Auth
+## 7. Auth
 
 - **v1 path**: paste a fine-grained PAT (Contents: read/write on the vault repo). Validated via `GET /user` + `GET /repos/:owner/:repo`. Stored via `safeStorage`.
 - **Device flow**: implemented behind `GITHUB_CLIENT_ID` in `.vault-config`/env; lights up once an OAuth App is registered (free). Polls `/login/oauth/access_token`, handles `authorization_pending`, `slow_down`, `expired_token`, `access_denied`.
 - Git push uses the token via a credential helper injected per-command (`-c credential.helper=` + `http.extraheader`), never written to `.git/config`.
 - Any 401 → `auth:expired` → re-auth screen; unsaved editor state kept in the renderer.
 
-## 7. Windows
+## 8. Windows
 
 - **Main** (3-pane, sidebar states full/rail/hidden via `⌘\`).
 - **Capture sheet**: frameless, always-on-top, `vibrancy`, centred on active display; `globalShortcut('Alt+Space')`, reads clipboard on show, `⌘↵` saves, `Esc` hides. Hidden, not destroyed — shows in <50 ms.
 - **Tray** icon with sync status (green/amber) + quick actions.
 
-## 8. Decisions I'm making beyond the PRD
+## 9. Decisions I'm making beyond the PRD
 
 - Delete = `git mv` into `.trash/` + commit (Q5). Purge from settings.
 - Push cadence = commit now, push on 3 s debounce (Q6).
@@ -100,17 +113,17 @@ Repo layout: `README.md` (generated index), `<project-slug>/<title-slug>.md`, `_
 - Search grammar parsed into an AST (`project:`, `tags:`, `created:`, `source:`, `is:`) and applied as MiniSearch filters, so saved views are just query strings.
 - Project colours derived deterministically from slug hash (no state to store).
 
-## 9. Risks & how they're handled
+## 10. Risks & how they're handled
 
-| Risk | Mitigation |
-|---|---|
-| Unsigned macOS build shows Gatekeeper warning | Dev via `npm run dev`; ship dmg with "right-click → Open" note. Signing = $99/yr, out of scope. |
-| `git` missing on user machine | Detect on launch; show one-screen instruction (`xcode-select --install`). |
-| Global hotkey `⌥Space` conflicts (Raycast/Alfred) | Configurable in settings; fallback `⌃⌥V`. |
-| Push conflict (two machines) | Fetch before push; on non-fast-forward, `pull --rebase`; per-file conflicts surface the "Yours / Remote / Keep both" sheet. |
-| Large vault (5k files) cold scan | Frontmatter-only read + lazy body pass; measured target <1 s for 5k. |
-| Token leakage | Never in repo, never in logs; `safeStorage`; redact in error messages. |
-| Mermaid render errors on bad diagrams | Render in try/catch, show code block with error line. |
-| Clipboard not markdown | Heuristic detector (headings/fences/lists); still allow capture, source = `other`. |
-| Electron memory footprint | Single renderer, capture sheet reuses hidden window. |
-| Filename collisions / unicode titles | Slugify with transliteration, dedup suffix. |
+| Risk                                              | Mitigation                                                                                                                  |
+| ------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| Unsigned macOS build shows Gatekeeper warning     | Dev via `npm run dev`; ship dmg with "right-click → Open" note. Signing = $99/yr, out of scope.                             |
+| `git` missing on user machine                     | Detect on launch; show one-screen instruction (`xcode-select --install`).                                                   |
+| Global hotkey `⌥Space` conflicts (Raycast/Alfred) | Configurable in settings; fallback `⌃⌥V`.                                                                                   |
+| Push conflict (two machines)                      | Fetch before push; on non-fast-forward, `pull --rebase`; per-file conflicts surface the "Yours / Remote / Keep both" sheet. |
+| Large vault (5k files) cold scan                  | Frontmatter-only read + lazy body pass; measured target <1 s for 5k.                                                        |
+| Token leakage                                     | Never in repo, never in logs; `safeStorage`; redact in error messages.                                                      |
+| Mermaid render errors on bad diagrams             | Render in try/catch, show code block with error line.                                                                       |
+| Clipboard not markdown                            | Heuristic detector (headings/fences/lists); still allow capture, source = `other`.                                          |
+| Electron memory footprint                         | Single renderer, capture sheet reuses hidden window.                                                                        |
+| Filename collisions / unicode titles              | Slugify with transliteration, dedup suffix.                                                                                 |

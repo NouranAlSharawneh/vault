@@ -14,10 +14,15 @@
     "preview": "electron-vite preview",
     "typecheck": "tsc --noEmit -p tsconfig.node.json && tsc --noEmit -p tsconfig.web.json",
     "test": "vitest run",
-    "smoke": "xvfb-run -a node scripts/smoke.mjs",
+    "smoke": "xvfb-run -a node tests/smoke/smoke.mjs",
     "test:watch": "vitest",
     "dist": "electron-vite build && electron-builder --mac",
-    "postinstall": "electron-builder install-app-deps"
+    "postinstall": "electron-builder install-app-deps",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "prepare": "husky || true"
   },
   "dependencies": {
     "@codemirror/commands": "^6.8.1",
@@ -31,6 +36,7 @@
     "@fontsource-variable/geist": "^5.3.0",
     "@fontsource-variable/geist-mono": "^5.3.0",
     "@fontsource-variable/newsreader": "^5.3.0",
+    "axios": "^1.20.0",
     "chokidar": "^5.0.0",
     "gray-matter": "^4.0.3",
     "lucide-react": "^1.43.0",
@@ -46,6 +52,7 @@
     "zustand": "^5.0.15"
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
     "@tailwindcss/vite": "^4.3.3",
     "@types/node": "^22.0.0",
     "@types/react": "^19.2.0",
@@ -54,9 +61,19 @@
     "electron": "^44.3.0",
     "electron-builder": "^26.15.3",
     "electron-vite": "^5.0.0",
+    "eslint": "^10.10.0",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "eslint-plugin-react-refresh": "^0.5.6",
+    "globals": "^17.12.0",
+    "husky": "^9.1.7",
+    "lint-staged": "^17.5.0",
     "playwright": "^1.63.0",
+    "prettier": "^3.9.6",
+    "prettier-plugin-tailwindcss": "^0.8.1",
     "tailwindcss": "^4.3.3",
     "typescript": "^5.9.0",
+    "typescript-eslint": "^8.70.0",
     "vite": "^7.3.6",
     "vitest": "^3.2.7"
   },
@@ -78,5 +95,14 @@
       "icon": "resources/icon.png",
       "identity": null
     }
+  },
+  "lint-staged": {
+    "*.{ts,tsx,js,mjs}": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "*.{css,json,md,yml}": [
+      "prettier --write"
+    ]
   }
 }
