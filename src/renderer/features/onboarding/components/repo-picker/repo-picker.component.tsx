@@ -1,5 +1,5 @@
 import { ArrowRight, FolderOpen, Plus, Search } from "lucide-react";
-import { Button, Card, Option, SectionLabel, Spinner } from "@/components/ui";
+import { Button, Card, ListRow, Option, SectionLabel, Spinner } from "@/components/ui";
 import { cx } from "@/helpers";
 import { useRepoPicker } from "./hooks/use-repo-picker.hook";
 import type { RepoPickerProps } from "./repo-picker.types";
@@ -58,13 +58,11 @@ export function RepoPicker({ onDone }: RepoPickerProps) {
               <div className="p-3 text-xs text-ink-4">No repos match.</div>
             )}
             {p.filtered.map((r) => (
-              <button
+              <ListRow
                 key={r.fullName}
+                kind="option"
+                selected={p.choice === r.fullName}
                 onClick={() => p.setChoice(r.fullName)}
-                className={cx(
-                  "flex w-full items-center gap-2.5 px-3 py-2 text-left text-sm hover:bg-paper-2",
-                  p.choice === r.fullName && "bg-cherry-tint",
-                )}
               >
                 <span
                   className={cx(
@@ -78,7 +76,7 @@ export function RepoPicker({ onDone }: RepoPickerProps) {
                 <span className="ml-auto shrink-0 text-xs text-ink-4">
                   {r.private ? "private" : "public"}
                 </span>
-              </button>
+              </ListRow>
             ))}
           </div>
         </>
@@ -93,12 +91,9 @@ export function RepoPicker({ onDone }: RepoPickerProps) {
         <FolderOpen size={12} />
         <span>clones to</span>
         <span className="truncate font-mono text-ink-2">{p.localPath}</span>
-        <button
-          className="ml-auto shrink-0 text-cherry hover:underline"
-          onClick={() => void p.chooseFolder()}
-        >
+        <Button variant="link" className="ml-auto shrink-0" onClick={() => void p.chooseFolder()}>
           Change
-        </button>
+        </Button>
       </div>
       {p.error && <div className="mt-3 text-xs text-cherry">{p.error}</div>}
       <div className="mt-5 flex justify-end">

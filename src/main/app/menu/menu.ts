@@ -4,6 +4,7 @@ import type { MenuAction, MenuItemData, MenuSectionData } from "./menu.types";
 import { openOnGitHub } from "../../network/github";
 import { IS_MAC, openEditorWindow, openMainWindow } from "../../windows";
 import { toggleCapture } from "../hotkey/hotkey";
+import { resetApp } from "../session/reset-app";
 
 function run(action: MenuAction): () => void {
   if (typeof action === "object") {
@@ -18,6 +19,8 @@ function run(action: MenuAction): () => void {
       return () => openMainWindow();
     case "openOnGitHub":
       return () => openOnGitHub(VAULT_REPO);
+    case "resetApp":
+      return () => void resetApp();
   }
 }
 

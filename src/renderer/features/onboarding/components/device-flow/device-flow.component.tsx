@@ -1,20 +1,13 @@
 import { useState } from "react";
 import { Copy } from "lucide-react";
-import { Card, Spinner } from "@/components/ui";
+import { Button, Card, Spinner } from "@/components/ui";
 import { COPIED_FEEDBACK_MS } from "@/constants";
+import { DEVICE_FLOW_STATUS_TEXT } from "@/data/auth.data";
 import { DEVICE_LOGIN_PATH } from "@/data/onboarding.data";
 import { cx } from "@/helpers";
 import { api } from "@/lib/api";
 import { useDeviceFlow } from "./hooks/use-device-flow.hook";
 import type { DeviceFlowProps } from "./device-flow.types";
-
-const STATUS_TEXT = {
-  pending: "Waiting for you to approve…",
-  slow_down: "GitHub asked us to slow down — still waiting…",
-  expired: "Code expired.",
-  denied: "You cancelled on GitHub.",
-  ok: "Approved!",
-} as const;
 
 export function DeviceFlow({ onBack }: DeviceFlowProps) {
   const { session, status, error, secondsLeft, terminal, restart } = useDeviceFlow();
@@ -56,15 +49,12 @@ export function DeviceFlow({ onBack }: DeviceFlowProps) {
               ))}
           </div>
           <div className="mt-3 flex items-center justify-center gap-4 text-xs">
-            <button className="flex items-center gap-1 text-cherry hover:underline" onClick={copy}>
+            <Button variant="link" onClick={copy}>
               <Copy size={11} /> {copied ? "Copied" : "Copy code"}
-            </button>
-            <button
-              className="text-cherry hover:underline"
-              onClick={() => api("github:openInBrowser", DEVICE_LOGIN_PATH)}
-            >
+            </Button>
+            <Button variant="link" onClick={() => api("github:openInBrowser", DEVICE_LOGIN_PATH)}>
               Reopen browser
-            </button>
+            </Button>
             <span className="font-mono text-ink-4">
               expires in {mm}:{ss}
             </span>
@@ -72,16 +62,16 @@ export function DeviceFlow({ onBack }: DeviceFlowProps) {
           <div className="mt-6 flex items-center justify-between rounded-md border border-line bg-paper-2 px-3 py-2 text-xs text-ink-2">
             <span className="flex items-center gap-2">
               {!terminal && <Spinner className="text-cherry" />}
-              {STATUS_TEXT[status]}
+              {DEVICE_FLOW_STATUS_TEXT[status]}
             </span>
             {terminal ? (
-              <button className="text-cherry hover:underline" onClick={restart}>
+              <Button variant="link" onClick={restart}>
                 Try again
-              </button>
+              </Button>
             ) : (
-              <button className="text-ink-4 hover:text-ink-2" onClick={onBack}>
+              <Button variant="subtle" onClick={onBack}>
                 Cancel
-              </button>
+              </Button>
             )}
           </div>
         </>

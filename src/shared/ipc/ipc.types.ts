@@ -1,4 +1,5 @@
 import type {
+  AuthMethods,
   AuthState,
   ClipboardCapture,
   CommitInfo,
@@ -20,6 +21,7 @@ import type {
   SyncStatus,
   Template,
   VaultConfig,
+  WebFlowStatus,
 } from "../types";
 
 /**
@@ -32,6 +34,9 @@ export interface IpcInvoke {
   "auth:deviceStart": () => DeviceCodeSession;
   "auth:deviceCancel": () => void;
   "auth:deviceAvailable": () => boolean;
+  "auth:methods": () => AuthMethods;
+  "auth:webStart": () => void;
+  "auth:webCancel": () => void;
   "auth:signOut": () => void;
 
   "github:listRepos": () => GitHubRepo[];
@@ -89,6 +94,7 @@ export interface IpcEvents {
   "sync:status": SyncStatus;
   "auth:state": AuthState;
   "auth:deviceStatus": { status: DevicePollStatus };
+  "auth:webStatus": { status: WebFlowStatus; message?: string };
   "capture:shown": ClipboardCapture;
   "editor:open": { path?: string; draft?: EditorDraft };
   shortcut: "search" | "new" | "toggleSidebar" | "history" | "save";

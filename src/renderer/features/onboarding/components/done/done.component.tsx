@@ -44,12 +44,9 @@ export function Done() {
           Save my first document
         </Button>
       </div>
-      <button
-        className="mt-4 inline-flex items-center gap-1 text-xs text-ink-4 hover:text-ink-2"
-        onClick={() => api("vault:rescan")}
-      >
+      <Button variant="subtle" className="mt-4" onClick={() => api("vault:rescan")}>
         <RefreshCw size={10} /> Rescan
-      </button>
+      </Button>
     </Card>
   );
 }

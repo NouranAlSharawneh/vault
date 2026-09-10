@@ -13,6 +13,8 @@
     "src/main/**/*",
     "src/preload/**/*",
     "src/shared/**/*",
-    "tests/**/*.ts"
+    "vitest.config.ts",
+    "tests/main/**/*.ts",
+    "tests/shared/**/*.ts"
   ]
 }
