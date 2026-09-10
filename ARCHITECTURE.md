@@ -132,7 +132,7 @@ Repo layout: `README.md` (generated index), `<project-slug>/<title-slug>.md`, `_
 
 ## 10. M5 scope
 
-- **History drawer** (`git log --follow` per doc, diff view, restore), **conflict sheet** (mine / theirs / both), **saved searches** (`.vault/views.yml`), **templates**, project rename, trash + purge, **Settings** (hotkey, push debounce, vault folder).
+- **History drawer** (`git log --follow` per doc, diff view, restore), **conflict sheet** (mine / theirs / both), **saved searches** (`.vault/views.yml`), **templates**, project rename, **delete** (reader toolbar + palette + `⌘⌫`: `git mv` into `.trash/`, commit `delete: <title>`, undo from the trash view, purge from Settings — `vault:delete` already exists in main, this is the UI), **Settings** (hotkey, push debounce, vault folder).
 - **Asset capture.** The clipboard carries text only, so relative images in a captured doc (`![…](docs/hero.gif)`) can't resolve on their own. Two inputs, one core:
   1. Text capture that references relative images: the sheet shows "N images referenced — choose the folder they're relative to", remembers the folder per source project, and on save copies the files into `<project>/assets/`, rewrites the links, and commits doc + assets in one commit.
   2. A `.md` file copied in Finder or dropped onto the sheet (`public.file-url`): the path is known, so images next to it resolve with no prompt.
