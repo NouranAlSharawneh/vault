@@ -1,6 +1,6 @@
 import { useCallback, useState } from "react";
 import type { VaultConfig } from "@shared/types";
-import { errorMessage } from "@/helpers";
+import { errorMessage, plural } from "@/helpers";
 import { api } from "@/lib/api";
 import { useApp } from "@/stores/app";
 import { useToast } from "@/stores/toast";
@@ -45,9 +45,10 @@ export function useSettings() {
   const emptyTrash = useCallback(async () => {
     setState((s) => ({ ...s, busy: "trash" }));
     try {
-      const { removed } = await api("trash:purge");
+      const { removed, assets } = await api("trash:purge");
       await refreshTrash();
-      show(`Emptied the trash — ${removed} ${removed === 1 ? "doc" : "docs"} gone for good`);
+      const images = assets.length ? `, with ${plural(assets.length, "image")}` : "";
+      show(`Emptied the trash — ${plural(removed, "doc")} gone for good${images}`);
     } catch (e) {
       show(errorMessage(e));
     } finally {

@@ -52,7 +52,7 @@ describe("useTrashActions", () => {
   it("restores and purges only docs that are in the trash", async () => {
     const { invoke } = mockVaultApi({
       "trash:restore": () => ({ path: meta.path, meta, committed: true }),
-      "trash:purge": () => ({ removed: 1 }),
+      "trash:purge": () => ({ removed: 1, assets: ["p/assets/a.gif", "p/assets/b.png"] }),
       "trash:list": () => [],
     });
     const select = vi.fn();
@@ -68,7 +68,7 @@ describe("useTrashActions", () => {
     expect(useToast.getState().toast?.message).toBe("Restored “Spec”");
     await act(() => inTrash.result.current.purge());
     expect(invoke).toHaveBeenCalledWith("trash:purge", trashed.path);
-    expect(useToast.getState().toast?.message).toBe("Deleted “Spec” forever");
+    expect(useToast.getState().toast?.message).toBe("Deleted “Spec” and 2 images forever");
   });
 
   it("shows the error when main refuses", async () => {

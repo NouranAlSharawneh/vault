@@ -145,7 +145,7 @@ Repo layout: `README.md` (generated index), `<project-slug>/<title-slug>.md`, `_
 
 ## 9. Decisions I'm making beyond the PRD
 
-- Delete = `git mv` into `.trash/` + commit (Q5). Purge from settings.
+- Delete = `git mv` into `.trash/` + commit (Q5). Purge from settings. Trashing moves the `.md` only, leaving its `assets/` where they are so a restore can find them again (the `vault://` handler falls back to the original folder for a trashed doc). Purging is therefore the one moment those files can go, and it takes the ones nothing else still refers to — every other `.md` in the vault, the rest of the trash included, is checked first, and an emptied `assets/` folder goes with them.
 - Push cadence = commit now, push on 3 s debounce (Q6).
 - Tailwind + CSS variables for the palette; fonts: Geist / Geist Mono / Newsreader loaded locally (OFL, free).
 - Search grammar parsed into an AST (`project:`, `tags:`, `created:`, `source:`, `is:`) and applied as MiniSearch filters, so saved views are just query strings.
