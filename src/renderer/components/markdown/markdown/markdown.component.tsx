@@ -1,19 +1,34 @@
 import { memo } from "react";
 import ReactMarkdown from "react-markdown";
+import type { Options } from "react-markdown";
 import remarkGfm from "remark-gfm";
+import { remarkAlert } from "remark-github-blockquote-alert";
+import rehypeRaw from "rehype-raw";
+import rehypeSanitize from "rehype-sanitize";
 import rehypeHighlight from "rehype-highlight";
 import { cx } from "@/helpers";
 import { api } from "@/lib/api";
+import { MARKDOWN_SANITIZE_SCHEMA } from "@/data/markdown.data";
 import { CodeBlock, PreBlock } from "../code-block/code-block.component";
 import { DocImage } from "../doc-image/doc-image.component";
 import type { MarkdownProps } from "./markdown.types";
 
-const REMARK = [remarkGfm];
-const REHYPE = [rehypeHighlight];
+const REMARK: NonNullable<Options["remarkPlugins"]> = [remarkGfm, remarkAlert];
 
 /**
- * Rendered markdown (GFM, highlighted code, Mermaid, vault images). External links open in
- * the system browser.
+ * Order matters. `rehypeRaw` turns the raw HTML a README leans on back into real nodes,
+ * `rehypeSanitize` then throws away everything GitHub wouldn't keep, and `rehypeHighlight`
+ * runs last because it adds `hljs-*` classes that the sanitizer would otherwise strip.
+ */
+const REHYPE: NonNullable<Options["rehypePlugins"]> = [
+  rehypeRaw,
+  [rehypeSanitize, MARKDOWN_SANITIZE_SCHEMA],
+  rehypeHighlight,
+];
+
+/**
+ * Rendered markdown (GFM, raw HTML, GitHub alerts, highlighted code, Mermaid, vault
+ * images). External links open in the system browser.
  */
 export const Markdown = memo(function Markdown({ source, docPath = "", className }: MarkdownProps) {
   return (

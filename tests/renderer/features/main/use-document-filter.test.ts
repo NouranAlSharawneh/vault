@@ -91,3 +91,50 @@ describe("applyFilter", () => {
     expect(r.docs.map((d) => d.path)).toEqual([".trash/a", ".trash/b"]);
   });
 });
+
+describe("Recent keeps its own order", () => {
+  const recent: IndexSnapshot = {
+    ...index,
+    docs: [
+      // Created a while ago but edited yesterday — this is the most recently touched.
+      doc({
+        path: "x",
+        title: "Zulu",
+        created: "2026-09-01T00:00:00Z",
+        mtime: Date.parse("2026-09-09T00:00:00Z"),
+      }),
+      doc({
+        path: "y",
+        title: "Alpha",
+        created: "2026-09-08T00:00:00Z",
+        mtime: Date.parse("2026-09-08T00:00:00Z"),
+      }),
+      doc({
+        path: "z",
+        title: "Mike",
+        created: "2020-01-01T00:00:00Z",
+        mtime: Date.parse("2020-01-01T00:00:00Z"),
+      }),
+    ],
+  };
+  const filter = (sort: "newest" | "oldest" | "title") =>
+    applyFilter(recent, { collection: "recent", project: null, tags: [], sort }, [], NOW).docs.map(
+      (d) => d.title,
+    );
+
+  it("ignores a sort carried over from another collection", () => {
+    // Sorted by title or oldest-first, Recent would be indistinguishable from All
+    // documents — and the control that set it isn't even shown on this tab.
+    expect(filter("newest")).toEqual(["Zulu", "Alpha"]);
+    expect(filter("title")).toEqual(["Zulu", "Alpha"]);
+    expect(filter("oldest")).toEqual(["Zulu", "Alpha"]);
+  });
+
+  it("ranks by last touched, not by created", () => {
+    expect(filter("newest")[0]).toBe("Zulu");
+  });
+
+  it("still drops anything outside the window", () => {
+    expect(filter("newest")).not.toContain("Mike");
+  });
+});

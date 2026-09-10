@@ -17,3 +17,9 @@ export const SEARCH_DEBOUNCE_MS = 80;
 export const CAPTURE_SAVED_FLASH_MS = 900;
 export const TOAST_MS = 6000;
 export const ASSET_RESOLVE_DEBOUNCE_MS = 250;
+/** Diagram zoom bounds. Chromium's `zoom` reflows, so the pane scrolls when it overflows. */
+export const MERMAID_ZOOM_MIN = 0.5;
+export const MERMAID_ZOOM_MAX = 4;
+export const MERMAID_ZOOM_STEP = 0.25;
+/** Horizontal padding of the diagram pane, subtracted when fitting to width. */
+export const MERMAID_PANE_PAD = 32;
