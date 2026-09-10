@@ -1,9 +1,9 @@
-import { ALT_KEY, MOD_KEY } from "@/constants";
+import { CAPTURE_HOTKEY_LABEL, MOD_KEY } from "@/constants";
 import type { FeatureData, ScopeData, ShortcutData } from "@/features/onboarding/onboarding.types";
 
 /** Welcome screen: the three things Vault does. */
 export const WELCOME_FEATURES: FeatureData[] = [
-  { shortcut: `${ALT_KEY} Space`, description: "Capture the clipboard from any app." },
+  { shortcut: CAPTURE_HOTKEY_LABEL, description: "Capture the clipboard from any app." },
   { shortcut: `${MOD_KEY} K`, description: "Find anything you've saved." },
   { shortcut: "git log", description: "Every save is a commit. History is free." },
 ];
@@ -30,7 +30,7 @@ export const GITHUB_SCOPES: ScopeData[] = [
 
 /** Done screen: the two shortcuts worth learning. */
 export const LEARN_SHORTCUTS: ShortcutData[] = [
-  { keys: `${ALT_KEY} Space`, description: "From anywhere — copy markdown, hit this, save it." },
+  { keys: CAPTURE_HOTKEY_LABEL, description: "From anywhere — copy markdown, hit this, save it." },
   { keys: `${MOD_KEY} K`, description: "Find anything you've saved." },
 ];
 

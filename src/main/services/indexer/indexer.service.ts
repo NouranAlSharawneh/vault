@@ -7,6 +7,7 @@ import {
   type Dirent,
   type Stats,
 } from "node:fs";
+import type { FileHandle } from "node:fs/promises";
 import { join, relative, sep } from "node:path";
 import { createHash } from "node:crypto";
 import { EventEmitter } from "node:events";
@@ -15,6 +16,7 @@ import MiniSearch from "minisearch";
 import {
   BODY_BATCH,
   FS_DEBOUNCE_MS,
+  HEAD_BYTES,
   INBOX_SLUG,
   PARSE_BATCH,
   README_FILE,
@@ -22,7 +24,7 @@ import {
   SKIP_DIRS,
   SMALL_FILE_BYTES,
 } from "@shared/constants";
-import { excerptOf, parseDoc } from "@shared/frontmatter";
+import { excerptOf, parseDoc, type ParsedDoc } from "@shared/frontmatter";
 import { countWords, projectSlug, unslug } from "@shared/helpers";
 import type {
   DocMeta,
@@ -327,7 +329,7 @@ export class IndexerService extends EventEmitter {
     return out.sort();
   }
 
-  /** Parse only the head of the file. Body indexing happens lazily. */
+  /** Parse only the two ends of the file. Body indexing happens lazily. */
   private async parseFile(relPath: string): Promise<DocMeta | null> {
     const abs = join(this.root, relPath);
     let st: Stats;
@@ -337,8 +339,9 @@ export class IndexerService extends EventEmitter {
       return null;
     }
     const small = st.size <= SMALL_FILE_BYTES;
-    const raw = small ? await fs.readFile(abs, "utf8") : await readHead(abs, SMALL_FILE_BYTES);
-    const { frontmatter, body } = parseDoc(raw);
+    const { frontmatter, body } = small
+      ? parseDoc(await fs.readFile(abs, "utf8"))
+      : await parseEnds(abs, st.size);
     const segments = relPath.split("/");
     const folderSlug = segments.length > 1 ? segments[0] : INBOX_SLUG;
     const base = {
@@ -452,15 +455,28 @@ export class IndexerService extends EventEmitter {
   }
 }
 
-async function readHead(abs: string, bytes: number): Promise<string> {
+/**
+ * Big file: read the head (excerpt, or a classic top block) and the tail (Vault's
+ * trailing metadata block) without touching the middle.
+ */
+async function parseEnds(abs: string, size: number): Promise<ParsedDoc> {
   const fh = await fs.open(abs, "r");
   try {
-    const buf = Buffer.alloc(bytes);
-    const { bytesRead } = await fh.read(buf, 0, bytes, 0);
-    return buf.subarray(0, bytesRead).toString("utf8");
+    const head = await readChunk(fh, 0, SMALL_FILE_BYTES);
+    const fromHead = parseDoc(head);
+    if (fromHead.frontmatter) return fromHead;
+    const tail = await readChunk(fh, Math.max(0, size - HEAD_BYTES), HEAD_BYTES);
+    const fromTail = parseDoc(tail);
+    return { ...fromTail, body: head };
   } finally {
     await fh.close();
   }
+}
+
+async function readChunk(fh: FileHandle, offset: number, bytes: number): Promise<string> {
+  const buf = Buffer.alloc(bytes);
+  const { bytesRead } = await fh.read(buf, 0, bytes, offset);
+  return buf.subarray(0, bytesRead).toString("utf8");
 }
 
 function titleFromPath(relPath: string, body: string): string {

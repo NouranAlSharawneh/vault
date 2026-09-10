@@ -4,6 +4,7 @@ import { APP_ID } from "@shared/constants";
 import { registerIpcHandlers } from "./app/ipc/ipc";
 import { registerHotkey } from "./app/hotkey/hotkey";
 import { buildAppMenu } from "./app/menu/menu";
+import { registerAssetProtocol, registerAssetScheme } from "./app/protocol/protocol";
 import { session } from "./app/session/session";
 import { createTray, updateTray } from "./app/tray/tray";
 import { configureNetwork } from "./network/axios";
@@ -19,6 +20,8 @@ import {
 
 if (!app.requestSingleInstanceLock()) app.quit();
 
+registerAssetScheme();
+
 app.on("second-instance", () => openMainWindow());
 
 app.whenReady().then(async () => {
@@ -28,6 +31,7 @@ app.whenReady().then(async () => {
 
   configureNetwork({ getToken: loadToken, onAuthExpired: () => session.markAuthExpired() });
   registerIpcHandlers();
+  registerAssetProtocol();
   buildAppMenu();
   await session.restore();
   createTray();

@@ -9,7 +9,16 @@ export const VAULT_DIR = ".vault";
 export const README_FILE = "README.md";
 export const QUERY_OPERATORS = ["project:", "tags:", "created:", "source:", "is:"] as const;
 
-// ---- frontmatter -----------------------------------------------------------------
+// ---- metadata block --------------------------------------------------------------
+// Vault writes its metadata as a fenced YAML block at the END of the file, under a rule,
+// so GitHub's preview shows the content first and the fields as a small code block below.
+// Files with classic top frontmatter (Obsidian, Jekyll, older Vault) are still read.
+export const META_RULE = "---";
+export const META_FENCE_OPEN = "```yaml";
+export const META_FENCE_CLOSE = "```";
+/** `---` + blank line + fence opener; matched at the last fence in the file. */
+export const META_TAIL_OPEN = /(?:^|\r?\n)---[ \t]*\r?\n[ \t]*\r?\n```yaml[ \t]*\r?\n$/;
+export const META_TAIL_CLOSE = /\r?\n```[ \t]*(?:\r?\n)*$/;
 export const FM_OPEN = /^\uFEFF?---[ \t]*\r?\n/;
 export const FM_CLOSE = /\r?\n---[ \t]*(?:\r?\n|$)/;
 
@@ -25,6 +34,34 @@ export const FS_DEBOUNCE_MS = 300;
 export const SEARCH_LIMIT = 100;
 export const EXCERPT_LENGTH = 200;
 
+// ---- assets ----------------------------------------------------------------------
+/** `vault://asset/<repo-relative path>` — images/media referenced from a doc, served by main. */
+export const ASSET_SCHEME = "vault";
+export const ASSET_HOST = "asset";
+export const VIDEO_EXTENSIONS = new Set(["mp4", "webm", "mov", "m4v", "ogv"]);
+/** MIME types main will serve from the vault; anything else is refused. */
+export const ASSET_MIME: Record<string, string> = {
+  png: "image/png",
+  jpg: "image/jpeg",
+  jpeg: "image/jpeg",
+  gif: "image/gif",
+  webp: "image/webp",
+  avif: "image/avif",
+  svg: "image/svg+xml",
+  bmp: "image/bmp",
+  ico: "image/x-icon",
+  mp4: "video/mp4",
+  m4v: "video/mp4",
+  webm: "video/webm",
+  mov: "video/quicktime",
+  ogv: "video/ogg",
+  mp3: "audio/mpeg",
+  m4a: "audio/mp4",
+  wav: "audio/wav",
+  ogg: "audio/ogg",
+  pdf: "application/pdf",
+};
+
 // ---- sync ------------------------------------------------------------------------
 export const DEFAULT_PUSH_DEBOUNCE_MS = 3000;
 export const PUSH_RETRY_MIN_MS = 5_000;
@@ -32,7 +69,10 @@ export const PUSH_RETRY_MAX_MS = 5 * 60_000;
 export const DEFAULT_BRANCH = "main";
 
 // ---- app defaults -------------------------------------------------------------------
-export const DEFAULT_HOTKEY = "Alt+Space";
+/** ⌃⌥V — ⌥Space clashes with Raycast/Alfred/Spotlight on most Macs. */
+export const DEFAULT_HOTKEY = "Control+Alt+V";
+/** Defaults we have shipped before; a saved hotkey equal to one of these follows the current default. */
+export const LEGACY_HOTKEYS = ["Alt+Space"] as const;
 export const DEFAULT_VAULT_NAME = "vault";
 export const APP_ID = "dev.nunu.vault";
 export const GIT_IDENTITY = { name: "Vault", email: "vault@localhost" } as const;
@@ -51,7 +91,7 @@ export const REPO_MAX_PAGES = 5;
 // ---- windows ------------------------------------------------------------------------
 export const MAIN_WINDOW = { width: 1280, height: 820, minWidth: 860, minHeight: 560 } as const;
 export const EDITOR_WINDOW = { width: 1100, height: 760, minWidth: 720, minHeight: 480 } as const;
-export const CAPTURE_WINDOW = { width: 720, height: 520 } as const;
+export const CAPTURE_WINDOW = { width: 720, height: 430 } as const;
 export const TRAFFIC_LIGHTS = { x: 14, y: 16 } as const;
 export const PAPER_BG = "#fdfcfa";
 export const OVERLAY_BG = "#1e1d1b";
