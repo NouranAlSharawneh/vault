@@ -49,7 +49,7 @@ describe("useSettings", () => {
   it("forgets an image folder and empties the trash", async () => {
     const { invoke } = mockVaultApi({
       "vault:updateConfig": () => ({ ...config, assetDirs: {} }),
-      "trash:purge": () => ({ removed: 2 }),
+      "trash:purge": () => ({ removed: 2, assets: ["p/assets/a.gif"] }),
       "trash:list": () => [],
     });
     useApp.setState({ config });
@@ -60,6 +60,6 @@ describe("useSettings", () => {
     expect(invoke).toHaveBeenCalledWith("vault:updateConfig", { assetDirs: {} });
     await act(() => result.current.emptyTrash());
     expect(invoke).toHaveBeenCalledWith("trash:purge");
-    expect(useToast.getState().toast?.message).toContain("2 docs gone for good");
+    expect(useToast.getState().toast?.message).toContain("2 docs gone for good, with 1 image");
   });
 });

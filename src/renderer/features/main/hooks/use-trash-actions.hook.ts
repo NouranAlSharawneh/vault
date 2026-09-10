@@ -1,6 +1,6 @@
 import { useCallback } from "react";
 import type { DocMeta } from "@shared/types";
-import { errorMessage } from "@/helpers";
+import { errorMessage, plural } from "@/helpers";
 import { api } from "@/lib/api";
 import { useApp } from "@/stores/app";
 import { useToast } from "@/stores/toast";
@@ -48,10 +48,11 @@ export function useTrashActions(doc: DocMeta | null, select: (path: string | nul
   const purge = useCallback(async () => {
     if (!doc || !isTrashed(doc.path)) return;
     try {
-      await api("trash:purge", doc.path);
+      const { assets } = await api("trash:purge", doc.path);
       select(null);
       await refreshTrash();
-      show(`Deleted “${doc.title}” forever`);
+      const images = assets.length ? ` and ${plural(assets.length, "image")}` : "";
+      show(`Deleted “${doc.title}”${images} forever`);
     } catch (e) {
       show(errorMessage(e));
     }
