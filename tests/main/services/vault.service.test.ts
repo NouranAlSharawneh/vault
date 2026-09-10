@@ -159,11 +159,78 @@ describe("VaultService (800-doc fixture)", () => {
 
     await vault.trash(restored.path);
     await expect(vault.readTrashed("atlas-api/rate-limiting-at-the-edge.md")).rejects.toThrow();
-    expect(await vault.purgeTrash()).toEqual({ removed: 1 });
+    expect(await vault.purgeTrash()).toEqual({ removed: 1, assets: [] });
     expect(existsSync(join(root, ".trash"))).toBe(false);
     expect((await vault.git.git.log()).latest?.message).toBe("purge: trash (1 doc)");
     const status = await vault.git.git.status();
     expect(status.files.filter((f) => f.path.startsWith(".trash"))).toEqual([]);
+  });
+
+  it("takes an image with the doc when the doc is deleted for good", async () => {
+    // Trashing leaves images alone so a restore can find them again, which makes purging
+    // the only moment they can go. Before this they stayed in the repo forever, with
+    // nothing left anywhere that mentioned them.
+    const src = mkdtempSync(join(tmpdir(), "vault-purge-"));
+    mkdirSync(join(src, "docs"), { recursive: true });
+    writeFileSync(join(src, "docs", "solo.gif"), Buffer.from("GIF89a"));
+    writeFileSync(join(src, "docs", "shared.gif"), Buffer.from("GIF89a"));
+
+    const doomed = await vault.save({
+      body: "# Doomed\n\n![a](docs/solo.gif)\n![b](docs/shared.gif)\n",
+      frontmatter: { title: "Doomed", project: "Purge Me", tags: [], source: "manual" },
+      commit: true,
+      assets: { baseDir: src, refs: ["docs/solo.gif", "docs/shared.gif"] },
+    });
+    // A second doc in the same project points at one of the two copied files.
+    const keeper = await vault.save({
+      body: "# Keeper\n\n![b](assets/shared.gif)\n",
+      frontmatter: { title: "Keeper", project: "Purge Me", tags: [], source: "manual" },
+      commit: true,
+    });
+    expect(existsSync(join(root, "purge-me", "assets", "solo.gif"))).toBe(true);
+
+    const trashed = await vault.trash(doomed.path);
+    // Still there while it's only in the trash — a restore has to be able to find it.
+    expect(existsSync(join(root, "purge-me", "assets", "solo.gif"))).toBe(true);
+
+    const res = await vault.purgeTrash(trashed.path);
+    expect(res).toEqual({ removed: 1, assets: ["purge-me/assets/solo.gif"] });
+    expect(existsSync(join(root, "purge-me", "assets", "solo.gif"))).toBe(false);
+    // The one the other doc still uses stays, and so does that doc.
+    expect(existsSync(join(root, "purge-me", "assets", "shared.gif"))).toBe(true);
+    expect(existsSync(join(root, keeper.path))).toBe(true);
+    // Gone from git too, in the same commit as the doc.
+    const shown = await vault.git.git.show(["--stat", "--format=%s", "HEAD"]);
+    expect(shown).toContain("purge: Doomed");
+    expect(shown).toContain("purge-me/assets/solo.gif");
+    expect(shown).not.toContain("shared.gif");
+    rmSync(src, { recursive: true, force: true });
+  });
+
+  it("empties the trash and takes the images that went in with it", async () => {
+    const src = mkdtempSync(join(tmpdir(), "vault-purge-all-"));
+    mkdirSync(join(src, "docs"), { recursive: true });
+    writeFileSync(join(src, "docs", "only.gif"), Buffer.from("GIF89a"));
+    const doc = await vault.save({
+      body: "# Alone\n\n![a](docs/only.gif)\n",
+      frontmatter: { title: "Alone", project: "Empty Me", tags: [], source: "manual" },
+      commit: true,
+    });
+    const withAsset = await vault.save({
+      body: "# Alone\n\n![a](docs/only.gif)\n",
+      frontmatter: { title: "Alone", project: "Empty Me", tags: [], source: "manual" },
+      existingPath: doc.path,
+      commit: true,
+      assets: { baseDir: src, refs: ["docs/only.gif"] },
+    });
+    await vault.trash(withAsset.path);
+
+    const res = await vault.purgeTrash();
+    expect(res.assets).toContain("empty-me/assets/only.gif");
+    expect(existsSync(join(root, "empty-me", "assets", "only.gif"))).toBe(false);
+    // An emptied `assets/` folder does not linger either.
+    expect(existsSync(join(root, "empty-me", "assets"))).toBe(false);
+    rmSync(src, { recursive: true, force: true });
   });
 
   it("copies referenced images into <project>/assets and rewrites the links in one commit", async () => {
