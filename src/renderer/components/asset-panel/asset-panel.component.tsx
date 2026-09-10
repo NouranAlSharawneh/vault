@@ -68,7 +68,11 @@ export function AssetPanel({ plan, dark, className }: AssetPanelProps) {
                 </>
               ) : (
                 <span className={r.status === "missing" ? "text-cherry-3" : muted}>
-                  {r.status === "missing" ? "not found" : "unsupported type"}
+                  {r.status === "missing"
+                    ? "not found"
+                    : r.status === "unsupported"
+                      ? "unsupported type"
+                      : "—"}
                 </span>
               )}
             </li>

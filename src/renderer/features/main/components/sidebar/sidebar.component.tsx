@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Clock, Layers, RefreshCw, Star, Trash2 } from "lucide-react";
+import { Clock, Layers, RefreshCw, Star } from "lucide-react";
 import { INBOX_COLOR, INBOX_SLUG } from "@shared/constants";
 import { projectColor } from "@shared/helpers";
 import { Button, Chip, Dot, ListRow, Logo, SectionLabel } from "@/components/ui";
@@ -10,15 +10,7 @@ import type { SidebarProps } from "./sidebar.types";
 const ICONS = { all: Layers, recent: Clock, starred: Star } as const;
 
 /** Full sidebar: collections · projects · tags (with its own filter box once there are many). */
-export function Sidebar({
-  index,
-  config,
-  filter,
-  trashCount,
-  onCollection,
-  onProject,
-  onTag,
-}: SidebarProps) {
+export function Sidebar({ index, config, filter, onCollection, onProject, onTag }: SidebarProps) {
   const [tagQuery, setTagQuery] = useState("");
   const tags = (index?.tags ?? [])
     .filter((t) => !tagQuery || t.tag.includes(tagQuery.toLowerCase()))
@@ -81,16 +73,6 @@ export function Sidebar({
             </Chip>
           ))}
         </div>
-      </div>
-      <div className="px-3">
-        <ListRow
-          selected={!filter.project && filter.collection === "trash"}
-          onClick={() => onCollection("trash")}
-        >
-          <Trash2 size={13} className="text-ink-3" />
-          Trash
-          {trashCount > 0 && <span className="ml-auto text-xs text-ink-4">{trashCount}</span>}
-        </ListRow>
       </div>
       <div className="flex items-center justify-between px-3 pb-3 text-xs text-ink-4">
         <span className="truncate font-mono">{config.remote ?? "local"}</span>

@@ -124,7 +124,6 @@ export function Main() {
             index={index}
             config={config}
             filter={list.filter}
-            trashCount={trash.length}
             onCollection={list.selectCollection}
             onProject={list.selectProject}
             onTag={list.toggleTag}
