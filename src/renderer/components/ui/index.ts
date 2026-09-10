@@ -10,3 +10,4 @@ export { Stat } from "./stat/stat.component";
 export { Option } from "./option/option.component";
 export { GitHubMark } from "./github-mark/github-mark.component";
 export { ListRow } from "./list-row/list-row.component";
+export { SplitPane } from "./split-pane/split-pane.component";

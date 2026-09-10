@@ -413,15 +413,16 @@ input {
 .cm-editor.cm-focused {
   outline: none;
 }
-.cm-scroller {
+.cm-editor .cm-scroller {
   line-height: 1.6;
   padding: 20px 0 40vh;
+  overflow: auto;
 }
-.cm-content {
+.cm-editor .cm-content {
   padding: 0 24px;
   caret-color: var(--color-cherry);
 }
-.cm-line {
+.cm-editor .cm-line {
   padding: 0;
 }
 .cm-gutters {

@@ -49,6 +49,7 @@ export const INVOKE_CHANNELS: InvokeChannel[] = [
   "window:openEditor",
   "app:version",
   "app:platform",
+  "app:openExternal",
 ];
 
 export const EVENT_CHANNELS: EventChannel[] = [

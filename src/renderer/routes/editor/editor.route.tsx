@@ -1,5 +1,5 @@
-import { Placeholder } from "@/features/placeholder/placeholder.component";
+import { Editor } from "@/features/editor/editor.component";
 
 export function EditorRoute() {
-  return <Placeholder name="Editor" />;
+  return <Editor />;
 }

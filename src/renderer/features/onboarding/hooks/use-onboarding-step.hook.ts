@@ -11,6 +11,8 @@ export function useOnboardingStep() {
     config ? "done" : signedIn ? "repo" : "welcome",
   );
 
-  const effectiveStep: OnboardingStep = step === "signin" && signedIn ? "repo" : step;
+  // Once auth lands, skip the sign-in screen: to the repo picker, or straight to done if a vault exists.
+  const effectiveStep: OnboardingStep =
+    step === "signin" && signedIn ? (config ? "done" : "repo") : step;
   return { step: effectiveStep, setStep, signedIn, user: auth.user };
 }
