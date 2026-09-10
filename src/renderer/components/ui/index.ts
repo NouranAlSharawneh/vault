@@ -8,3 +8,4 @@ export { Empty } from "./empty/empty.component";
 export { Card } from "./card/card.component";
 export { Stat } from "./stat/stat.component";
 export { Option } from "./option/option.component";
+export { GitHubMark } from "./github-mark/github-mark.component";

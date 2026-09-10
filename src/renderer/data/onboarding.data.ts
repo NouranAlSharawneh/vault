@@ -12,9 +12,9 @@ export const WELCOME_FEATURES: FeatureData[] = [
 export const GITHUB_SCOPES: ScopeData[] = [
   {
     granted: true,
-    title: "Read and write one repository",
+    title: "Read and write your repositories",
     description:
-      "The vault repo you pick next. A fine-grained token can be narrowed to exactly that repo.",
+      "GitHub's OAuth scope covers all your repos; Vault only ever touches the one you pick next. Paste a fine-grained token instead if you want it narrowed to that repo.",
   },
   {
     granted: true,

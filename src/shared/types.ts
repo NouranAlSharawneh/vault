@@ -142,7 +142,15 @@ export interface DeviceCodeSession {
 
 export type DevicePollStatus = "pending" | "slow_down" | "expired" | "denied" | "ok";
 
-export type AuthMethod = "pat" | "device";
+export type AuthMethod = "pat" | "device" | "oauth";
+
+/** Which sign-in routes are configured on this machine. PAT is always available. */
+export interface AuthMethods {
+  oauth: boolean;
+  device: boolean;
+}
+
+export type WebFlowStatus = "waiting" | "exchanging" | "ok" | "cancelled" | "timeout" | "error";
 
 export interface AuthState {
   status: "signed-out" | "signed-in" | "expired";
