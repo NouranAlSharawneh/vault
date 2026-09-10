@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { relaxMermaidWidth } from "@/helpers";
 
 interface MermaidResult {
   svg: string | null;
@@ -22,7 +23,7 @@ export function useMermaid(code: string): MermaidResult {
           fontFamily: "inherit",
         });
         const { svg } = await mermaid.render(`vault-mermaid-${++counter}`, code);
-        if (!cancelled) setResult({ svg, error: null });
+        if (!cancelled) setResult({ svg: relaxMermaidWidth(svg), error: null });
       })
       .catch(
         (e: unknown) =>

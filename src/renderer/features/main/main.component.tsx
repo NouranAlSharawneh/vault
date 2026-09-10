@@ -98,7 +98,7 @@ export function Main() {
             activeTags={list.filter.tags}
             onRemoveTag={list.toggleTag}
             onClearTags={list.clearTags}
-            sortable={!inTrash}
+            sortable={!inTrash && list.filter.collection !== "recent"}
             emptyHint={inTrash ? "Deleted documents wait here until you purge them." : undefined}
           />
         }

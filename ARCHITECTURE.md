@@ -4,20 +4,20 @@
 
 ## 1. Stack (all free / OSS)
 
-| Layer     | Choice                                                                   | Why                                                                                                                         |
-| --------- | ------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------- |
-| Shell     | **Electron 44** + **electron-vite 5**                                    | All-JS, built-in `globalShortcut`, `clipboard`, `safeStorage` (Keychain-backed on macOS), `Tray`. No Rust toolchain needed. |
-| UI        | **React 19 + TypeScript**, **Tailwind v4**, `lucide-react` icons         | Fast to iterate, matches the team's skills.                                                                                 |
-| State     | **zustand**                                                              | Tiny, no boilerplate, works well with IPC-fed stores.                                                                       |
-| Editor    | **CodeMirror 6** (`@codemirror/lang-markdown`)                           | Lightweight, keyboard-first, markdown-aware.                                                                                |
-| Preview   | `react-markdown` + `remark-gfm` + `shiki` (code) + `mermaid` (diagrams)  | Renders client-side; file on disk stays plain text.                                                                         |
-| Search    | **MiniSearch** (in-memory)                                               | Full-text + field boosting over ~5k docs in ms; disposable index.                                                           |
-| Git       | **simple-git** wrapping the system `git`                                 | Free, no libgit2 build step. Requires git on PATH (macOS ships it via Xcode CLT).                                           |
-| Metadata  | `yaml`                                                                   | Trailing fenced YAML block; tolerant parse, stable key order on write.                                                      |
-| Watcher   | `chokidar`                                                               | Picks up edits made in Obsidian/vim/github pulls.                                                                           |
-| Secrets   | Electron `safeStorage` → encrypted blob in `userData`                    | Uses macOS Keychain for the key; no `keytar` (unmaintained).                                                                |
-| Tests     | vitest (core logic), Playwright + Electron (smoke)                       |                                                                                                                             |
-| Packaging | electron-builder (dmg, unsigned for now — signing costs $99/yr, skipped) |                                                                                                                             |
+| Layer     | Choice                                                                                                                                            | Why                                                                                                                         |
+| --------- | ------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| Shell     | **Electron 44** + **electron-vite 5**                                                                                                             | All-JS, built-in `globalShortcut`, `clipboard`, `safeStorage` (Keychain-backed on macOS), `Tray`. No Rust toolchain needed. |
+| UI        | **React 19 + TypeScript**, **Tailwind v4**, `lucide-react` icons                                                                                  | Fast to iterate, matches the team's skills.                                                                                 |
+| State     | **zustand**                                                                                                                                       | Tiny, no boilerplate, works well with IPC-fed stores.                                                                       |
+| Editor    | **CodeMirror 6** (`@codemirror/lang-markdown`)                                                                                                    | Lightweight, keyboard-first, markdown-aware.                                                                                |
+| Preview   | `react-markdown` + `remark-gfm` + `remark-github-blockquote-alert` + `rehype-raw` → `rehype-sanitize` → `rehype-highlight` + `mermaid` (diagrams) | Renders client-side; file on disk stays plain text. Raw HTML is parsed, then cut back to GitHub's own allowlist.            |
+| Search    | **MiniSearch** (in-memory)                                                                                                                        | Full-text + field boosting over ~5k docs in ms; disposable index.                                                           |
+| Git       | **simple-git** wrapping the system `git`                                                                                                          | Free, no libgit2 build step. Requires git on PATH (macOS ships it via Xcode CLT).                                           |
+| Metadata  | `yaml`                                                                                                                                            | Trailing fenced YAML block; tolerant parse, stable key order on write.                                                      |
+| Watcher   | `chokidar`                                                                                                                                        | Picks up edits made in Obsidian/vim/github pulls.                                                                           |
+| Secrets   | Electron `safeStorage` → encrypted blob in `userData`                                                                                             | Uses macOS Keychain for the key; no `keytar` (unmaintained).                                                                |
+| Tests     | vitest (core logic), Playwright + Electron (smoke)                                                                                                |                                                                                                                             |
+| Packaging | electron-builder (dmg, unsigned for now — signing costs $99/yr, skipped)                                                                          |                                                                                                                             |
 
 ## 2. Code conventions
 
@@ -91,6 +91,27 @@ Images and media referenced from a doc (`![hero](assets/hero.png)`) resolve GitH
 doc's folder and load through the app's `vault://asset/<path>` protocol, which serves known media
 types from inside the vault only. `https:` images load directly.
 
+### Raw HTML, and why the preview matches GitHub's warts
+
+A README is mostly HTML — `<p align="center">`, `<picture>`, rows of shields.io badges,
+`<div>`s of stats cards — and `react-markdown` drops every tag of it by default. `rehype-raw`
+parses that HTML back into real nodes, which makes anything on the clipboard a live script
+vector, so `rehype-sanitize` immediately cuts the tree back to `hast-util-sanitize`'s GitHub
+allowlist (`src/renderer/data/markdown.data.ts`). Order is load-bearing: raw → sanitize →
+highlight, because `rehype-highlight` adds `hljs-*` classes the sanitizer would otherwise strip.
+
+Three things are added to that allowlist — `<svg>`/`<path>` for the alert octicons, the
+`markdown-alert-*` class names, and `<video>`, which GitHub permits. `style` is deliberately
+**not** added: GitHub strips it too, so a `<div style="display:flex">` stacks here exactly as it
+stacks on github.com. The preview is a promise about what the pushed file looks like, and a
+preview that renders _better_ than the real thing breaks that promise.
+
+One thing is taken away: `<source>`. GitHub READMEs swap in dark-mode assets with
+`<picture><source media="(prefers-color-scheme: dark)">`, and that query follows the OS, not
+Vault — which is light-only. Sanitize unwraps a disallowed element rather than deleting its
+subtree, so dropping `<source>` leaves the `<picture>` holding just its `<img>` fallback: the
+light variant, by convention. Put `<source>` back when Vault grows a dark theme.
+
 Repo layout: `README.md` (generated index), `<project-slug>/<title-slug>.md`, `_inbox/` for no-project docs, `.trash/` (scanner skips), `.vault/views.yml`, `.vault/templates/`.
 
 ## 5. Index & cache (D3 from the PRD)
@@ -140,15 +161,16 @@ Repo layout: `README.md` (generated index), `<project-slug>/<title-slug>.md`, `_
 
 ## 11. Risks & how they're handled
 
-| Risk                                                  | Mitigation                                                                                                                  |
-| ----------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
-| Unsigned macOS build shows Gatekeeper warning         | Dev via `npm run dev`; ship dmg with "right-click → Open" note. Signing = $99/yr, out of scope.                             |
-| `git` missing on user machine                         | Detect on launch; show one-screen instruction (`xcode-select --install`).                                                   |
-| Global hotkey conflicts (Raycast/Alfred own `⌥Space`) | Default is `⌃⌥V`, which nothing common claims; configurable in settings.                                                    |
-| Push conflict (two machines)                          | Fetch before push; on non-fast-forward, `pull --rebase`; per-file conflicts surface the "Yours / Remote / Keep both" sheet. |
-| Large vault (5k files) cold scan                      | Ends-of-file read + lazy body pass; measured target <1 s for 5k.                                                            |
-| Token leakage                                         | Never in repo, never in logs; `safeStorage`; redact in error messages.                                                      |
-| Mermaid render errors on bad diagrams                 | Render in try/catch, show code block with error line.                                                                       |
-| Clipboard not markdown                                | Heuristic detector (headings/fences/lists); still allow capture, source = `other`.                                          |
-| Electron memory footprint                             | Single renderer, capture sheet reuses hidden window.                                                                        |
-| Filename collisions / unicode titles                  | Slugify with transliteration, dedup suffix.                                                                                 |
+| Risk                                                         | Mitigation                                                                                                                                                |
+| ------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Unsigned macOS build shows Gatekeeper warning                | Dev via `npm run dev`; ship dmg with "right-click → Open" note. Signing = $99/yr, out of scope.                                                           |
+| `git` missing on user machine                                | Detect on launch; show one-screen instruction (`xcode-select --install`).                                                                                 |
+| Global hotkey conflicts (Raycast/Alfred own `⌥Space`)        | Default is `⌃⌥V`, which nothing common claims; configurable in settings.                                                                                  |
+| Push conflict (two machines)                                 | Fetch before push; on non-fast-forward, `pull --rebase`; per-file conflicts surface the "Yours / Remote / Keep both" sheet.                               |
+| Large vault (5k files) cold scan                             | Ends-of-file read + lazy body pass; measured target <1 s for 5k.                                                                                          |
+| Token leakage                                                | Never in repo, never in logs; `safeStorage`; redact in error messages.                                                                                    |
+| Mermaid render errors on bad diagrams                        | Render in try/catch, show code block with error line.                                                                                                     |
+| Script or handler smuggled in via raw HTML in a captured doc | `rehype-sanitize` on GitHub's allowlist, applied after `rehype-raw` and before anything reaches React; `contextIsolation` and the renderer CSP behind it. |
+| Clipboard not markdown                                       | Heuristic detector (headings/fences/lists); still allow capture, source = `other`.                                                                        |
+| Electron memory footprint                                    | Single renderer, capture sheet reuses hidden window.                                                                                                      |
+| Filename collisions / unicode titles                         | Slugify with transliteration, dedup suffix.                                                                                                               |
