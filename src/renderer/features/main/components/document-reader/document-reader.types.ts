@@ -6,4 +6,8 @@ export interface DocumentReaderProps {
   view: ReaderView;
   onView: (v: ReaderView) => void;
   onStar: () => void;
+  onTrash: () => void;
+  trashed?: boolean;
+  onRestore: () => void;
+  onPurge: () => void;
 }

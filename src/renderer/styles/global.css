@@ -193,6 +193,9 @@ input {
   .btn-outline {
     @apply border border-line bg-paper hover:bg-paper-2;
   }
+  .btn-danger {
+    @apply border border-line bg-paper text-cherry hover:border-cherry-3 hover:bg-cherry-tint active:bg-cherry-tint-2;
+  }
   .btn:disabled {
     @apply pointer-events-none opacity-50;
   }

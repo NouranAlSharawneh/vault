@@ -9,7 +9,7 @@ export interface LoadedDocument {
 /** ⌘\ cycles full → rail → hidden. */
 export type SidebarState = "full" | "rail" | "hidden";
 
-export type Collection = "all" | "recent" | "starred";
+export type Collection = "all" | "recent" | "starred" | "trash";
 
 export type SortOrder = "newest" | "oldest" | "title";
 

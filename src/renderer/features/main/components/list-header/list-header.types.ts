@@ -5,4 +5,6 @@ export interface ListHeaderProps {
   count: number;
   sort: SortOrder;
   onSort: (s: SortOrder) => void;
+  /** Trash keeps its own order (newest trashed first). */
+  sortable?: boolean;
 }

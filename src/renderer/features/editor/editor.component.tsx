@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useState } from "react";
 import { countWords } from "@shared/helpers";
+import { AssetPanel, useAssetPlan } from "@/components/asset-panel";
 import { Markdown } from "@/components/markdown";
 import { SyncBadge } from "@/components/sync-badge/sync-badge.component";
 import { SectionLabel, SplitPane } from "@/components/ui";
 import { CAPTURE_SAVED_FLASH_MS } from "@/constants";
 import { EDITOR_PLACEHOLDER } from "@/data/editor.data";
-import { plural } from "@/helpers";
+import { parentDir, plural } from "@/helpers";
 import { useApp } from "@/stores/app";
 import type { SaveMode } from "./editor.types";
 import { useEditorDraft } from "./hooks/use-editor-draft.hook";
@@ -24,11 +25,18 @@ export function Editor() {
   const [discarding, setDiscarding] = useState(false);
 
   useEditorOpen({ onDoc: d.loadDoc, onDraft: d.loadDraft });
+  const plan = useAssetPlan({
+    body: d.body,
+    project: d.meta.project,
+    sourceDir: d.sourcePath ? parentDir(d.sourcePath) : null,
+  });
   /** Save, then close the window — the main window already shows the result. */
   const saveAndClose = useCallback(
     (mode: SaveMode) =>
-      void d.save(mode).then((r) => r && setTimeout(() => window.close(), CAPTURE_SAVED_FLASH_MS)),
-    [d],
+      void d
+        .save(mode, plan.request)
+        .then((r) => r && setTimeout(() => window.close(), CAPTURE_SAVED_FLASH_MS)),
+    [d, plan.request],
   );
   const commit = useCallback(() => saveAndClose("commit"), [saveAndClose]);
   useEditorShortcuts(commit);
@@ -81,6 +89,7 @@ export function Editor() {
           </>
         }
       />
+      <AssetPanel plan={plan} className="mx-4 mb-2" />
       <MetadataBar
         meta={d.meta}
         inferredTitle={d.inferredTitle}

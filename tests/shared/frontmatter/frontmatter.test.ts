@@ -54,6 +54,8 @@ describe("frontmatter", () => {
     const parsed = parseDoc(LEGACY);
     expect(parsed.frontmatter).toEqual(parseDoc(SAMPLE).frontmatter);
     expect(splitFrontmatter(LEGACY).position).toBe("top");
+    // The blank line after the closing --- is dropped, so the body opens on the heading.
+    expect(parsed.body.startsWith("# Rate limiting")).toBe(true);
     expect(composeDoc(parsed.frontmatter!, parsed.body, parsed.extra)).toBe(SAMPLE);
   });
 

@@ -32,10 +32,38 @@ export interface DocMeta extends Frontmatter {
   unpushed?: boolean;
 }
 
+/** A document sitting in `.trash/`, listed from disk (the index skips that folder). */
+export interface TrashedDoc {
+  meta: DocMeta;
+  /** Path inside `.trash/`, e.g. `.trash/atlas-api/spec.md`. */
+  path: string;
+  /** Where it lived before, e.g. `atlas-api/spec.md`. */
+  originalPath: string;
+  /** ISO date of the `trash:` commit (file mtime when unknown). */
+  trashedAt: string;
+}
+
 export interface DocContent {
   meta: DocMeta;
   body: string;
   raw: string;
+}
+
+/** One relative image/media path in a body, checked against a base folder. */
+export interface AssetRef {
+  /** As written in the markdown, e.g. `docs/hero.gif`. */
+  ref: string;
+  name: string;
+  /** `unknown` = no base folder chosen yet, so nothing has been looked for. */
+  status: "found" | "missing" | "unsupported" | "unknown";
+  bytes: number;
+}
+
+/** Copy these referenced files into the vault when saving. */
+export interface AssetImport {
+  /** Folder the refs are relative to (the source project, usually). */
+  baseDir: string;
+  refs: string[];
 }
 
 export interface SaveRequest {
@@ -45,10 +73,13 @@ export interface SaveRequest {
   existingPath?: string;
   /** Commit + push, or just write to disk. */
   commit: boolean;
+  assets?: AssetImport;
 }
 
 export interface SaveResult {
   path: string;
+  /** Repo-relative paths of assets copied in with this save. */
+  assets?: string[];
   meta: DocMeta;
   committed: boolean;
 }
@@ -170,6 +201,8 @@ export interface VaultConfig {
   lastSource: Source;
   hotkey: string;
   pushDebounceMs: number;
+  /** Where relative image paths resolve, remembered per project slug (this machine only). */
+  assetDirs?: Record<string, string>;
 }
 
 export interface SavedView {
@@ -190,11 +223,15 @@ export interface ClipboardCapture {
   looksLikeMarkdown: boolean;
   detectedSource: Source;
   detectedTitle: string | null;
+  /** Set when the clipboard held a markdown *file* (copied in Finder) rather than text. */
+  sourcePath?: string;
 }
 
 export interface EditorDraft {
   body: string;
   frontmatter?: Partial<DocMeta>;
+  /** File the text came from, so relative images can still be resolved in the editor. */
+  sourcePath?: string;
 }
 
 export type AppRoute = (typeof APP_ROUTES)[number];

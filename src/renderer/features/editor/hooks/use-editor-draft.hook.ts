@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { inferTitle } from "@shared/helpers";
-import type { DocContent, EditorDraft, SaveResult, Source } from "@shared/types";
+import type { AssetImport, DocContent, EditorDraft, SaveResult, Source } from "@shared/types";
 import { errorMessage } from "@/helpers";
 import { api } from "@/lib/api";
 import { useApp } from "@/stores/app";
@@ -22,6 +22,7 @@ export function useEditorDraft() {
     existingPath: null,
     created: null,
     dirty: false,
+    sourcePath: null,
   });
   const [saving, setSaving] = useState<SaveMode | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -52,6 +53,7 @@ export function useEditorDraft() {
       existingPath: doc.meta.path,
       created: doc.meta.created,
       dirty: false,
+      sourcePath: null,
     });
     setLastSaved(null);
   }, []);
@@ -72,13 +74,14 @@ export function useEditorDraft() {
         existingPath: null,
         created: null,
         dirty: draft.body.length > 0,
+        sourcePath: draft.sourcePath ?? null,
       });
     },
     [config?.lastProject, defaultSource],
   );
 
   const save = useCallback(
-    async (mode: SaveMode) => {
+    async (mode: SaveMode, assets?: AssetImport) => {
       if (!state.body.trim()) return null;
       setSaving(mode);
       setError(null);
@@ -92,6 +95,7 @@ export function useEditorDraft() {
           },
           existingPath: state.existingPath ?? undefined,
           commit: mode === "commit",
+          assets,
         });
         setState((s) => ({
           ...s,

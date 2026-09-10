@@ -6,4 +6,9 @@ export interface ReaderToolbarProps {
   view: ReaderView;
   onView: (v: ReaderView) => void;
   onStar: () => void;
+  onTrash: () => void;
+  /** Set when the doc lives in `.trash/`: swaps the actions for Restore / Delete forever. */
+  trashed?: boolean;
+  onRestore: () => void;
+  onPurge: () => void;
 }

@@ -122,7 +122,7 @@ export class GitService {
     message: string,
     opts: { amend?: boolean } = {},
   ): Promise<string> {
-    await this.git.add(paths);
+    if (paths.length) await this.git.add(paths);
     if (opts.amend) {
       await this.git.raw(["commit", "--amend", "--no-edit", "--quiet"]);
       return (await this.headSha()) ?? "";
@@ -133,6 +133,11 @@ export class GitService {
   async commitAll(message: string): Promise<string> {
     await this.git.add(["-A"]);
     return (await this.git.commit(message)).commit;
+  }
+
+  /** `git rm -r` a folder (tracked files only; untracked ones are the caller's to remove). */
+  async removeTree(path: string): Promise<void> {
+    await this.git.raw(["rm", "-r", "-q", "--ignore-unmatch", "--", path]);
   }
 
   /** Stages `from` first so untracked (never-committed) files can be moved too. */
