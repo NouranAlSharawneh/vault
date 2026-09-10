@@ -37,6 +37,9 @@ export function SyncBadge({ className }: SyncBadgeProps) {
       <span className="font-mono">{branch}</span>
       <span className="text-ink-4">·</span>
       <span>{p.label(sync?.ahead ?? 0)}</span>
+      {(state === "error" || state === "conflict") && sync?.lastError && (
+        <span className="max-w-80 truncate text-ink-4">— {sync.lastError}</span>
+      )}
     </Button>
   );
 }
