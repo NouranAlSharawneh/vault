@@ -23,12 +23,15 @@ export function toggleCapture(): void {
   });
 }
 
-export function registerHotkey(accelerator: string): void {
+/** Bind the capture shortcut. False when the OS refused it (taken by another app, or invalid). */
+export function registerHotkey(accelerator: string): boolean {
   globalShortcut.unregisterAll();
   try {
-    if (!globalShortcut.register(accelerator, toggleCapture))
-      console.warn("Hotkey unavailable:", accelerator);
+    const ok = globalShortcut.register(accelerator, toggleCapture);
+    if (!ok) console.warn("Hotkey unavailable:", accelerator);
+    return ok;
   } catch (e) {
     console.warn("Hotkey failed", e);
+    return false;
   }
 }

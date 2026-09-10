@@ -97,6 +97,7 @@ export interface IpcInvoke {
   "app:version": () => string;
   "app:platform": () => NodeJS.Platform;
   "app:openExternal": (url: string) => void;
+  "app:reset": () => void;
 }
 
 /** Main → renderer push events. */

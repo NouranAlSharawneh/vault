@@ -2,7 +2,9 @@
 
 // ---- domain ---------------------------------------------------------------------
 export const SOURCES = ["claude", "chatgpt", "github", "manual", "other"] as const;
-export const APP_ROUTES = ["onboarding", "main", "editor", "capture"] as const;
+export const APP_ROUTES = ["onboarding", "main", "editor", "capture", "settings"] as const;
+/** Push debounce choices offered in Settings, in ms. */
+export const PUSH_DEBOUNCE_OPTIONS = [0, 3000, 10_000, 30_000] as const;
 export const INBOX_SLUG = "_inbox";
 export const TRASH_DIR = ".trash";
 export const VAULT_DIR = ".vault";

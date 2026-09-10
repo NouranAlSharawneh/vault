@@ -22,6 +22,8 @@ import { getOAuthConfig } from "../../store/oauth-config";
 import { cancelWebFlow, runWebFlow } from "../../services/auth/web-flow.service";
 import { broadcast, hideCaptureWindow, openEditorWindow, openMainWindow } from "../../windows";
 import { registerHotkey } from "../hotkey/hotkey";
+import { buildAppMenu } from "../menu/menu";
+import { resetApp } from "../session/reset-app";
 import { resolveAssets } from "../../services/assets";
 import { session } from "../session/session";
 
@@ -137,11 +139,16 @@ export function registerIpcHandlers(): void {
     const current = getSettings().vault;
     if (!current) throw new Error("No vault");
     const next = { ...current, ...patch };
+    if (patch.hotkey && patch.hotkey !== current.hotkey && !registerHotkey(patch.hotkey)) {
+      registerHotkey(current.hotkey);
+      throw new Error(`${patch.hotkey} is taken by another app or isn't a valid shortcut.`);
+    }
     updateSettings({ vault: next });
     if (session.vault) Object.assign(session.vault.config, next);
-    if (patch.hotkey) registerHotkey(next.hotkey);
+    if (patch.hotkey) buildAppMenu(next.hotkey);
     return next;
   });
+  handle("app:reset", () => resetApp());
   handle("vault:index", () => session.requireVault().index.snapshot());
   handle("vault:rescan", () => session.requireVault().index.rescan());
   handle("vault:disconnect", async () => {

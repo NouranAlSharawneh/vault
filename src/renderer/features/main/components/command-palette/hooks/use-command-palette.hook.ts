@@ -3,6 +3,7 @@ import { matchesFilters, parseQuery } from "@shared/query";
 import type { DocMeta, SearchHit } from "@shared/types";
 import { PALETTE_MAX_DOCS, PALETTE_MAX_TEXT, SEARCH_DEBOUNCE_MS } from "@/constants";
 import { PALETTE_ACTIONS, type PaletteActionKey } from "@/data/palette.data";
+import { acceleratorLabel } from "@/helpers";
 import { api } from "@/lib/api";
 import { useApp } from "@/stores/app";
 import type { PaletteGroup, PaletteItem } from "../command-palette.types";
@@ -15,6 +16,7 @@ export function useCommandPalette(
 ) {
   const index = useApp((s) => s.index);
   const sync = useApp((s) => s.sync);
+  const hotkey = useApp((s) => s.config?.hotkey);
   const [query, setQuery] = useState("");
   const [hits, setHits] = useState<SearchHit[]>([]);
   const [cursor, setCursor] = useState(0);
@@ -81,7 +83,7 @@ export function useCommandPalette(
         a.key === "pushPending"
           ? `Push ${pending} pending doc${pending === 1 ? "" : "s"}`
           : a.label,
-      shortcut: a.shortcut,
+      shortcut: a.key === "newFromClipboard" && hotkey ? acceleratorLabel(hotkey) : a.shortcut,
     }));
     const q = parsed.text.toLowerCase();
     const visibleActions = q
@@ -89,7 +91,7 @@ export function useCommandPalette(
       : actions;
     if (visibleActions.length) out.push({ title: "Actions", items: visibleActions });
     return out;
-  }, [index, liveHits, query, sync?.ahead, onTrashDoc]);
+  }, [index, liveHits, query, sync?.ahead, onTrashDoc, hotkey]);
 
   const flat = useMemo(() => groups.flatMap((g) => g.items), [groups]);
   const active = flat[Math.min(cursor, Math.max(0, flat.length - 1))] ?? null;
