@@ -108,10 +108,11 @@ await editor.waitForSelector("text=atlas-api/rate-limiting-at-the-edge.md");
 await editor.waitForSelector(".mermaid-block svg", { timeout: 20000 });
 await editor.waitForTimeout(300);
 await editor.screenshot({ path: join(out, "smoke-5-editor.png") });
-await editor.screenshot({ path: join(out, "smoke-6-editor-saved.png") });
 // Escape on a document with unsaved changes asks rather than throwing work away.
 await editor.keyboard.press("Escape");
 await editor.waitForSelector("text=Unsaved changes", { timeout: 5000 });
+await editor.waitForTimeout(300);
+await editor.screenshot({ path: join(out, "smoke-6-unsaved-prompt.png") });
 await editor.click('button:has-text("Keep editing")');
 await editor.waitForSelector("text=Unsaved changes", { state: "detached" });
 await editor.click('button:has-text("Save & commit")');
