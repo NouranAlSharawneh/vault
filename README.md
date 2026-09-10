@@ -2,7 +2,7 @@
 
 A macOS desktop app that catches every markdown file you'd hate to lose and commits it straight to a GitHub repository you own. **No database, no account, no lock-in** — the git repo _is_ the database.
 
-- ⌥Space anywhere → clipboard captured → tagged → committed to `main` in under five seconds.
+- ⌃⌥V anywhere → clipboard captured → tagged → committed to `main` in under five seconds.
 - ⌘K finds any document by title, frontmatter or body text.
 - Every save is a commit, so version history and restore come for free.
 - The vault stays fully usable if this app disappears: it's just `.md` files with YAML frontmatter.

@@ -3,9 +3,11 @@ import { countWords } from "@shared/helpers";
 import { Markdown } from "@/components/markdown";
 import { SyncBadge } from "@/components/sync-badge/sync-badge.component";
 import { SectionLabel, SplitPane } from "@/components/ui";
+import { CAPTURE_SAVED_FLASH_MS } from "@/constants";
 import { EDITOR_PLACEHOLDER } from "@/data/editor.data";
 import { plural } from "@/helpers";
 import { useApp } from "@/stores/app";
+import type { SaveMode } from "./editor.types";
 import { useEditorDraft } from "./hooks/use-editor-draft.hook";
 import { useEditorOpen } from "./hooks/use-editor-open.hook";
 import { useEditorShortcuts } from "./hooks/use-editor-shortcuts.hook";
@@ -22,7 +24,13 @@ export function Editor() {
   const [discarding, setDiscarding] = useState(false);
 
   useEditorOpen({ onDoc: d.loadDoc, onDraft: d.loadDraft });
-  const commit = useCallback(() => void d.save("commit"), [d]);
+  /** Save, then close the window — the main window already shows the result. */
+  const saveAndClose = useCallback(
+    (mode: SaveMode) =>
+      void d.save(mode).then((r) => r && setTimeout(() => window.close(), CAPTURE_SAVED_FLASH_MS)),
+    [d],
+  );
+  const commit = useCallback(() => saveAndClose("commit"), [saveAndClose]);
   useEditorShortcuts(commit);
 
   useEffect(() => {
@@ -88,7 +96,7 @@ export function Editor() {
         canSave={d.canSave}
         dirty={d.dirty}
         error={d.error}
-        onSave={(m) => void d.save(m)}
+        onSave={saveAndClose}
       />
       <UnsavedGuard
         dirty={d.dirty && !discarding}
@@ -97,7 +105,7 @@ export function Editor() {
           d.markClean();
           setTimeout(() => window.close(), 0);
         }}
-        onSave={() => void d.save("commit").then((r) => r && setTimeout(() => window.close(), 0))}
+        onSave={() => commit()}
       />
     </div>
   );

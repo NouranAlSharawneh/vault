@@ -27,7 +27,7 @@ export function Main() {
   const [selected, setSelected] = useState<string | null>(null);
   const [view, setView] = useState<ReaderView>("preview");
   const [paletteOpen, setPaletteOpen] = useState(false);
-  const doc = useDocument(selected);
+  const doc = useDocument(selected, index?.docs);
 
   const openPalette = useCallback(() => setPaletteOpen(true), []);
   useMainShortcuts({ onSearch: openPalette });

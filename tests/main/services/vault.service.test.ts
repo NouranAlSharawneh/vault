@@ -18,9 +18,16 @@ function makeFixture(root: string, n: number): void {
     const created = new Date(Date.UTC(2026, 0, 1) + i * 3_600_000).toISOString();
     const keyword = i % 7 === 0 ? "ratelimit" : "nothing";
     const body = `# Document ${i}\n\nThis is document number ${i} about ${project}. It mentions the ${tags[0]} keyword ${keyword}.\n\n## Section\n\n- point a\n- point b\n`;
+    const yaml = `title: Document ${i}\nproject: ${project}\ntags: [${tags.join(", ")}]\ncreated: ${created}\nsource: claude`;
+    // Every tenth file keeps a classic head block so both layouts are always exercised;
+    // one of them is padded past the "read the whole file" size to hit the tail reader.
+    const legacy = i % 10 === 0;
+    const padding = i === 5 ? "\n" + "Lorem ipsum dolor sit amet. ".repeat(1_000) : "";
     writeFileSync(
       join(root, slug, `document-${i}.md`),
-      `---\ntitle: Document ${i}\nproject: ${project}\ntags: [${tags.join(", ")}]\ncreated: ${created}\nsource: claude\n---\n\n${body}`,
+      legacy
+        ? `---\n${yaml}\n---\n\n${body}`
+        : `${body}${padding}\n---\n\n\`\`\`yaml\n${yaml}\n\`\`\`\n`,
     );
   }
   mkdirSync(join(root, "_inbox"), { recursive: true });
@@ -46,7 +53,7 @@ beforeAll(async () => {
       branch: "main",
       lastProject: null,
       lastSource: "claude",
-      hotkey: "Alt+Space",
+      hotkey: "Control+Alt+V",
       pushDebounceMs: 3000,
     },
     cache,
@@ -71,6 +78,11 @@ describe("VaultService (800-doc fixture)", () => {
     expect(snap.projects.find((p) => p.slug === "_inbox")?.count).toBe(1);
     expect(snap.tags.find((t) => t.tag === "spec")?.count).toBeGreaterThan(100);
     expect(ms).toBeLessThan(3000);
+    // The padded file is read from both ends: metadata from the tail, excerpt from the head.
+    const big = snap.docs.find((d) => d.path.endsWith("/document-5.md"));
+    expect(big?.orphan).toBe(false);
+    expect(big?.title).toBe("Document 5");
+    expect(big?.excerpt.startsWith("This is document number 5")).toBe(true);
   });
 
   it("writes README index and .vault scaffold", () => {
@@ -96,11 +108,11 @@ describe("VaultService (800-doc fixture)", () => {
     expect(log.total).toBe(before + 1);
     expect(log.latest?.message).toBe("add: Rate limiting at the edge");
     const raw = readFileSync(join(root, res.path), "utf8");
-    expect(
-      raw.startsWith(
-        "---\ntitle: Rate limiting at the edge\nproject: Atlas API\ntags: [spec, infra]\ncreated: ",
-      ),
-    ).toBe(true);
+    expect(raw.startsWith("# Rate limiting")).toBe(true);
+    expect(raw).toContain(
+      "\n---\n\n```yaml\ntitle: Rate limiting at the edge\nproject: Atlas API\ntags: [spec, infra]\ncreated: ",
+    );
+    expect(raw.endsWith("source: claude\n```\n")).toBe(true);
     expect(readFileSync(join(root, "README.md"), "utf8")).toContain(
       "[Rate limiting at the edge](atlas-api/rate-limiting-at-the-edge.md)",
     );
