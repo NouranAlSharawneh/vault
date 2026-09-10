@@ -68,6 +68,45 @@ export const ASSET_MIME: Record<string, string> = {
 export const ASSETS_DIR = "assets";
 /** Above this a referenced file is flagged before it goes into git for good. */
 export const ASSET_WARN_BYTES = 10 * 1024 * 1024;
+
+// ---- finding the folder relative refs belong to -----------------------------------
+/** How many refs are used as probes when working out the folder on our own. */
+export const ASSET_PROBE_LIMIT = 3;
+/** Folders under `~` a walk is allowed to start from when nothing better is known. */
+export const ASSET_HOME_ROOTS = [
+  "Coding",
+  "Developer",
+  "Projects",
+  "Documents",
+  "Desktop",
+  "Downloads",
+  "src",
+  "code",
+  "repos",
+  "work",
+];
+/** Never walked into: huge, and never where a doc's own screenshots live. */
+export const ASSET_WALK_SKIP = new Set([
+  ".git",
+  ".next",
+  ".cache",
+  ".Trash",
+  "Library",
+  "node_modules",
+  "dist",
+  "build",
+  "out",
+  "target",
+  "vendor",
+  "venv",
+  "coverage",
+]);
+/** The walk is a fallback, so it stays cheap: shallow, capped, and time-boxed. */
+export const ASSET_WALK_DEPTH = 4;
+export const ASSET_WALK_MAX_DIRS = 3000;
+export const ASSET_WALK_BUDGET_MS = 1200;
+/** Spotlight answers from its index in tens of ms; anything slower is treated as a miss. */
+export const SPOTLIGHT_BUDGET_MS = 2500;
 /** `![alt](path)` and `[text](<path with spaces>)` — group 1 is the `!`, group 2 the target (maybe in `<>`). */
 export const MD_LINK_RE = /(!?)\[[^\]]*\]\(\s*(<[^>]*>|[^\s)]+)(?:\s+["'][^"']*["'])?\s*\)/g;
 /** `<img src="…">`, `<video src>`, `<source src>` — group 1 is the attribute prefix, group 2 the target. */

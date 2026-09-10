@@ -6,6 +6,8 @@ export interface CaptureFooterProps {
   error: string | null;
   savedPath: string | null;
   hasRemote: boolean;
+  /** Referenced images that won't be copied, so the save leaves broken links. */
+  stranded: number;
   onOpenEditor: () => void;
   onSave: () => void;
   onRetry: () => void;

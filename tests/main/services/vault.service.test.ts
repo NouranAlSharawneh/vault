@@ -1,7 +1,12 @@
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
+
+// Off the real Spotlight index: the temp workspace below is the only folder in play.
+vi.mock("@main/services/assets/spotlight", () => ({ spotlightRoots: async () => [] }));
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { findAssetRefs, resolveAssetUrl } from "@shared/helpers";
+import { resolveAssets } from "@main/services/assets";
 import { VaultService } from "@main/services/vault/vault.service";
 import { IndexerService } from "@main/services/indexer/indexer.service";
 import { GitService } from "@main/services/git/git.service";
@@ -190,6 +195,37 @@ describe("VaultService (800-doc fixture)", () => {
     expect(shown).toContain("personal/assets/hero-fly-in.gif");
     expect(shown).toContain("personal/assets/hero-fly-in.png");
     rmSync(src, { recursive: true, force: true });
+  });
+
+  it("captures an image with no folder given: finds it, copies it, rewrites the link", async () => {
+    // The bug this covers: text pasted from a README carries no path, so nothing was copied
+    // and the doc committed with `docs/hero-flyin.gif` still in it — a link with nothing
+    // behind it, which the reader renders as a broken image.
+    const workspace = mkdtempSync(join(tmpdir(), "vault-workspace-"));
+    mkdirSync(join(workspace, "concorde", "docs"), { recursive: true });
+    writeFileSync(join(workspace, "concorde", "docs", "hero-flyin.gif"), Buffer.from("GIF89a"));
+    const body = "# Concorde\n\n![The landing page](docs/hero-flyin.gif)\n";
+
+    const plan = await resolveAssets(null, findAssetRefs(body), [join(workspace, "elsewhere")]);
+    expect(plan.baseDir).toBe(join(workspace, "concorde"));
+    expect(plan.detected).toBe(true);
+    expect(plan.refs[0].status).toBe("found");
+
+    const res = await vault.save({
+      body,
+      frontmatter: { title: "Concorde", project: "Concorde", tags: [], source: "claude" },
+      commit: true,
+      assets: { baseDir: plan.baseDir!, refs: plan.refs.map((r) => r.ref) },
+    });
+    expect(readFileSync(join(root, res.path), "utf8")).toContain(
+      "![The landing page](assets/hero-flyin.gif)",
+    );
+    // And the rewritten link is exactly what the reader turns into a `vault://` URL.
+    expect(resolveAssetUrl("assets/hero-flyin.gif", res.path)).toBe(
+      "vault://asset/concorde/assets/hero-flyin.gif",
+    );
+    expect(existsSync(join(root, "concorde", "assets", "hero-flyin.gif"))).toBe(true);
+    rmSync(workspace, { recursive: true, force: true });
   });
 
   it("moves the file when the project changes and keeps `created`", async () => {

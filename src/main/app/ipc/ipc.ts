@@ -200,7 +200,9 @@ export function registerIpcHandlers(): void {
   handle("search:query", (text) => session.vault?.search(text) ?? []);
 
   // ---- capture
-  handle("assets:resolve", (baseDir, refs) => resolveAssets(baseDir, refs));
+  handle("assets:resolve", (baseDir, refs) =>
+    resolveAssets(baseDir, refs, Object.values(getSettings().vault?.assetDirs ?? {})),
+  );
   handle("assets:chooseFolder", async (defaultPath) => {
     const r = await dialog.showOpenDialog({
       title: "Where are these images relative to?",

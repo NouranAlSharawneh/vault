@@ -40,7 +40,9 @@ export function useTagInput(
     } else if (e.key === "ArrowUp" && matches.length) {
       e.preventDefault();
       setCursor((c) => (c - 1 + matches.length) % matches.length);
-    } else if (e.key === "Escape") {
+    } else if (e.key === "Escape" && text) {
+      // Consume it, so the window-level Escape doesn't also close the editor.
+      e.preventDefault();
       setText("");
     }
   };

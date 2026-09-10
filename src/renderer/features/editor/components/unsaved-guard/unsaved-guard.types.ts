@@ -1,5 +1,6 @@
 export interface UnsavedGuardProps {
-  dirty: boolean;
+  open: boolean;
+  onKeepEditing: () => void;
   onDiscard: () => void;
   onSave: () => void;
 }

@@ -116,8 +116,6 @@ export function useEditorDraft() {
     [state, effectiveTitle],
   );
 
-  const markClean = useCallback(() => setState((s) => ({ ...s, dirty: false })), []);
-
   return {
     ...state,
     inferredTitle,
@@ -132,6 +130,5 @@ export function useEditorDraft() {
     loadDoc,
     loadDraft,
     save,
-    markClean,
   };
 }

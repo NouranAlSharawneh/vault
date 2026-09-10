@@ -9,10 +9,11 @@ type Listener = (payload: unknown) => void;
  */
 export function mockVaultApi(answers: Partial<Record<InvokeChannel, unknown>> = {}) {
   const listeners = new Map<string, Set<Listener>>();
-  const invoke = vi.fn(async (channel: InvokeChannel, ..._args: unknown[]) => {
+  const invoke = vi.fn(async (channel: InvokeChannel, ...args: unknown[]) => {
     const a = answers[channel];
     if (a instanceof Error) throw a;
-    return typeof a === "function" ? (a as () => unknown)() : a;
+    // Answers get the call's arguments, so a handler can reply the way main would.
+    return typeof a === "function" ? (a as (...a: unknown[]) => unknown)(...args) : a;
   });
   const on = vi.fn((channel: EventChannel, listener: Listener) => {
     if (!listeners.has(channel)) listeners.set(channel, new Set());
