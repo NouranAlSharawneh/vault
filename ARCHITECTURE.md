@@ -27,7 +27,7 @@
 - **Folders**
   - `src/shared/` — `types.ts` (cross-process domain types), `constants/` (one file with every constant), `helpers/` (one function per file), `frontmatter/`, `query/`, `ipc/`.
   - `src/main/` — `index.ts` (lifecycle only), `app/<name>/` (session, ipc, hotkey, menu, tray), `network/axios/` (instance + request/response interceptors + `NetworkError`), `network/github/` (one call per file), `services/<name>/` (git, indexer, vault, capture), `store/`, `windows/`, `data/` (static menu/tray data).
-  - `src/renderer/src/` — `app/`, `routes/<name>/` (thin) → `features/<name>/` (`<name>.component.tsx`, `<name>.types.ts`, `hooks/`, `components/<child>/`), `components/ui/<name>/`, `stores/<name>/`, `helpers/`, `constants/`, `data/`, `lib/api/`.
+  - `src/renderer/` — `app/`, `routes/<name>/` (thin) → `features/<name>/` (`<name>.component.tsx`, `<name>.types.ts`, `hooks/`, `components/<child>/`), `components/ui/<name>/`, `stores/<name>/`, `helpers/`, `constants/`, `data/`, `lib/api/`.
   - Types live beside the file that owns them (`*.types.ts`); only truly shared types go in `src/shared/types.ts`.
   - `tests/` at the repo root mirrors `src/` (`tests/shared/…`, `tests/main/services/…`, `tests/smoke/`).
 

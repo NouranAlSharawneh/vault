@@ -6,7 +6,7 @@ export default defineConfig({
     alias: {
       "@shared": resolve("src/shared"),
       "@main": resolve("src/main"),
-      "@": resolve("src/renderer/src"),
+      "@": resolve("src/renderer"),
     },
   },
   test: { include: ["tests/**/*.test.ts"], environment: "node" },
