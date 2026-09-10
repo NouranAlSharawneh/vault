@@ -250,8 +250,12 @@ export class VaultService extends EventEmitter {
       if (!meta) continue;
       const originalPath = path.slice(TRASH_DIR.length + 1);
       const [last] = await this.git.log(path, 1);
+      // readMeta saw the `.trash/…` path, so it read the project off that folder.
+      // Recover it from where the document used to live.
+      const folder = originalPath.includes("/") ? originalPath.split("/")[0] : INBOX_SLUG;
+      const project = meta.project === unslug(TRASH_DIR) ? "" : meta.project;
       out.push({
-        meta: { ...meta, projectSlug: projectSlug(meta.project) || INBOX_SLUG },
+        meta: { ...meta, project, projectSlug: project ? projectSlug(project) : folder },
         path,
         originalPath,
         trashedAt: last?.date ?? new Date(meta.mtime).toISOString(),
