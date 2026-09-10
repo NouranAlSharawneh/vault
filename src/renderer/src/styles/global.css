@@ -1,16 +1,41 @@
-@import 'tailwindcss';
-@import '@fontsource-variable/geist';
-@import '@fontsource-variable/geist-mono';
-@import '@fontsource-variable/newsreader';
+@import "tailwindcss";
+@import "@fontsource-variable/geist";
+@import "@fontsource-variable/geist-mono";
+@import "@fontsource-variable/newsreader";
 
 /* ------------------------------------------------------------------
    Design tokens. Warm off-whites, near-black overlays, cherry accent
    reserved for brand + primary actions; green/amber reserved for sync.
+   Every utility below maps to a token so no arbitrary values are needed.
    ------------------------------------------------------------------ */
 @theme {
-  --font-sans: 'Geist Variable', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
-  --font-mono: 'Geist Mono Variable', ui-monospace, SFMono-Regular, Menlo, monospace;
-  --font-serif: 'Newsreader Variable', 'Iowan Old Style', Georgia, serif;
+  --font-sans: "Geist Variable", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "Geist Mono Variable", ui-monospace, SFMono-Regular, Menlo, monospace;
+  --font-serif: "Newsreader Variable", "Iowan Old Style", Georgia, serif;
+
+  /* type scale (px) — 2xs 10.5 · xs 11.5 · sm 12.5 · base 13 · md 14 · lg 15 · xl 17 · 2xl 22 · 3xl 24 · 4xl 30 · 5xl 34 */
+  --text-2xs: 0.65625rem;
+  --text-2xs--line-height: 1.3;
+  --text-xs: 0.71875rem;
+  --text-xs--line-height: 1.4;
+  --text-sm: 0.78125rem;
+  --text-sm--line-height: 1.45;
+  --text-base: 0.8125rem;
+  --text-base--line-height: 1.45;
+  --text-md: 0.875rem;
+  --text-md--line-height: 1.45;
+  --text-lg: 0.9375rem;
+  --text-lg--line-height: 1.55;
+  --text-xl: 1.0625rem;
+  --text-xl--line-height: 1.6;
+  --text-2xl: 1.375rem;
+  --text-2xl--line-height: 1.25;
+  --text-3xl: 1.5rem;
+  --text-3xl--line-height: 1.2;
+  --text-4xl: 1.875rem;
+  --text-4xl--line-height: 1.15;
+  --text-5xl: 2.125rem;
+  --text-5xl--line-height: 1.1;
 
   --color-paper: #fdfcfa;
   --color-paper-2: #f7f5f0;
@@ -39,12 +64,40 @@
   --color-overlay-ink-2: #b8b3aa;
   --color-overlay-ink-3: #7d786f;
 
+  --radius-xs: 5px;
   --radius-sm: 6px;
   --radius-md: 9px;
   --radius-lg: 13px;
+  --radius-xl: 14px;
 
   --shadow-pop: 0 1px 2px rgb(30 29 27 / 0.06), 0 8px 24px -8px rgb(30 29 27 / 0.18);
   --shadow-sheet: 0 2px 6px rgb(0 0 0 / 0.25), 0 28px 60px -12px rgb(0 0 0 / 0.55);
+  --shadow-kbd: 0 1px 0 var(--color-line-2);
+
+  --animate-fade-in: fade-in 140ms ease-out both;
+  --animate-pop-in: pop-in 160ms cubic-bezier(0.2, 0.9, 0.3, 1.2) both;
+  --animate-spin-fast: spin 900ms linear infinite;
+
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+      transform: translateY(2px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+  @keyframes pop-in {
+    from {
+      opacity: 0;
+      transform: scale(0.98) translateY(6px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
 }
 
 :root {
@@ -60,7 +113,7 @@ body,
 
 body {
   font-family: var(--font-sans);
-  font-size: 13px;
+  font-size: var(--text-base);
   line-height: 1.45;
   color: var(--color-ink);
   background: var(--color-paper);
@@ -75,10 +128,10 @@ body {
 }
 
 /* Draggable title-bar region (macOS hiddenInset) */
-.drag {
+@utility drag {
   -webkit-app-region: drag;
 }
-.no-drag {
+@utility no-drag {
   -webkit-app-region: no-drag;
 }
 
@@ -103,15 +156,15 @@ body {
 
 kbd {
   font-family: var(--font-sans);
-  font-size: 10.5px;
+  font-size: var(--text-2xs);
   font-weight: 500;
   line-height: 1;
   padding: 3px 5px;
-  border-radius: 5px;
+  border-radius: var(--radius-xs);
   color: var(--color-ink-3);
   background: var(--color-paper-2);
   border: 1px solid var(--color-line);
-  box-shadow: 0 1px 0 var(--color-line-2);
+  box-shadow: var(--shadow-kbd);
 }
 .dark kbd {
   color: var(--color-overlay-ink-2);
@@ -120,80 +173,81 @@ kbd {
   box-shadow: 0 1px 0 #000;
 }
 
-/* Buttons ---------------------------------------------------------- */
-.btn {
-  @apply inline-flex items-center gap-1.5 h-7 px-2.5 rounded-[var(--radius-sm)] text-[12.5px] font-medium select-none whitespace-nowrap transition-colors;
-  @apply text-ink-2 hover:bg-paper-3 active:bg-line;
-}
-.btn-primary {
-  @apply bg-cherry text-white hover:bg-cherry-2 active:bg-cherry-2;
-}
-.btn-ghost {
-  @apply text-ink-3 hover:text-ink hover:bg-paper-3;
-}
-.btn-outline {
-  @apply border border-line bg-paper hover:bg-paper-2;
-}
-.btn:disabled {
-  @apply opacity-50 pointer-events-none;
-}
-.icon-btn {
-  @apply inline-flex items-center justify-center w-7 h-7 rounded-[var(--radius-sm)] text-ink-3 hover:text-ink hover:bg-paper-3 transition-colors;
-}
-
-/* Inputs ----------------------------------------------------------- */
-.input {
-  @apply w-full h-8 px-2.5 rounded-[var(--radius-sm)] border border-line bg-paper text-[13px] text-ink outline-none;
-  @apply placeholder:text-ink-4 focus:border-line-2 focus:ring-2 focus:ring-cherry-tint-2 transition;
-  user-select: text;
-}
-.input-sm {
-  @apply h-7 text-[12.5px];
-}
 textarea,
 input {
   user-select: text;
 }
 
-/* Chips ------------------------------------------------------------ */
-.chip {
-  @apply inline-flex items-center gap-1 h-5 px-1.5 rounded-[5px] text-[11px] font-medium leading-none;
-  @apply bg-paper-3 text-ink-2;
-}
-.chip-tag {
-  @apply bg-cherry-tint text-cherry-2;
-}
-.dark .chip-tag {
-  background: rgb(224 101 109 / 0.16);
-  color: var(--color-cherry-3);
+/* ---- component layer ---------------------------------------------- */
+@layer components {
+  .btn {
+    @apply inline-flex h-7 items-center gap-1.5 rounded-sm px-2.5 text-sm font-medium whitespace-nowrap transition-colors select-none;
+    @apply text-ink-2 hover:bg-paper-3 active:bg-line;
+  }
+  .btn-primary {
+    @apply bg-cherry text-white hover:bg-cherry-2 active:bg-cherry-2;
+  }
+  .btn-ghost {
+    @apply text-ink-3 hover:bg-paper-3 hover:text-ink;
+  }
+  .btn-outline {
+    @apply border border-line bg-paper hover:bg-paper-2;
+  }
+  .btn:disabled {
+    @apply pointer-events-none opacity-50;
+  }
+  .icon-btn {
+    @apply inline-flex h-7 w-7 items-center justify-center rounded-sm text-ink-3 transition-colors hover:bg-paper-3 hover:text-ink;
+  }
+
+  .input {
+    @apply h-8 w-full rounded-sm border border-line bg-paper px-2.5 text-base text-ink outline-none;
+    @apply transition placeholder:text-ink-4 focus:border-line-2 focus:ring-2 focus:ring-cherry-tint-2;
+    user-select: text;
+  }
+  .input-sm {
+    @apply h-7 text-sm;
+  }
+
+  .chip {
+    @apply inline-flex h-5 items-center gap-1 rounded-xs px-1.5 text-xs leading-none font-medium;
+    @apply bg-paper-3 text-ink-2;
+  }
+  .chip-tag {
+    @apply bg-cherry-tint text-cherry-2;
+  }
+  .dark .chip-tag {
+    background: rgb(224 101 109 / 0.16);
+    color: var(--color-cherry-3);
+  }
 }
 
-/* Prose (rendered markdown) --------------------------------------- */
+/* ---- rendered markdown -------------------------------------------- */
 .prose-doc {
   font-family: var(--font-serif);
-  font-size: 17px;
+  font-size: var(--text-xl);
   line-height: 1.6;
   color: var(--color-ink);
   user-select: text;
-  font-variation-settings: 'opsz' 16;
+  font-variation-settings: "opsz" 16;
 }
 .prose-doc > *:first-child {
   margin-top: 0;
 }
 .prose-doc h1 {
-  font-size: 30px;
+  font-size: var(--text-4xl);
   font-weight: 500;
   line-height: 1.2;
   letter-spacing: -0.01em;
   margin: 0 0 0.6em;
 }
 .prose-doc h2 {
-  font-size: 22px;
+  font-size: var(--text-2xl);
   font-weight: 500;
   margin: 1.5em 0 0.5em;
 }
 .prose-doc h3 {
-  font-size: 18px;
+  font-size: var(--text-lg);
   font-weight: 600;
   margin: 1.3em 0 0.4em;
 }
@@ -201,7 +255,7 @@ input {
 .prose-doc h5,
 .prose-doc h6 {
   font-family: var(--font-sans);
-  font-size: 13px;
+  font-size: var(--text-base);
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.04em;
@@ -254,7 +308,7 @@ input {
 }
 .prose-doc pre {
   font-family: var(--font-mono);
-  font-size: 12.5px;
+  font-size: var(--text-sm);
   line-height: 1.55;
   background: var(--color-overlay);
   color: var(--color-overlay-ink);
@@ -271,7 +325,7 @@ input {
 }
 .prose-doc table {
   font-family: var(--font-sans);
-  font-size: 13px;
+  font-size: var(--text-base);
   border-collapse: collapse;
   width: 100%;
 }
@@ -285,7 +339,7 @@ input {
 .prose-doc th {
   font-weight: 600;
   color: var(--color-ink-3);
-  font-size: 11.5px;
+  font-size: var(--text-xs);
   text-transform: uppercase;
   letter-spacing: 0.04em;
 }
@@ -293,7 +347,7 @@ input {
   max-width: 100%;
   border-radius: var(--radius-md);
 }
-.prose-doc input[type='checkbox'] {
+.prose-doc input[type="checkbox"] {
   margin-right: 0.5em;
   accent-color: var(--color-cherry);
 }
@@ -309,19 +363,44 @@ input {
   height: auto;
 }
 
-/* highlight.js-ish token colours on the dark block */
-.hljs-keyword, .hljs-selector-tag, .hljs-built_in, .hljs-name, .hljs-tag { color: #c9a8ff; }
-.hljs-string, .hljs-attr, .hljs-template-variable { color: #a8d5a2; }
-.hljs-number, .hljs-literal { color: #f6c177; }
-.hljs-comment, .hljs-quote { color: #7d786f; font-style: italic; }
-.hljs-title, .hljs-section, .hljs-function { color: #9ccfd8; }
-.hljs-attribute, .hljs-variable, .hljs-type { color: #e0656d; }
+/* highlight.js token colours on the dark block */
+.hljs-keyword,
+.hljs-selector-tag,
+.hljs-built_in,
+.hljs-name,
+.hljs-tag {
+  color: #c9a8ff;
+}
+.hljs-string,
+.hljs-attr,
+.hljs-template-variable {
+  color: #a8d5a2;
+}
+.hljs-number,
+.hljs-literal {
+  color: #f6c177;
+}
+.hljs-comment,
+.hljs-quote {
+  color: #7d786f;
+  font-style: italic;
+}
+.hljs-title,
+.hljs-section,
+.hljs-function {
+  color: #9ccfd8;
+}
+.hljs-attribute,
+.hljs-variable,
+.hljs-type {
+  color: #e0656d;
+}
 
-/* CodeMirror -------------------------------------------------------- */
+/* ---- CodeMirror ------------------------------------------------------ */
 .cm-editor {
   height: 100%;
   font-family: var(--font-mono);
-  font-size: 13px;
+  font-size: var(--text-base);
   background: transparent;
   user-select: text;
 }
@@ -376,40 +455,4 @@ input {
 .dark .cm-selectionBackground,
 .dark .cm-editor ::selection {
   background: rgb(224 101 109 / 0.25) !important;
-}
-
-/* Misc --------------------------------------------------------------- */
-.fade-in {
-  animation: fade-in 140ms ease-out both;
-}
-@keyframes fade-in {
-  from {
-    opacity: 0;
-    transform: translateY(2px);
-  }
-  to {
-    opacity: 1;
-    transform: none;
-  }
-}
-.pop-in {
-  animation: pop-in 160ms cubic-bezier(0.2, 0.9, 0.3, 1.2) both;
-}
-@keyframes pop-in {
-  from {
-    opacity: 0;
-    transform: scale(0.98) translateY(6px);
-  }
-  to {
-    opacity: 1;
-    transform: none;
-  }
-}
-.spin {
-  animation: spin 900ms linear infinite;
-}
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
 }

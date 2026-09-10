@@ -1,6 +1,6 @@
 # Vault
 
-A macOS desktop app that catches every markdown file you'd hate to lose and commits it straight to a GitHub repository you own. **No database, no account, no lock-in** — the git repo *is* the database.
+A macOS desktop app that catches every markdown file you'd hate to lose and commits it straight to a GitHub repository you own. **No database, no account, no lock-in** — the git repo _is_ the database.
 
 - ⌥Space anywhere → clipboard captured → tagged → committed to `main` in under five seconds.
 - ⌘K finds any document by title, frontmatter or body text.
@@ -36,4 +36,10 @@ _inbox/              # docs saved with no project
   templates/         # frontmatter starters
 ```
 
-See `ARCHITECTURE.md` for the full design.
+See `ARCHITECTURE.md` for the full design and code conventions.
+
+```bash
+npm run lint        # eslint
+npm run format      # prettier
+npm run smoke       # headless Electron walk-through (needs xvfb)
+```
