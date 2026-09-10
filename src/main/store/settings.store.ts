@@ -1,5 +1,6 @@
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
+import { DEFAULT_HOTKEY, LEGACY_HOTKEYS } from "@shared/constants";
 import { userDataDir } from "./user-data-dir";
 import type { AppSettings } from "./settings.types";
 
@@ -23,7 +24,7 @@ function configPath(): string {
 export function getSettings(): AppSettings {
   if (cache) return cache;
   try {
-    cache = { ...DEFAULTS, ...JSON.parse(readFileSync(configPath(), "utf8")) };
+    cache = migrate({ ...DEFAULTS, ...JSON.parse(readFileSync(configPath(), "utf8")) });
   } catch {
     cache = { ...DEFAULTS };
   }
@@ -34,4 +35,13 @@ export function updateSettings(patch: Partial<AppSettings>): AppSettings {
   cache = { ...getSettings(), ...patch };
   writeFileSync(configPath(), JSON.stringify(cache, null, 2));
   return cache;
+}
+
+/** Bring an older config file up to date. A hotkey we used to ship follows the current default. */
+function migrate(settings: AppSettings): AppSettings {
+  const vault = settings.vault;
+  if (vault && (LEGACY_HOTKEYS as readonly string[]).includes(vault.hotkey)) {
+    return { ...settings, vault: { ...vault, hotkey: DEFAULT_HOTKEY } };
+  }
+  return settings;
 }

@@ -9,7 +9,7 @@ import { CaptureFields } from "./components/capture-fields/capture-fields.compon
 import { CaptureFooter } from "./components/capture-footer/capture-footer.component";
 import { CaptureEmpty } from "./components/capture-empty/capture-empty.component";
 
-/** ⌥Space sheet: clipboard → two tabs → ⌘↵. The main window never opens. */
+/** ⌃⌥V sheet: clipboard → two tabs → ⌘↵. The main window never opens. */
 export function Capture() {
   const c = useCapture();
   useCaptureKeys({ onSave: () => void c.save(), onOpenEditor: c.openInEditor, onHide: c.hide });

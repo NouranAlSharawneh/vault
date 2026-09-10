@@ -20,7 +20,7 @@ const config = {
   branch: "main",
   lastProject: "Atlas API",
   lastSource: "claude" as const,
-  hotkey: "Alt+Space",
+  hotkey: "Control+Alt+V",
   pushDebounceMs: 3000,
 };
 

@@ -12,7 +12,7 @@ const config = {
   branch: "main",
   lastProject: null,
   lastSource: "claude" as const,
-  hotkey: "Alt+Space",
+  hotkey: "Control+Alt+V",
   pushDebounceMs: 3000,
 };
 const status = (state: "synced" | "pending" | "pushing" | "offline" | "error", ahead = 0) => ({

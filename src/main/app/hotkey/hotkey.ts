@@ -8,7 +8,7 @@ import {
 } from "../../windows";
 import { session } from "../session/session";
 
-/** ⌥Space: show the capture sheet pre-filled from the clipboard, or hide it. */
+/** ⌃⌥V (configurable): show the capture sheet pre-filled from the clipboard, or hide it. */
 export function toggleCapture(): void {
   if (isCaptureVisible()) return hideCaptureWindow();
   if (!session.vault) {
