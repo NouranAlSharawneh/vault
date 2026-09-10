@@ -41,6 +41,9 @@ let deviceAbort: AbortController | null = null;
 export function registerIpcHandlers(): void {
   handle("app:version", () => app.getVersion());
   handle("app:platform", () => process.platform);
+  handle("app:openExternal", (url) => {
+    if (/^https?:\/\//.test(url)) void shell.openExternal(url);
+  });
 
   // ---- auth
   handle("auth:state", () => session.auth);
