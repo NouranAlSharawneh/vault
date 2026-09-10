@@ -13,7 +13,14 @@ import {
   VAULT_DIR,
 } from "@shared/constants";
 import { composeDoc, parseDoc, splitFrontmatter } from "@shared/frontmatter";
-import { countWords, inferTitle, projectSlug, slugify, unslug } from "@shared/helpers";
+import {
+  countWords,
+  inferTitle,
+  projectSlug,
+  rewriteAssetRefs,
+  slugify,
+  unslug,
+} from "@shared/helpers";
 import type {
   CommitInfo,
   ConflictChoice,
@@ -31,6 +38,7 @@ import type {
   TrashedDoc,
   VaultConfig,
 } from "@shared/types";
+import { importAssets } from "../assets";
 import { GitService } from "../git/git.service";
 import { IndexerService } from "../indexer/indexer.service";
 import type { TokenProvider } from "./vault.types";
@@ -163,7 +171,15 @@ export class VaultService extends EventEmitter {
     const isNew = !req.existingPath;
     const moved = !!req.existingPath && req.existingPath !== target;
     if (moved) await this.git.mv(req.existingPath!, target);
-    await fs.writeFile(abs, composeDoc(fm, req.body, extra));
+
+    let body = req.body;
+    let assets: string[] = [];
+    if (req.assets?.refs.length) {
+      const imported = await importAssets(this.root, dirname(target), req.assets);
+      body = rewriteAssetRefs(body, imported.map);
+      assets = imported.paths;
+    }
+    await fs.writeFile(abs, composeDoc(fm, body, extra));
 
     const meta = (await this.index.refreshFile(target))!;
     if (moved) this.index.remove(req.existingPath!);
@@ -175,14 +191,14 @@ export class VaultService extends EventEmitter {
         : moved
           ? `move: ${fm.title}`
           : `update: ${fm.title}`;
-      await this.git.commitPaths([target], message);
+      await this.git.commitPaths([target, ...assets], message);
       await this.writeReadme();
       await this.git.commitPaths([README_FILE], message, { amend: true });
       committed = true;
       this.schedulePush();
     }
     this.emit("index", this.index.snapshot());
-    return { path: target, meta, committed };
+    return { path: target, meta, committed, assets };
   }
 
   async setStarred(relPath: string, starred: boolean): Promise<DocMeta> {

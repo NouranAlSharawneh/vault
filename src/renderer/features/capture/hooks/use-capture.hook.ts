@@ -2,7 +2,8 @@ import { useCallback, useEffect, useState } from "react";
 import { inferTitle } from "@shared/helpers";
 import type { ClipboardCapture } from "@shared/types";
 import { CAPTURE_SAVED_FLASH_MS } from "@/constants";
-import { errorMessage } from "@/helpers";
+import { useAssetPlan } from "@/components/asset-panel";
+import { errorMessage, parentDir } from "@/helpers";
 import { api, on } from "@/lib/api";
 import { useApp } from "@/stores/app";
 import type { CaptureForm, CaptureState } from "../capture.types";
@@ -47,6 +48,11 @@ export function useCapture() {
 
   const title =
     state.clip?.detectedTitle ?? (state.clip ? (inferTitle(state.clip.text) ?? "Untitled") : "");
+  const assets = useAssetPlan({
+    body: state.clip?.text ?? "",
+    project: state.form.project,
+    sourceDir: state.clip?.sourcePath ? parentDir(state.clip.sourcePath) : null,
+  });
 
   useEffect(() => {
     if (!state.clip) return;
@@ -73,13 +79,14 @@ export function useCapture() {
           source: state.form.source,
         },
         commit: true,
+        assets: assets.request,
       });
       setState((s) => ({ ...s, phase: "saved", savedPath: res.path }));
       setTimeout(hide, CAPTURE_SAVED_FLASH_MS);
     } catch (e) {
       setState((s) => ({ ...s, phase: "error", error: errorMessage(e) }));
     }
-  }, [state.clip, state.phase, state.form, title, hide]);
+  }, [state.clip, state.phase, state.form, title, hide, assets.request]);
 
   const openInEditor = useCallback(() => {
     if (!state.clip?.text.trim()) {
@@ -88,6 +95,7 @@ export function useCapture() {
     }
     void api("capture:openEditor", {
       body: state.clip.text,
+      sourcePath: state.clip.sourcePath,
       frontmatter: {
         title,
         project: state.form.project,
@@ -102,6 +110,7 @@ export function useCapture() {
   return {
     ...state,
     title,
+    assets,
     projects: index?.projects.filter((p) => p.slug !== "_inbox").map((p) => p.name) ?? [],
     tags: index?.tags.map((t) => t.tag) ?? [],
     lastProject: config?.lastProject ?? null,

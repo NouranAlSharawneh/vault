@@ -17,6 +17,8 @@ export interface DraftState {
   created: string | null;
   /** True once the user typed anything since the last save/load. */
   dirty: boolean;
+  /** Where the draft text came from on disk, if anywhere (relative images resolve there). */
+  sourcePath: string | null;
 }
 
 export type SaveMode = "local" | "commit";

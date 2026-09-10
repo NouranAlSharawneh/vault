@@ -22,6 +22,7 @@ import { getOAuthConfig } from "../../store/oauth-config";
 import { cancelWebFlow, runWebFlow } from "../../services/auth/web-flow.service";
 import { broadcast, hideCaptureWindow, openEditorWindow, openMainWindow } from "../../windows";
 import { registerHotkey } from "../hotkey/hotkey";
+import { resolveAssets } from "../../services/assets";
 import { session } from "../session/session";
 
 /** Typed `ipcMain.handle` that normalises errors so the renderer sees a plain message. */
@@ -192,6 +193,15 @@ export function registerIpcHandlers(): void {
   handle("search:query", (text) => session.vault?.search(text) ?? []);
 
   // ---- capture
+  handle("assets:resolve", (baseDir, refs) => resolveAssets(baseDir, refs));
+  handle("assets:chooseFolder", async (defaultPath) => {
+    const r = await dialog.showOpenDialog({
+      title: "Where are these images relative to?",
+      properties: ["openDirectory"],
+      defaultPath: defaultPath ?? join(homedir(), "Documents"),
+    });
+    return r.canceled ? null : r.filePaths[0];
+  });
   handle("capture:readClipboard", () => readClipboard());
   handle("capture:hide", () => hideCaptureWindow());
   handle("capture:openEditor", (draft) => {
