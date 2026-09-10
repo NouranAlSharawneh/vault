@@ -18,7 +18,7 @@ export default defineConfig({
     plugins: [react(), tailwindcss()],
     resolve: {
       alias: {
-        "@": resolve("src/renderer/src"),
+        "@": resolve("src/renderer"),
         "@shared": resolve("src/shared"),
       },
     },
