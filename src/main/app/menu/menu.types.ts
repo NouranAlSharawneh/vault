@@ -2,7 +2,12 @@ import type { IpcEvents } from "@shared/ipc";
 
 /** Actions a menu item can trigger; resolved to functions in `app/menu.ts`. */
 export type MenuAction =
-  "newDocument" | "capture" | "openMain" | "openOnGitHub" | { shortcut: IpcEvents["shortcut"] };
+  | "newDocument"
+  | "capture"
+  | "openMain"
+  | "openOnGitHub"
+  | "resetApp"
+  | { shortcut: IpcEvents["shortcut"] };
 
 export type MenuItemData =
   | { type: "separator" }

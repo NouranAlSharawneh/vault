@@ -6,7 +6,17 @@ import prettier from "eslint-config-prettier";
 import globals from "globals";
 
 export default tseslint.config(
-  { ignores: ["node_modules", "out", "release", "dist", ".sync", "tests/smoke/*.mjs"] },
+  {
+    ignores: [
+      "node_modules",
+      "out",
+      "release",
+      "dist",
+      ".sync",
+      "tests/smoke/*.mjs",
+      "scripts/*.mjs",
+    ],
+  },
   js.configs.recommended,
   ...tseslint.configs.recommended,
   {

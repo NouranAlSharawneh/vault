@@ -4,6 +4,7 @@ import { homedir } from "node:os";
 import { join } from "node:path";
 import { DEFAULT_BRANCH, DEFAULT_HOTKEY, DEFAULT_PUSH_DEBOUNCE_MS } from "@shared/constants";
 import type { InvokeChannel, IpcInvoke } from "@shared/ipc";
+import type { IpcHandler } from "./ipc.types";
 import type { VaultConfig } from "@shared/types";
 import { NetworkError } from "../../network/axios";
 import {
@@ -23,12 +24,8 @@ import { broadcast, hideCaptureWindow, openEditorWindow, openMainWindow } from "
 import { registerHotkey } from "../hotkey/hotkey";
 import { session } from "../session/session";
 
-type Handler<C extends InvokeChannel> = (
-  ...args: Parameters<IpcInvoke[C]>
-) => ReturnType<IpcInvoke[C]> | Promise<ReturnType<IpcInvoke[C]>>;
-
 /** Typed `ipcMain.handle` that normalises errors so the renderer sees a plain message. */
-function handle<C extends InvokeChannel>(channel: C, fn: Handler<C>): void {
+function handle<C extends InvokeChannel>(channel: C, fn: IpcHandler<C>): void {
   ipcMain.handle(channel, async (_event, ...args: unknown[]) => {
     try {
       return await fn(...(args as Parameters<IpcInvoke[C]>));

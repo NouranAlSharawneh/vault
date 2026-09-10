@@ -35,7 +35,7 @@ export async function startLoopbackServer(opts: LoopbackOptions): Promise<Loopba
     const authCode = url.searchParams.get("code");
     let ok = false;
     let detail: string | undefined;
-    if (error) detail = url.searchParams.get("error_description") ?? error;
+    if (error) detail = error;
     else if (state !== opts.state) detail = "state mismatch";
     else if (!authCode) detail = "missing code";
     else ok = true;
