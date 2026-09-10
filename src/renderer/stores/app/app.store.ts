@@ -17,9 +17,9 @@ export const useApp = create<AppState>((set) => ({
 
   boot: async () => {
     const [auth, config, platform] = await Promise.all([
-      api("auth:state"),
-      api("vault:config"),
-      api("app:platform"),
+      api("auth:state").catch(() => ({ status: "signed-out", user: null, method: null }) as const),
+      api("vault:config").catch(() => null),
+      api("app:platform").catch(() => "darwin"),
     ]);
     let index: IndexSnapshot | null = null;
     let sync: SyncStatus | null = null;

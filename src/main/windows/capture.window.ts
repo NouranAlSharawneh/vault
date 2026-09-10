@@ -20,8 +20,9 @@ export function getCaptureWindow(): BrowserWindow {
     hasShadow: true,
     transparent: IS_MAC,
     backgroundColor: IS_MAC ? "#00000000" : OVERLAY_BG,
-    vibrancy: IS_MAC ? "hud" : undefined,
-    visualEffectState: "active",
+    // No `vibrancy` here on purpose: macOS refuses to composite it with a transparent
+    // window and paints an opaque light panel instead — the sheet arrives as a white
+    // box. The panel does its own blur in CSS (`backdrop-blur-xl`).
     fullscreenable: false,
   });
   captureWin.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });

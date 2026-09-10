@@ -9,6 +9,7 @@ export function CaptureFooter({
   error,
   savedPath,
   hasRemote,
+  stranded,
   onOpenEditor,
   onSave,
   onRetry,
@@ -45,7 +46,8 @@ export function CaptureFooter({
             disabled={phase !== "ready"}
             onClick={onSave}
           >
-            {hasRemote ? "Save & commit" : "Save"} <Kbd dark>{MOD_KEY}↵</Kbd>
+            {stranded > 0 ? "Save anyway" : hasRemote ? "Save & commit" : "Save"}{" "}
+            <Kbd dark>{MOD_KEY}↵</Kbd>
           </Button>
         </>
       )}

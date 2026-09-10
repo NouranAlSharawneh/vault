@@ -154,10 +154,12 @@ Repo layout: `README.md` (generated index), `<project-slug>/<title-slug>.md`, `_
 ## 10. M5 scope
 
 - **History drawer** (`git log --follow` per doc, diff view, restore), **conflict sheet** (mine / theirs / both), **saved searches** (`.vault/views.yml`), **templates**, project rename, **delete** (reader toolbar + palette + `⌘⌫`: `git mv` into `.trash/`, commit `delete: <title>`, undo from the trash view, purge from Settings — `vault:delete` already exists in main, this is the UI), **Settings** (hotkey, push debounce, vault folder).
-- **Asset capture.** The clipboard carries text only, so relative images in a captured doc (`![…](docs/hero.gif)`) can't resolve on their own. Two inputs, one core:
-  1. Text capture that references relative images: the sheet shows "N images referenced — choose the folder they're relative to", remembers the folder per source project, and on save copies the files into `<project>/assets/`, rewrites the links, and commits doc + assets in one commit.
-  2. A `.md` file copied in Finder or dropped onto the sheet (`public.file-url`): the path is known, so images next to it resolve with no prompt.
-  - Guardrails: warn before committing any asset over 10 MB (GitHub refuses >100 MB; git never forgets); remote `https:` images are left as links by default (vendoring is opt-in).
+- **Asset capture.** The clipboard carries text only, so relative images in a captured doc (`![…](docs/hero.gif)`) can't resolve on their own. Three ways the folder is known, in order:
+  1. A `.md` file copied in Finder or dropped onto the sheet (`public.file-url`): the path came with it, so images next to it resolve with no prompt.
+  2. The folder remembered for that project from a previous capture (`assetDirs`, per project slug, this machine only).
+  3. Neither — the usual case for text pasted out of a README. Main then works it out itself: `mdfind -name <basename>` for each ref, keeping only hits whose path ends with the _whole_ ref (`docs/hero.gif`, not just `hero.gif`), then a shallow, time-boxed walk of known and usual code folders when Spotlight is off or excludes the file. Every candidate is verified by opening the files, and scored by how many refs it holds, so a folder with all three beats one with a single stray match. Nothing is guessed: no verified folder means no folder.
+  - On save the files are copied into `<project>/assets/`, the links are rewritten, and doc + assets go in one commit.
+  - Guardrails: warn before committing any asset over 10 MB (GitHub refuses >100 MB; git never forgets); remote `https:` images are left as links by default (vendoring is opt-in). Anything that won't be copied — never located, or skipped by hand — is called out in the sheet before the save, and the button reads "Save anyway", because the doc keeps the original relative link either way and a link with nothing behind it renders as a broken image.
 
 ## 11. Risks & how they're handled
 
