@@ -1,6 +1,6 @@
 import { FM_CLOSE, FM_OPEN } from "../constants";
 
-/** Byte offset where the body starts, so a streaming reader can stop early. Null when no block. */
+/** Offset where the body starts for a classic head block, so a reader can skip it. Null when none. */
 export function frontmatterEndOffset(head: string): number | null {
   const open = FM_OPEN.exec(head);
   if (!open) return null;

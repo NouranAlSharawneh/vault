@@ -2,6 +2,9 @@
 export const IS_MAC = navigator.platform.toLowerCase().includes("mac");
 export const MOD_KEY = IS_MAC ? "⌘" : "Ctrl";
 export const ALT_KEY = IS_MAC ? "⌥" : "Alt";
+export const CTRL_KEY = IS_MAC ? "⌃" : "Ctrl";
+/** Human label for `DEFAULT_HOTKEY` (Control+Alt+V). */
+export const CAPTURE_HOTKEY_LABEL = IS_MAC ? "⌃⌥V" : "Ctrl+Alt+V";
 export const DONE_SCREEN_DELAY_MS = 700;
 export const COPIED_FEEDBACK_MS = 1200;
 export const REPO_LIST_LIMIT = 50;

@@ -17,7 +17,7 @@ const EMPTY: CaptureState = {
 };
 
 /**
- * The ⌥Space sheet: main pushes `capture:shown` with the analysed clipboard each
+ * The ⌃⌥V sheet: main pushes `capture:shown` with the analysed clipboard each
  * time the window appears; project/source are pre-filled from last use + detection.
  */
 export function useCapture() {

@@ -15,9 +15,18 @@ for (let i = 0; i < 800; i++) {
   mkdirSync(join(root, slug), { recursive: true });
   writeFileSync(
     join(root, slug, `doc-${i}.md`),
-    `---\ntitle: Doc ${i}\nproject: ${project}\ntags: [spec${i % 2 ? ", infra" : ""}]\ncreated: 2026-0${1 + (i % 9)}-0${1 + (i % 9)}T10:00:00Z\nsource: claude\n---\n\n# Doc ${i}\n\nBody of document ${i} about ${project}.\n`,
+    `# Doc ${i}\n\nBody of document ${i} about ${project}.\n\n---\n\n\`\`\`yaml\ntitle: Doc ${i}\nproject: ${project}\ntags: [spec${i % 2 ? ", infra" : ""}]\ncreated: 2026-0${1 + (i % 9)}-0${1 + (i % 9)}T10:00:00Z\nsource: claude\n\`\`\`\n`,
   );
 }
+// One doc embeds a repo-relative image, served back through vault://asset.
+const PNG_1x1 =
+  "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==";
+mkdirSync(join(root, "research-log", "assets"), { recursive: true });
+writeFileSync(join(root, "research-log", "assets", "hero.png"), Buffer.from(PNG_1x1, "base64"));
+writeFileSync(
+  join(root, "research-log", "with-image.md"),
+  "# With image\n\n![hero](assets/hero.png)\n\n---\n\n```yaml\ntitle: With image\nproject: Research log\ntags: [spec]\ncreated: 2026-01-01T10:00:00Z\nsource: manual\n```\n",
+);
 const { execSync: sh } = await import("node:child_process");
 sh(
   "git init -q -b main && git add -A && git -c user.name=smoke -c user.email=smoke@test commit -qm seed",
@@ -127,7 +136,19 @@ await win.click('button[aria-label="toggle sidebar"]');
 await win.waitForTimeout(300);
 await win.screenshot({ path: join(out, "smoke-10-hidden.png") });
 await win.click('button[aria-label="toggle sidebar"]');
-// ---- M4: the ⌥Space sheet, driven through main (xvfb has no global hotkey)
+// ---- images referenced from a doc load through vault://asset
+await win.keyboard.press("Control+K");
+await win.waitForSelector('input[aria-label="search"]');
+await win.keyboard.type("with image");
+await win.waitForSelector('[role="dialog"] >> text=With image', { timeout: 5000 });
+await win.waitForTimeout(200);
+await win.keyboard.press("Enter");
+await win.waitForSelector('[role="dialog"]', { state: "detached" });
+await win.click('button:has-text("Preview")');
+const img = await win.waitForSelector(".prose-doc img", { timeout: 5000 });
+await win.waitForFunction((el) => el.complete && el.naturalWidth > 0, img, { timeout: 5000 });
+console.log("image src:", await img.getAttribute("src"));
+// ---- M4: the ⌃⌥V sheet, driven through main (xvfb has no global hotkey)
 await app.evaluate(async ({ clipboard }) => {
   await clipboard.writeText(
     "# Edge POP inventory\n\nRegion, capacity and provider for each point of presence.\n\n- fra1\n- ams2\n",

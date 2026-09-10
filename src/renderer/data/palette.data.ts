@@ -1,3 +1,4 @@
+import { CAPTURE_HOTKEY_LABEL } from "@/constants";
 import { QUERY_OPERATORS } from "@shared/constants";
 
 export type PaletteActionKey = "newFromClipboard" | "newDocument" | "pushPending" | "rescan";
@@ -11,7 +12,7 @@ export interface PaletteActionData {
 }
 
 export const PALETTE_ACTIONS: PaletteActionData[] = [
-  { key: "newFromClipboard", label: "New doc from clipboard", shortcut: "⌥Space" },
+  { key: "newFromClipboard", label: "New doc from clipboard", shortcut: CAPTURE_HOTKEY_LABEL },
   { key: "newDocument", label: "New document", shortcut: "⌘N" },
   { key: "pushPending", label: "Push pending docs", needsPending: true },
   { key: "rescan", label: "Rescan vault folder" },

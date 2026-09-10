@@ -48,14 +48,18 @@ export function DocumentReader({ doc, view, onView, onStar }: DocumentReaderProp
               }
               right={
                 <div className="min-h-0 flex-1 overflow-y-auto px-8 py-4 pb-16">
-                  <Markdown source={doc.body} />
+                  <Markdown source={doc.body} docPath={meta.path} />
                 </div>
               }
             />
           ) : (
             <div className="min-h-0 flex-1 overflow-y-auto px-12 pt-4 pb-16">
               <article className="mx-auto max-w-170">
-                {view === "markdown" ? <Raw body={doc.body} /> : <Markdown source={doc.body} />}
+                {view === "markdown" ? (
+                  <Raw body={doc.body} />
+                ) : (
+                  <Markdown source={doc.body} docPath={meta.path} />
+                )}
               </article>
             </div>
           )}
