@@ -1,7 +1,8 @@
 import { net, protocol } from "electron";
+import { existsSync } from "node:fs";
 import { join, resolve, sep } from "node:path";
 import { pathToFileURL } from "node:url";
-import { ASSET_HOST, ASSET_MIME, ASSET_SCHEME } from "@shared/constants";
+import { ASSET_HOST, ASSET_MIME, ASSET_SCHEME, TRASH_DIR } from "@shared/constants";
 import { session } from "../session/session";
 
 /** Must run before `app.whenReady()` — the scheme needs to look like https to the renderer. */
@@ -27,8 +28,20 @@ export function registerAssetProtocol(): void {
     if (!inside || !mime || rel.split("/").includes(".git")) {
       return new Response(null, { status: 403 });
     }
-    const file = await net.fetch(pathToFileURL(abs).href);
-    if (!file.ok) return new Response(null, { status: 404 });
-    return new Response(file.body, { headers: { "Content-Type": mime } });
+    // A trashed doc still points at `assets/…` next to where it used to live.
+    const candidates = [abs];
+    if (rel.startsWith(`${TRASH_DIR}/`)) {
+      candidates.push(join(root, rel.slice(TRASH_DIR.length + 1)));
+    }
+    for (const path of candidates) {
+      if (!existsSync(path)) continue;
+      try {
+        const file = await net.fetch(pathToFileURL(path).href);
+        if (file.ok) return new Response(file.body, { headers: { "Content-Type": mime } });
+      } catch {
+        /* unreadable — fall through to 404 */
+      }
+    }
+    return new Response(null, { status: 404 });
   });
 }
