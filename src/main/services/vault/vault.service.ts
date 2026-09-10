@@ -39,6 +39,7 @@ import type {
   VaultConfig,
 } from "@shared/types";
 import { importAssets } from "../assets";
+import { classifyPushError } from "./classify-push-error";
 import { GitService } from "../git/git.service";
 import { IndexerService } from "../indexer/indexer.service";
 import type { TokenProvider } from "./vault.types";
@@ -49,7 +50,7 @@ const ADR_TEMPLATE =
 /**
  * Everything that touches the vault folder: save, trash, rename, history,
  * views, templates, and the commit → debounced push pipeline.
- * Emits `index`, `progress`, `sync`, `auth-expired`.
+ * Emits `index`, `progress`, `sync`, `auth-ok`, `auth-suspect`.
  */
 export class VaultService extends EventEmitter {
   readonly git: GitService;
@@ -536,16 +537,17 @@ export class VaultService extends EventEmitter {
         await this.git.push();
       }
       this.retryDelay = PUSH_RETRY_MIN_MS;
+      this.emit("auth-ok");
       this.setSync({ state: "synced", lastPushAt: Date.now(), ahead: 0 });
       await this.index.markUnpushed(new Set());
       await this.refreshSyncStatus();
     } catch (e) {
       const msg = redact(String((e as Error).message ?? e), this.tokenProvider());
-      const offline = /could not resolve|network|timed out|unable to access|connection/i.test(msg);
-      const auth = /401|403|authentication|permission/i.test(msg);
-      this.setSync({ state: auth ? "error" : offline ? "offline" : "error", lastError: msg });
-      if (auth) this.emit("auth-expired");
-      else {
+      const failure = classifyPushError(msg);
+      this.setSync({ state: failure === "offline" ? "offline" : "error", lastError: msg });
+      if (failure === "bad-credentials" || failure === "no-permission") {
+        this.emit("auth-suspect");
+      } else {
         // back off and retry; the commit is safe on disk
         this.pushTimer = setTimeout(() => void this.pushNow(), this.retryDelay);
         this.retryDelay = Math.min(this.retryDelay * 2, PUSH_RETRY_MAX_MS);

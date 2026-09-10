@@ -1,6 +1,8 @@
 import type { DevicePollStatus } from "@shared/types";
 import { OAUTH_DEVICE_GRANT } from "@shared/constants";
 import { githubOAuth, NetworkError } from "../axios";
+import { toCredentials } from "./token-grant";
+import type { StoredCredentials } from "../../store/token.store.types";
 import type { RawDeviceToken } from "./github.types";
 
 const sleep = (s: number) => new Promise((r) => setTimeout(r, s * 1000));
@@ -15,7 +17,7 @@ export async function pollDeviceFlow(
   intervalSec: number,
   signal: AbortSignal,
   onStatus: (s: DevicePollStatus) => void,
-): Promise<string> {
+): Promise<StoredCredentials> {
   let interval = intervalSec;
   while (!signal.aborted) {
     await sleep(interval);
@@ -27,7 +29,7 @@ export async function pollDeviceFlow(
     });
     if (data.access_token) {
       onStatus("ok");
-      return data.access_token;
+      return toCredentials(data);
     }
     switch (data.error) {
       case "authorization_pending":

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { countWords } from "@shared/helpers";
 import { AssetPanel, useAssetPlan } from "@/components/asset-panel";
+import { AuthExpiredBanner } from "@/components/auth-expired-banner/auth-expired-banner.component";
 import { Markdown } from "@/components/markdown";
 import { SyncBadge } from "@/components/sync-badge/sync-badge.component";
 import { SectionLabel, SplitPane } from "@/components/ui";
@@ -56,6 +57,7 @@ export function Editor() {
           <SyncBadge />
         </div>
       </div>
+      <AuthExpiredBanner />
       <SplitPane
         className="flex-1"
         storageKey="editor-split"

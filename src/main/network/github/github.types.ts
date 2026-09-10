@@ -29,8 +29,19 @@ export interface RawDeviceCode {
 
 export interface RawDeviceToken {
   access_token?: string;
+  /** Only sent when the app issues expiring tokens; without it renewal is impossible. */
+  refresh_token?: string;
+  /** Seconds until `access_token` stops working. */
+  expires_in?: number;
+  refresh_token_expires_in?: number;
   error?: string;
   interval?: number;
+}
+
+export interface RefreshParams {
+  clientId: string;
+  clientSecret: string;
+  refreshToken: string;
 }
 
 export interface AuthorizeParams {

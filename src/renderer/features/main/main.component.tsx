@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { AuthExpiredBanner } from "@/components/auth-expired-banner/auth-expired-banner.component";
 import { Button, Empty, SplitPane, Toast } from "@/components/ui";
 import { cx } from "@/helpers";
 import { api, on } from "@/lib/api";
@@ -121,6 +122,7 @@ export function Main() {
   return (
     <div className="relative flex h-full flex-col bg-paper-2">
       <TopBar sidebar={sidebar.state} onToggleSidebar={sidebar.cycle} onSearch={openPalette} />
+      <AuthExpiredBanner />
       <div className="flex min-h-0 flex-1">
         {sidebar.state === "rail" && (
           <SidebarRail

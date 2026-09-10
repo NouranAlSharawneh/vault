@@ -16,7 +16,7 @@ export function Settings() {
       <Empty
         title="No vault connected"
         action={
-          <Button variant="primary" onClick={() => (window.location.hash = "onboarding")}>
+          <Button variant="primary" onClick={() => (window.location.hash = "onboarding?signin")}>
             Set up Vault
           </Button>
         }
