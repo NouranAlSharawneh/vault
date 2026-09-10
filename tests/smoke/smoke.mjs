@@ -2,7 +2,7 @@
 // local onboarding path against a generated 800-doc vault, screenshot each step.
 //   xvfb-run -a node scripts/smoke.mjs
 import { _electron as electron } from "playwright";
-import { mkdtempSync, mkdirSync, writeFileSync } from "node:fs";
+import { existsSync, mkdtempSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -185,5 +185,97 @@ await sheet.screenshot({ path: join(out, "smoke-12-capture-saved.png") });
 const log2 = execSync("git log --oneline -1", { cwd: root }).toString().trim();
 console.log("capture commit:", log2);
 if (!log2.includes("add: Edge POP inventory")) throw new Error("capture commit not found: " + log2);
+// ---- M5: asset capture through the capture sheet (a source folder with the image)
+const srcDir = join(home, "concorde");
+mkdirSync(join(srcDir, "docs"), { recursive: true });
+writeFileSync(
+  join(srcDir, "docs", "hero-flyin.gif"),
+  Buffer.from("R0lGODlhAQABAAAAACw=", "base64"),
+);
+await app.evaluate(async ({ clipboard }) => {
+  await clipboard.writeText(
+    "# Concorde\n\nA flight through history.\n\n![hero](docs/hero-flyin.gif)\n",
+  );
+});
+await app.evaluate(
+  async ({ BrowserWindow, clipboard }, sourcePath) => {
+    const w = BrowserWindow.getAllWindows().find((x) =>
+      x.webContents.getURL().includes("#capture"),
+    );
+    w.show();
+    w.webContents.send("capture:shown", {
+      text: await clipboard.readText(),
+      words: 8,
+      lines: 5,
+      looksLikeMarkdown: true,
+      detectedSource: "manual",
+      detectedTitle: "Concorde",
+      sourcePath,
+    });
+  },
+  join(srcDir, "README.md"),
+);
+await sheet.waitForSelector('[data-testid="asset-panel"] >> text=1 image referenced');
+await sheet.waitForSelector('[data-testid="asset-panel"] >> text=1 found');
+await sheet.waitForTimeout(300);
+await sheet.screenshot({ path: join(out, "smoke-13-capture-assets.png") });
+await sheet.keyboard.press("Control+Enter");
+await sheet.waitForSelector("text=committed", { timeout: 15000 });
+const concorde = readFileSync(join(root, "_inbox", "concorde.md"), "utf8");
+if (!concorde.includes("![hero](assets/hero-flyin.gif)"))
+  throw new Error("asset link not rewritten:\n" + concorde);
+if (!existsSync(join(root, "_inbox", "assets", "hero-flyin.gif")))
+  throw new Error("asset not copied");
+const assetCommit = execSync("git show --stat --format=%s HEAD", { cwd: root }).toString();
+if (!assetCommit.includes("_inbox/assets/hero-flyin.gif"))
+  throw new Error("asset not in commit:\n" + assetCommit);
+console.log("asset commit:", assetCommit.split("\n")[0]);
+
+// ---- M5: trash with undo, trash view, settings
+await win.bringToFront();
+await win.keyboard.press("Control+K");
+await win.waitForSelector('input[aria-label="search"]');
+await win.keyboard.type("concorde");
+await win.waitForSelector('[role="dialog"] >> text=Concorde', { timeout: 5000 });
+await win.waitForTimeout(200);
+await win.keyboard.press("Enter");
+await win.waitForSelector('[role="dialog"]', { state: "detached" });
+await win.waitForSelector(".prose-doc img");
+await win.click('button[aria-label="move to trash"]');
+await win.waitForSelector("text=Moved “Concorde” to trash", { timeout: 10000 });
+await win.waitForTimeout(300);
+await win.screenshot({ path: join(out, "smoke-14-trashed.png") });
+if (existsSync(join(root, "_inbox", "concorde.md")))
+  throw new Error("doc still in place after trash");
+await win.click('[role="status"] >> text=Undo');
+await win.waitForSelector("text=Concorde >> nth=0", { timeout: 10000 });
+await win.waitForTimeout(500);
+if (!existsSync(join(root, "_inbox", "concorde.md")))
+  throw new Error("undo did not restore the doc");
+await win.keyboard.press("Control+Backspace");
+await win.waitForSelector("text=Moved “Concorde” to trash", { timeout: 10000 });
+await win.click('button[aria-label="dismiss"]');
+await win.click("text=Trash");
+await win.waitForSelector("text=Deleted documents wait here", { timeout: 5000 }).catch(() => null);
+await win.click("text=Concorde >> nth=0");
+await win.waitForSelector('button:has-text("Restore")');
+await win.waitForTimeout(300);
+await win.screenshot({ path: join(out, "smoke-15-trash-view.png") });
+await win.click('button:has-text("Delete forever")');
+await win.waitForSelector("text=Deleted “Concorde” forever", { timeout: 10000 });
+const purge = execSync("git log --oneline -1", { cwd: root }).toString().trim();
+if (!purge.includes("purge: Concorde")) throw new Error("purge commit not found: " + purge);
+await win.keyboard.press("Control+,");
+await win.waitForSelector("text=Back to vault");
+await win.waitForSelector('button[aria-label="capture shortcut"]');
+await win.click('button[aria-label="capture shortcut"]');
+await win.keyboard.press("Control+Alt+J");
+await win.waitForSelector("kbd:has-text('J')", { timeout: 5000 });
+await win.waitForTimeout(400);
+await win.screenshot({ path: join(out, "smoke-16-settings.png") });
+const cfg = JSON.parse(readFileSync(join(home, ".config", "vault", "config.json"), "utf8"));
+if (cfg.vault.hotkey !== "Control+Alt+J") throw new Error("hotkey not saved: " + cfg.vault.hotkey);
+await win.click("text=Back to vault");
+await win.waitForSelector("text=All documents");
 console.log("errors:", errors.length ? errors : "none");
 await app.close();
