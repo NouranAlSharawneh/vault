@@ -8,7 +8,11 @@ import { useApp } from "@/stores/app";
 import type { PaletteGroup, PaletteItem } from "../command-palette.types";
 
 /** Query → grouped results (documents · in text · actions) with keyboard navigation. */
-export function useCommandPalette(onOpenDoc: (path: string) => void, onClose: () => void) {
+export function useCommandPalette(
+  onOpenDoc: (path: string) => void,
+  onClose: () => void,
+  onTrashDoc?: () => void,
+) {
   const index = useApp((s) => s.index);
   const sync = useApp((s) => s.sync);
   const [query, setQuery] = useState("");
@@ -69,7 +73,7 @@ export function useCommandPalette(onOpenDoc: (path: string) => void, onClose: ()
 
     const pending = sync?.ahead ?? 0;
     const actions: PaletteItem[] = PALETTE_ACTIONS.filter(
-      (a) => !a.needsPending || pending > 0,
+      (a) => (!a.needsPending || pending > 0) && (!a.needsDoc || !!onTrashDoc),
     ).map((a) => ({
       kind: "action",
       key: a.key,
@@ -85,7 +89,7 @@ export function useCommandPalette(onOpenDoc: (path: string) => void, onClose: ()
       : actions;
     if (visibleActions.length) out.push({ title: "Actions", items: visibleActions });
     return out;
-  }, [index, liveHits, query, sync?.ahead]);
+  }, [index, liveHits, query, sync?.ahead, onTrashDoc]);
 
   const flat = useMemo(() => groups.flatMap((g) => g.items), [groups]);
   const active = flat[Math.min(cursor, Math.max(0, flat.length - 1))] ?? null;
@@ -95,24 +99,33 @@ export function useCommandPalette(onOpenDoc: (path: string) => void, onClose: ()
     setCursor(0);
   }, []);
 
-  const runAction = useCallback((key: PaletteActionKey) => {
-    switch (key) {
-      case "newFromClipboard":
-        void api("capture:readClipboard").then((c) =>
-          api("capture:openEditor", { body: c.text, frontmatter: { source: c.detectedSource } }),
-        );
-        break;
-      case "newDocument":
-        void api("window:openEditor");
-        break;
-      case "pushPending":
-        void api("sync:pushNow");
-        break;
-      case "rescan":
-        void api("vault:rescan");
-        break;
-    }
-  }, []);
+  const runAction = useCallback(
+    (key: PaletteActionKey) => {
+      switch (key) {
+        case "trashDoc":
+          onTrashDoc?.();
+          break;
+        case "settings":
+          window.location.hash = "settings";
+          break;
+        case "newFromClipboard":
+          void api("capture:readClipboard").then((c) =>
+            api("capture:openEditor", { body: c.text, frontmatter: { source: c.detectedSource } }),
+          );
+          break;
+        case "newDocument":
+          void api("window:openEditor");
+          break;
+        case "pushPending":
+          void api("sync:pushNow");
+          break;
+        case "rescan":
+          void api("vault:rescan");
+          break;
+      }
+    },
+    [onTrashDoc],
+  );
 
   const choose = useCallback(
     (item: PaletteItem | null) => {

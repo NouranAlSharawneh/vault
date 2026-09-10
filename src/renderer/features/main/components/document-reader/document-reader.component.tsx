@@ -1,4 +1,4 @@
-import { INBOX_COLOR, INBOX_SLUG } from "@shared/constants";
+import { INBOX_COLOR, INBOX_SLUG, TRASH_DIR } from "@shared/constants";
 import { projectColor, relativeTime } from "@shared/helpers";
 import { Markdown } from "@/components/markdown";
 import { Dot, Empty, SplitPane } from "@/components/ui";
@@ -16,11 +16,29 @@ function Raw({ body }: { body: string }) {
 }
 
 /** Rendered document with Preview / Markdown / Split views and a metadata strip. */
-export function DocumentReader({ doc, view, onView, onStar }: DocumentReaderProps) {
+export function DocumentReader({
+  doc,
+  view,
+  onView,
+  onStar,
+  onTrash,
+  trashed,
+  onRestore,
+  onPurge,
+}: DocumentReaderProps) {
   const meta = doc?.meta ?? null;
   return (
     <main className="flex h-full min-w-0 flex-col">
-      <ReaderToolbar doc={meta} view={view} onView={onView} onStar={onStar} />
+      <ReaderToolbar
+        doc={meta}
+        view={view}
+        onView={onView}
+        onStar={onStar}
+        onTrash={onTrash}
+        trashed={trashed}
+        onRestore={onRestore}
+        onPurge={onPurge}
+      />
       {doc && meta ? (
         <>
           <div className="flex items-center gap-2 px-12 pt-4 pb-6 text-xs text-ink-3">
@@ -64,7 +82,8 @@ export function DocumentReader({ doc, view, onView, onStar }: DocumentReaderProp
             </div>
           )}
           <div className="flex h-7 shrink-0 items-center justify-between border-t border-line px-4 font-mono text-2xs text-ink-4">
-            <span>{meta.path}</span>
+            <span>{trashed ? meta.path.slice(TRASH_DIR.length + 1) : meta.path}</span>
+            {trashed && <span className="text-ink-3">in trash</span>}
             {meta.unpushed && <span className="text-warn">not pushed yet</span>}
           </div>
         </>

@@ -164,6 +164,10 @@ export function registerIpcHandlers(): void {
     return res;
   });
   handle("doc:trash", (p) => session.requireVault().trash(p));
+  handle("trash:list", () => session.requireVault().listTrash());
+  handle("trash:read", (p) => session.requireVault().readTrashed(p));
+  handle("trash:restore", (p) => session.requireVault().restoreFromTrash(p));
+  handle("trash:purge", (p) => session.requireVault().purgeTrash(p));
   handle("doc:setStarred", (p, starred) => session.requireVault().setStarred(p, starred));
   handle("doc:history", (p) => session.requireVault().history(p));
   handle("doc:atCommit", (p, sha) => session.requireVault().atCommit(p, sha));

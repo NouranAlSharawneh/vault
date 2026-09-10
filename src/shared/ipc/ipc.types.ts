@@ -20,6 +20,7 @@ import type {
   SearchHit,
   SyncStatus,
   Template,
+  TrashedDoc,
   VaultConfig,
   WebFlowStatus,
 } from "../types";
@@ -55,12 +56,18 @@ export interface IpcInvoke {
 
   "doc:read": (path: string) => DocContent;
   "doc:save": (req: SaveRequest) => SaveResult;
-  "doc:trash": (path: string) => void;
+  "doc:trash": (path: string) => TrashedDoc;
   "doc:setStarred": (path: string, starred: boolean) => DocMeta;
   "doc:history": (path: string) => CommitInfo[];
   "doc:atCommit": (path: string, sha: string) => string;
   "doc:restore": (path: string, sha: string) => SaveResult;
   "doc:pathPreview": (project: string, title: string) => string;
+
+  "trash:list": () => TrashedDoc[];
+  "trash:read": (path: string) => DocContent;
+  "trash:restore": (path: string) => SaveResult;
+  /** One trashed doc, or the whole folder when no path is given. */
+  "trash:purge": (path?: string) => { removed: number };
 
   "project:rename": (from: string, to: string) => { moved: number };
   "project:list": () => string[];
@@ -98,7 +105,7 @@ export interface IpcEvents {
   "auth:webStatus": { status: WebFlowStatus; message?: string };
   "capture:shown": ClipboardCapture;
   "editor:open": { path?: string; draft?: EditorDraft };
-  shortcut: "search" | "new" | "toggleSidebar" | "history" | "save";
+  shortcut: "search" | "new" | "toggleSidebar" | "history" | "save" | "trash" | "settings";
   navigate: string;
 }
 

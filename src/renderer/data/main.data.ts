@@ -1,7 +1,8 @@
 import type { Collection, ReaderView, SortOrder } from "@/features/main/main.types";
 
+/** Rows at the top of the sidebar. Trash lives at the bottom and is handled on its own. */
 export interface CollectionData {
-  key: Collection;
+  key: Exclude<Collection, "trash">;
   label: string;
 }
 

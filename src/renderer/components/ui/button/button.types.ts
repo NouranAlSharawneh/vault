@@ -2,9 +2,10 @@ import type { ButtonHTMLAttributes } from "react";
 
 /**
  * default — quiet grey · primary — cherry fill · outline — bordered · ghost — icon-ish
- * link — inline cherry text · subtle — inline muted text
+ * link — inline cherry text · subtle — inline muted text · danger — bordered, cherry text
  */
-export type ButtonVariant = "default" | "primary" | "outline" | "ghost" | "link" | "subtle";
+export type ButtonVariant =
+  "default" | "primary" | "outline" | "ghost" | "link" | "subtle" | "danger";
 export type ButtonSize = "sm" | "md" | "lg";
 
 export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {

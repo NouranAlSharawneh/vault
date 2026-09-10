@@ -4,6 +4,8 @@ import type { PaletteActionKey } from "@/data/palette.data";
 export interface CommandPaletteProps {
   onClose: () => void;
   onOpenDoc: (path: string) => void;
+  /** Present while a doc is open in the reader; enables "Move document to trash". */
+  onTrashDoc?: () => void;
 }
 
 export type PaletteItem =

@@ -1,25 +1,38 @@
 import { useEffect, useMemo, useRef } from "react";
-import { ChevronRight, FileText, Pilcrow, Plus, RefreshCw, Upload } from "lucide-react";
+import {
+  ChevronRight,
+  FileText,
+  Pilcrow,
+  Plus,
+  RefreshCw,
+  Settings,
+  Trash2,
+  Upload,
+  type LucideIcon,
+} from "lucide-react";
+import type { PaletteActionKey } from "@/data/palette.data";
 import { relativeTime } from "@shared/helpers";
 import { Chip, Kbd, ListRow } from "@/components/ui";
 import { PALETTE_HINTS } from "@/data/palette.data";
 import { useCommandPalette } from "./hooks/use-command-palette.hook";
 import type { CommandPaletteProps, PaletteItem } from "./command-palette.types";
 
-const ACTION_ICONS = {
+const ACTION_ICONS: Record<PaletteActionKey, LucideIcon> = {
   newFromClipboard: Plus,
   newDocument: FileText,
+  trashDoc: Trash2,
   pushPending: Upload,
   rescan: RefreshCw,
-} as const;
+  settings: Settings,
+};
 
 function itemKey(item: PaletteItem): string {
   return item.kind === "action" ? `action:${item.key}` : `${item.kind}:${item.doc.path}`;
 }
 
 /** ⌘K — the primary navigation surface: grouped results with a live preview. */
-export function CommandPalette({ onClose, onOpenDoc }: CommandPaletteProps) {
-  const p = useCommandPalette(onOpenDoc, onClose);
+export function CommandPalette({ onClose, onOpenDoc, onTrashDoc }: CommandPaletteProps) {
+  const p = useCommandPalette(onOpenDoc, onClose, onTrashDoc);
   const input = useRef<HTMLInputElement>(null);
 
   useEffect(() => {

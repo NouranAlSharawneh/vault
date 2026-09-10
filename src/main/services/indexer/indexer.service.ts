@@ -331,6 +331,19 @@ export class IndexerService extends EventEmitter {
 
   /** Parse only the two ends of the file. Body indexing happens lazily. */
   private async parseFile(relPath: string): Promise<DocMeta | null> {
+    const meta = await this.readMeta(relPath);
+    if (!meta) return null;
+    if (this.docs.get(relPath)?.unpushed) meta.unpushed = true;
+    this.docs.set(relPath, meta);
+    this.upsertSearch(meta, this.bodies.get(relPath) ?? "");
+    return meta;
+  }
+
+  /**
+   * Metadata for any markdown file under the root without touching the index —
+   * used for `.trash/` listings, which the scanner deliberately skips.
+   */
+  async readMeta(relPath: string): Promise<DocMeta | null> {
     const abs = join(this.root, relPath);
     let st: Stats;
     try {
@@ -373,9 +386,6 @@ export class IndexerService extends EventEmitter {
         orphan: true,
       };
     }
-    if (this.docs.get(relPath)?.unpushed) meta.unpushed = true;
-    this.docs.set(relPath, meta);
-    this.upsertSearch(meta, this.bodies.get(relPath) ?? "");
     return meta;
   }
 

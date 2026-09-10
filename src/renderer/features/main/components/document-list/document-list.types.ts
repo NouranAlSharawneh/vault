@@ -11,4 +11,7 @@ export interface DocumentListProps {
   activeTags: string[];
   onRemoveTag: (t: string) => void;
   onClearTags: () => void;
+  sortable?: boolean;
+  /** Shown when the list is empty. */
+  emptyHint?: string;
 }
