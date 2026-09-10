@@ -1,5 +1,5 @@
 import { promises as fs, existsSync } from "node:fs";
-import { dirname, join } from "node:path";
+import { dirname, join, sep } from "node:path";
 import { EventEmitter } from "node:events";
 import { parse as parseYaml, stringify as stringifyYaml } from "yaml";
 import {
@@ -28,6 +28,7 @@ import type {
   SearchHit,
   SyncStatus,
   Template,
+  TrashedDoc,
   VaultConfig,
 } from "@shared/types";
 import { GitService } from "../git/git.service";
@@ -196,17 +197,96 @@ export class VaultService extends EventEmitter {
   }
 
   /** PRD Q5: move to `.trash/` (scanner skips it) rather than `git rm`. */
-  async trash(relPath: string): Promise<void> {
-    const dest = `${TRASH_DIR}/${relPath}`;
+  async trash(relPath: string): Promise<TrashedDoc> {
+    const dest = await this.uniquePath(`${TRASH_DIR}/${relPath}`);
     await fs.mkdir(dirname(join(this.root, dest)), { recursive: true });
-    const title = this.index.get(relPath)?.title ?? relPath;
+    const meta = this.index.get(relPath) ?? (await this.index.readMeta(relPath));
+    if (!meta) throw new Error(`Not a document: ${relPath}`);
     await this.git.mv(relPath, dest);
     this.index.remove(relPath);
-    await this.git.commitPaths([dest], `trash: ${title}`);
+    await this.git.commitPaths([dest], `trash: ${meta.title}`);
     await this.writeReadme();
     await this.git.commitPaths([README_FILE], "", { amend: true });
     this.schedulePush();
     this.emit("index", this.index.snapshot());
+    return {
+      meta: { ...meta, path: dest },
+      path: dest,
+      originalPath: relPath,
+      trashedAt: new Date().toISOString(),
+    };
+  }
+
+  // ---- trash --------------------------------------------------------------------
+
+  /** Everything under `.trash/`, newest first. Read from disk — the index skips it. */
+  async listTrash(): Promise<TrashedDoc[]> {
+    const dir = join(this.root, TRASH_DIR);
+    if (!existsSync(dir)) return [];
+    const files = await walkMarkdown(dir);
+    const out: TrashedDoc[] = [];
+    for (const abs of files) {
+      const path = abs
+        .slice(this.root.length + 1)
+        .split(sep)
+        .join("/");
+      const meta = await this.index.readMeta(path);
+      if (!meta) continue;
+      const originalPath = path.slice(TRASH_DIR.length + 1);
+      const [last] = await this.git.log(path, 1);
+      out.push({
+        meta: { ...meta, projectSlug: projectSlug(meta.project) || INBOX_SLUG },
+        path,
+        originalPath,
+        trashedAt: last?.date ?? new Date(meta.mtime).toISOString(),
+      });
+    }
+    return out.sort((a, b) => b.trashedAt.localeCompare(a.trashedAt));
+  }
+
+  async readTrashed(path: string): Promise<DocContent> {
+    assertInTrash(path);
+    const raw = await fs.readFile(join(this.root, path), "utf8");
+    const meta = await this.index.readMeta(path);
+    if (!meta) throw new Error(`Not a document: ${path}`);
+    return { meta, body: parseDoc(raw).body, raw };
+  }
+
+  /** Move a trashed doc back where it came from (a new `-2` name if that path is taken). */
+  async restoreFromTrash(path: string): Promise<SaveResult> {
+    assertInTrash(path);
+    const target = await this.uniquePath(path.slice(TRASH_DIR.length + 1));
+    await fs.mkdir(dirname(join(this.root, target)), { recursive: true });
+    await this.git.mv(path, target);
+    const meta = await this.index.refreshFile(target);
+    if (!meta) throw new Error(`Could not index ${target}`);
+    await this.git.commitPaths([target], `restore: ${meta.title}`);
+    await this.writeReadme();
+    await this.git.commitPaths([README_FILE], "", { amend: true });
+    this.schedulePush();
+    this.emit("index", this.index.snapshot());
+    return { path: target, meta, committed: true };
+  }
+
+  /** Delete one trashed doc — or the whole `.trash/` folder — for good, in one commit. */
+  async purgeTrash(path?: string): Promise<{ removed: number }> {
+    if (path) {
+      assertInTrash(path);
+      const meta = await this.index.readMeta(path);
+      if (!meta) return { removed: 0 };
+      await this.git.removeTree(path);
+      await fs.rm(join(this.root, path), { force: true });
+      await this.git.commitPaths([], `purge: ${meta.title}`);
+      this.schedulePush();
+      return { removed: 1 };
+    }
+    const removed = (await this.listTrash()).length;
+    if (!existsSync(join(this.root, TRASH_DIR))) return { removed: 0 };
+    await this.git.removeTree(TRASH_DIR);
+    await fs.rm(join(this.root, TRASH_DIR), { recursive: true, force: true });
+    await this.git.commitPaths([], `purge: trash (${removed} ${removed === 1 ? "doc" : "docs"})`);
+    this.schedulePush();
+    return { removed };
   }
 
   async history(relPath: string): Promise<CommitInfo[]> {
@@ -528,4 +608,20 @@ function pickFrontmatter(m: Frontmatter): Frontmatter {
 
 function redact(msg: string, token: string | null): string {
   return token ? msg.split(token).join("•••") : msg;
+}
+
+function assertInTrash(path: string): void {
+  if (!path.startsWith(`${TRASH_DIR}/`) || path.includes("..")) {
+    throw new Error(`Not a trashed document: ${path}`);
+  }
+}
+
+async function walkMarkdown(dir: string): Promise<string[]> {
+  const out: string[] = [];
+  for (const e of await fs.readdir(dir, { withFileTypes: true })) {
+    const abs = join(dir, e.name);
+    if (e.isDirectory()) out.push(...(await walkMarkdown(abs)));
+    else if (e.isFile() && e.name.endsWith(".md")) out.push(abs);
+  }
+  return out;
 }

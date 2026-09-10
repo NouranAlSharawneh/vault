@@ -15,13 +15,21 @@ export function DocumentList({
   activeTags,
   onRemoveTag,
   onClearTags,
+  sortable,
+  emptyHint = "No documents match this filter.",
 }: DocumentListProps) {
   return (
     <section className="flex h-full flex-col">
-      <ListHeader title={title} count={docs.length} sort={sort} onSort={onSort} />
+      <ListHeader
+        title={title}
+        count={docs.length}
+        sort={sort}
+        onSort={onSort}
+        sortable={sortable}
+      />
       <TagFilter tags={activeTags} onRemove={onRemoveTag} onClear={onClearTags} />
       <div className="flex-1 overflow-y-auto">
-        {docs.length === 0 && <Empty title="Nothing here" hint="No documents match this filter." />}
+        {docs.length === 0 && <Empty title="Nothing here" hint={emptyHint} />}
         {docs.map((d) => (
           <ListRow
             key={d.path}

@@ -131,9 +131,33 @@ describe("VaultService (800-doc fixture)", () => {
       commit: false,
     });
     expect(res.path).toBe("atlas-api/rate-limiting-at-the-edge-2.md");
-    await vault.trash(res.path);
+    const trashed = await vault.trash(res.path);
     expect(vault.index.get(res.path)).toBeUndefined();
     expect(existsSync(join(root, ".trash", res.path))).toBe(true);
+    expect(trashed.originalPath).toBe(res.path);
+    expect(trashed.meta.title).toBe("Rate limiting at the edge");
+  });
+
+  it("lists, restores and purges the trash", async () => {
+    const listed = await vault.listTrash();
+    expect(listed.map((t) => t.originalPath)).toEqual(["atlas-api/rate-limiting-at-the-edge-2.md"]);
+    expect(listed[0].meta.projectSlug).toBe("atlas-api");
+    const read = await vault.readTrashed(listed[0].path);
+    expect(read.body.trim()).toBe("second one");
+
+    const restored = await vault.restoreFromTrash(listed[0].path);
+    expect(restored.path).toBe("atlas-api/rate-limiting-at-the-edge-2.md");
+    expect(vault.index.get(restored.path)?.title).toBe("Rate limiting at the edge");
+    expect((await vault.git.git.log()).latest?.message).toBe("restore: Rate limiting at the edge");
+    expect(await vault.listTrash()).toEqual([]);
+
+    await vault.trash(restored.path);
+    await expect(vault.readTrashed("atlas-api/rate-limiting-at-the-edge.md")).rejects.toThrow();
+    expect(await vault.purgeTrash()).toEqual({ removed: 1 });
+    expect(existsSync(join(root, ".trash"))).toBe(false);
+    expect((await vault.git.git.log()).latest?.message).toBe("purge: trash (1 doc)");
+    const status = await vault.git.git.status();
+    expect(status.files.filter((f) => f.path.startsWith(".trash"))).toEqual([]);
   });
 
   it("moves the file when the project changes and keeps `created`", async () => {

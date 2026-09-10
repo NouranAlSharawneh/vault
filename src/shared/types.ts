@@ -32,6 +32,17 @@ export interface DocMeta extends Frontmatter {
   unpushed?: boolean;
 }
 
+/** A document sitting in `.trash/`, listed from disk (the index skips that folder). */
+export interface TrashedDoc {
+  meta: DocMeta;
+  /** Path inside `.trash/`, e.g. `.trash/atlas-api/spec.md`. */
+  path: string;
+  /** Where it lived before, e.g. `atlas-api/spec.md`. */
+  originalPath: string;
+  /** ISO date of the `trash:` commit (file mtime when unknown). */
+  trashedAt: string;
+}
+
 export interface DocContent {
   meta: DocMeta;
   body: string;

@@ -1,10 +1,12 @@
 import { useCallback, useState } from "react";
-import { Button, Empty, SplitPane } from "@/components/ui";
+import { Button, Empty, SplitPane, Toast } from "@/components/ui";
 import { cx } from "@/helpers";
 import { api } from "@/lib/api";
 import { useApp } from "@/stores/app";
+import { useToast } from "@/stores/toast";
 import type { ReaderView } from "./main.types";
-import { useDocument } from "./hooks/use-document.hook";
+import { isTrashed, useDocument } from "./hooks/use-document.hook";
+import { useTrashActions } from "./hooks/use-trash-actions.hook";
 import { useDocumentFilter } from "./hooks/use-document-filter.hook";
 import { useSidebarState } from "./hooks/use-sidebar-state.hook";
 import { useMainShortcuts } from "./hooks/use-main-shortcuts.hook";
@@ -22,15 +24,25 @@ import { CommandPalette } from "./components/command-palette/command-palette.com
 export function Main() {
   const index = useApp((s) => s.index);
   const config = useApp((s) => s.config);
+  const trash = useApp((s) => s.trash);
+  const toast = useToast((s) => s.toast);
+  const dismissToast = useToast((s) => s.dismiss);
   const sidebar = useSidebarState();
-  const list = useDocumentFilter(index);
+  const list = useDocumentFilter(index, trash);
   const [selected, setSelected] = useState<string | null>(null);
   const [view, setView] = useState<ReaderView>("preview");
   const [paletteOpen, setPaletteOpen] = useState(false);
-  const doc = useDocument(selected, index?.docs);
+  const inTrash = list.filter.collection === "trash";
+  const doc = useDocument(selected, inTrash ? trash.map((t) => t.meta) : index?.docs);
+  const trashActions = useTrashActions(doc?.meta ?? null, setSelected);
 
   const openPalette = useCallback(() => setPaletteOpen(true), []);
-  useMainShortcuts({ onSearch: openPalette });
+  const openSettings = useCallback(() => (window.location.hash = "settings"), []);
+  useMainShortcuts({
+    onSearch: openPalette,
+    onTrash: trashActions.trash,
+    onSettings: openSettings,
+  });
 
   const star = useCallback(() => {
     if (doc) void api("doc:setStarred", doc.meta.path, !doc.meta.starred);
@@ -74,9 +86,22 @@ export function Main() {
             activeTags={list.filter.tags}
             onRemoveTag={list.toggleTag}
             onClearTags={list.clearTags}
+            sortable={!inTrash}
+            emptyHint={inTrash ? "Deleted documents wait here until you purge them." : undefined}
           />
         }
-        right={<DocumentReader doc={doc} view={view} onView={setView} onStar={star} />}
+        right={
+          <DocumentReader
+            doc={doc}
+            view={view}
+            onView={setView}
+            onStar={star}
+            onTrash={trashActions.trash}
+            trashed={isTrashed(doc?.meta.path ?? null)}
+            onRestore={trashActions.restore}
+            onPurge={trashActions.purge}
+          />
+        }
       />
     </div>
   );
@@ -99,6 +124,7 @@ export function Main() {
             index={index}
             config={config}
             filter={list.filter}
+            trashCount={trash.length}
             onCollection={list.selectCollection}
             onProject={list.selectProject}
             onTag={list.toggleTag}
@@ -107,8 +133,13 @@ export function Main() {
         {content}
       </div>
       {paletteOpen && (
-        <CommandPalette onClose={() => setPaletteOpen(false)} onOpenDoc={setSelected} />
+        <CommandPalette
+          onClose={() => setPaletteOpen(false)}
+          onOpenDoc={setSelected}
+          onTrashDoc={doc && !inTrash ? trashActions.trash : undefined}
+        />
       )}
+      <Toast toast={toast} onDismiss={dismissToast} />
     </div>
   );
 }

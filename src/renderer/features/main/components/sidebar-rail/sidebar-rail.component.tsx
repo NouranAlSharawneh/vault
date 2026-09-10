@@ -1,4 +1,4 @@
-import { Clock, Hash, Layers, Star } from "lucide-react";
+import { Clock, Hash, Layers, Star, Trash2 } from "lucide-react";
 import { INBOX_COLOR, INBOX_SLUG } from "@shared/constants";
 import { projectColor } from "@shared/helpers";
 import { Dot, ListRow, Logo } from "@/components/ui";
@@ -56,6 +56,16 @@ export function SidebarRail({
       <ListRow kind="rail" title="Tags — expand sidebar (⌘\\)" onClick={onExpand}>
         <Hash size={14} />
       </ListRow>
+      <div className="mt-auto pb-2">
+        <ListRow
+          kind="rail"
+          title="Trash"
+          selected={!filter.project && filter.collection === "trash"}
+          onClick={() => onCollection("trash")}
+        >
+          <Trash2 size={14} />
+        </ListRow>
+      </div>
     </aside>
   );
 }
