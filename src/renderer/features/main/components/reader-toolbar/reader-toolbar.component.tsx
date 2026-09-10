@@ -23,7 +23,8 @@ export function ReaderToolbar({
   return (
     <div className="flex h-11 shrink-0 items-center justify-between gap-3 px-4">
       <div className="flex items-center gap-3">
-        <div className="flex rounded-sm bg-paper-2 p-0.5">
+        {/* gap-0.5 matches the sidebar rows, so an active tab never touches a hovered one. */}
+        <div className="flex gap-0.5 rounded-sm bg-paper-2 p-0.5">
           {READER_VIEWS.map((v) => (
             <Button
               key={v.key}
