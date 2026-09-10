@@ -1,4 +1,5 @@
 import type {
+  AssetRef,
   AuthMethods,
   AuthState,
   ClipboardCapture,
@@ -83,6 +84,9 @@ export interface IpcInvoke {
   "templates:list": () => Template[];
 
   "search:query": (text: string) => SearchHit[];
+
+  "assets:resolve": (baseDir: string | null, refs: string[]) => AssetRef[];
+  "assets:chooseFolder": (defaultPath?: string) => string | null;
 
   "capture:readClipboard": () => ClipboardCapture;
   "capture:hide": () => void;

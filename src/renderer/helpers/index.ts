@@ -3,3 +3,6 @@ export { plural } from "./plural";
 export { readTime } from "./read-time";
 export { errorMessage } from "./error-message";
 export { isEditableTarget } from "./is-editable-target";
+export { formatBytes } from "./format-bytes";
+export { parentDir } from "./parent-dir";
+export { shortPath } from "./short-path";

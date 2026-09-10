@@ -49,6 +49,22 @@ export interface DocContent {
   raw: string;
 }
 
+/** One relative image/media path in a body, checked against a base folder. */
+export interface AssetRef {
+  /** As written in the markdown, e.g. `docs/hero.gif`. */
+  ref: string;
+  name: string;
+  status: "found" | "missing" | "unsupported";
+  bytes: number;
+}
+
+/** Copy these referenced files into the vault when saving. */
+export interface AssetImport {
+  /** Folder the refs are relative to (the source project, usually). */
+  baseDir: string;
+  refs: string[];
+}
+
 export interface SaveRequest {
   body: string;
   frontmatter: Omit<Frontmatter, "created"> & { created?: string };
@@ -56,10 +72,13 @@ export interface SaveRequest {
   existingPath?: string;
   /** Commit + push, or just write to disk. */
   commit: boolean;
+  assets?: AssetImport;
 }
 
 export interface SaveResult {
   path: string;
+  /** Repo-relative paths of assets copied in with this save. */
+  assets?: string[];
   meta: DocMeta;
   committed: boolean;
 }
@@ -181,6 +200,8 @@ export interface VaultConfig {
   lastSource: Source;
   hotkey: string;
   pushDebounceMs: number;
+  /** Where relative image paths resolve, remembered per project slug (this machine only). */
+  assetDirs?: Record<string, string>;
 }
 
 export interface SavedView {
@@ -201,11 +222,15 @@ export interface ClipboardCapture {
   looksLikeMarkdown: boolean;
   detectedSource: Source;
   detectedTitle: string | null;
+  /** Set when the clipboard held a markdown *file* (copied in Finder) rather than text. */
+  sourcePath?: string;
 }
 
 export interface EditorDraft {
   body: string;
   frontmatter?: Partial<DocMeta>;
+  /** File the text came from, so relative images can still be resolved in the editor. */
+  sourcePath?: string;
 }
 
 export type AppRoute = (typeof APP_ROUTES)[number];

@@ -62,6 +62,15 @@ export const ASSET_MIME: Record<string, string> = {
   pdf: "application/pdf",
 };
 
+/** Folder, next to a doc's project folder, where captured images and media land. */
+export const ASSETS_DIR = "assets";
+/** Above this a referenced file is flagged before it goes into git for good. */
+export const ASSET_WARN_BYTES = 10 * 1024 * 1024;
+/** `![alt](path)` and `[text](<path with spaces>)` — group 1 is the `!`, group 2 the target (maybe in `<>`). */
+export const MD_LINK_RE = /(!?)\[[^\]]*\]\(\s*(<[^>]*>|[^\s)]+)(?:\s+["'][^"']*["'])?\s*\)/g;
+/** `<img src="…">`, `<video src>`, `<source src>` — group 1 is the attribute prefix, group 2 the target. */
+export const HTML_SRC_RE = /(<(?:img|video|audio|source)\b[^>]*?\ssrc=["'])([^"']+)(["'])/gi;
+
 // ---- sync ------------------------------------------------------------------------
 export const DEFAULT_PUSH_DEBOUNCE_MS = 3000;
 export const PUSH_RETRY_MIN_MS = 5_000;

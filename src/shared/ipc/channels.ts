@@ -46,6 +46,8 @@ export const INVOKE_CHANNELS: InvokeChannel[] = [
   "views:delete",
   "templates:list",
   "search:query",
+  "assets:resolve",
+  "assets:chooseFolder",
   "capture:readClipboard",
   "capture:hide",
   "capture:openEditor",
