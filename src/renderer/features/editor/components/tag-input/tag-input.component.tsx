@@ -1,4 +1,4 @@
-import { X } from "lucide-react";
+import { Chip, ListRow } from "@/components/ui";
 import { cx } from "@/helpers";
 import { useTagInput } from "./hooks/use-tag-input.hook";
 import type { TagInputProps } from "./tag-input.types";
@@ -22,17 +22,9 @@ export function TagInput({
         )}
       >
         {value.map((tag) => (
-          <span key={tag} className="chip chip-tag">
+          <Chip key={tag} onRemove={() => t.remove(tag)}>
             #{tag}
-            <button
-              type="button"
-              className="ml-0.5 opacity-60 hover:opacity-100"
-              onClick={() => t.remove(tag)}
-              aria-label={`remove ${tag}`}
-            >
-              <X size={10} />
-            </button>
-          </span>
+          </Chip>
         ))}
         <input
           className={cx(
@@ -56,23 +48,17 @@ export function TagInput({
         >
           {t.matches.map((m, i) => (
             <li key={m}>
-              <button
-                type="button"
-                className={cx(
-                  "w-full rounded-xs px-2 py-1 text-left text-sm",
-                  i === t.cursor
-                    ? "bg-cherry-tint text-cherry-2"
-                    : dark
-                      ? "text-overlay-ink-2 hover:bg-overlay-3"
-                      : "hover:bg-paper-2",
-                )}
+              <ListRow
+                kind="menu"
+                dark={dark}
+                selected={i === t.cursor}
                 onMouseDown={(e) => {
                   e.preventDefault();
                   t.add(m);
                 }}
               >
                 #{m}
-              </button>
+              </ListRow>
             </li>
           ))}
         </ul>

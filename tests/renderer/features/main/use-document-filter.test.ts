@@ -1,0 +1,75 @@
+import { describe, expect, it } from "vitest";
+import { applyFilter } from "@/features/main/hooks/use-document-filter.hook";
+import type { DocMeta, IndexSnapshot } from "@shared/types";
+
+const NOW = Date.parse("2026-09-10T12:00:00Z");
+const doc = (over: Partial<DocMeta>): DocMeta => ({
+  title: "t",
+  project: "Atlas API",
+  projectSlug: "atlas-api",
+  tags: [],
+  created: "2026-09-01T00:00:00Z",
+  source: "claude",
+  path: "atlas-api/t.md",
+  excerpt: "",
+  words: 1,
+  mtime: 0,
+  size: 0,
+  orphan: false,
+  ...over,
+});
+const index: IndexSnapshot = {
+  docs: [
+    doc({
+      path: "a",
+      title: "Beta",
+      created: "2026-09-09T00:00:00Z",
+      tags: ["spec"],
+      starred: true,
+    }),
+    doc({ path: "b", title: "Alpha", created: "2026-08-01T00:00:00Z", tags: ["spec", "infra"] }),
+    doc({
+      path: "c",
+      title: "Gamma",
+      created: "2026-07-01T00:00:00Z",
+      projectSlug: "research-log",
+      project: "Research log",
+    }),
+  ],
+  projects: [
+    { name: "Atlas API", slug: "atlas-api", count: 2 },
+    { name: "Research log", slug: "research-log", count: 1 },
+  ],
+  tags: [],
+  orphans: 0,
+  headSha: null,
+  scannedAt: 0,
+};
+const base = { collection: "all" as const, project: null, tags: [], sort: "newest" as const };
+
+describe("applyFilter", () => {
+  it("newest first by default", () => {
+    expect(applyFilter(index, base, NOW).docs.map((d) => d.path)).toEqual(["a", "b", "c"]);
+  });
+  it("project selection sets the title", () => {
+    const r = applyFilter(index, { ...base, project: "research-log" }, NOW);
+    expect(r.title).toBe("Research log");
+    expect(r.docs.map((d) => d.path)).toEqual(["c"]);
+  });
+  it("recent = last 7 days; starred", () => {
+    expect(
+      applyFilter(index, { ...base, collection: "recent" }, NOW).docs.map((d) => d.path),
+    ).toEqual(["a"]);
+    expect(applyFilter(index, { ...base, collection: "starred" }, NOW).title).toBe("Starred");
+  });
+  it("tags are AND-ed; sort by title", () => {
+    expect(
+      applyFilter(index, { ...base, tags: ["spec", "infra"] }, NOW).docs.map((d) => d.path),
+    ).toEqual(["b"]);
+    expect(applyFilter(index, { ...base, sort: "title" }, NOW).docs.map((d) => d.title)).toEqual([
+      "Alpha",
+      "Beta",
+      "Gamma",
+    ]);
+  });
+});
