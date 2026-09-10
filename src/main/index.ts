@@ -29,7 +29,7 @@ app.whenReady().then(async () => {
   nativeTheme.themeSource = "light";
   app.on("browser-window-created", (_, w) => optimizer.watchWindowShortcuts(w));
 
-  configureNetwork({ getToken: loadToken, onAuthExpired: () => session.markAuthExpired() });
+  configureNetwork({ getToken: loadToken, onAuthExpired: () => void session.revalidate() });
   registerIpcHandlers();
   registerAssetProtocol();
   await session.restore();

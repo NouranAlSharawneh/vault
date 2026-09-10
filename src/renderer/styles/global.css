@@ -56,6 +56,13 @@
   --color-ok: #5fb07a;
   --color-warn: #e4b04a;
 
+  /* GitHub alert accents. Their own ramp, so ok/warn stay reserved for sync status. */
+  --color-alert-note: #4a6fa5;
+  --color-alert-tip: #3f8f63;
+  --color-alert-important: #7c5cbf;
+  --color-alert-warning: #a8781f;
+  --color-alert-caution: #b4232f;
+
   --color-overlay: #1e1d1b;
   --color-overlay-2: #2a2825;
   --color-overlay-3: #383532;
@@ -356,6 +363,64 @@ input {
   max-width: 100%;
   border-radius: var(--radius-md);
 }
+
+/* GitHub alerts (`> [!NOTE]`), via remark-github-blockquote-alert. The plugin emits
+   GitHub's own class names and octicons, so only the paint is ours. */
+.prose-doc .markdown-alert {
+  --alert: var(--color-ink-3);
+  font-family: var(--font-sans);
+  font-size: var(--text-md);
+  line-height: 1.5;
+  color: var(--color-ink-2);
+  background: color-mix(in srgb, var(--alert) 6%, transparent);
+  border-left: 3px solid var(--alert);
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  padding: 10px 14px;
+  margin: 0 0 1.2em;
+}
+.prose-doc .markdown-alert > *:last-child {
+  margin-bottom: 0;
+}
+.prose-doc .markdown-alert-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--text-xs);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--alert);
+  margin: 0 0 0.4em;
+}
+/* The octicon ships with no fill of its own, so it would otherwise paint black. */
+.prose-doc .markdown-alert-title .octicon {
+  flex: none;
+  fill: currentColor;
+}
+.prose-doc .markdown-alert-note {
+  --alert: var(--color-alert-note);
+}
+.prose-doc .markdown-alert-tip {
+  --alert: var(--color-alert-tip);
+}
+.prose-doc .markdown-alert-important {
+  --alert: var(--color-alert-important);
+}
+.prose-doc .markdown-alert-warning {
+  --alert: var(--color-alert-warning);
+}
+.prose-doc .markdown-alert-caution {
+  --alert: var(--color-alert-caution);
+}
+
+/* A README badge row is a paragraph of images; keep them on one line and unrounded. */
+.prose-doc p > img + img {
+  margin-left: 4px;
+}
+.prose-doc a > img,
+.prose-doc p[align] img {
+  vertical-align: middle;
+}
 .prose-doc input[type="checkbox"] {
   margin-right: 0.5em;
   accent-color: var(--color-cherry);
@@ -370,6 +435,11 @@ input {
 .prose-doc .mermaid-block svg {
   max-width: 100%;
   height: auto;
+}
+/* Once the wrapper has an explicit width, the diagram follows it — that is the zoom. */
+.prose-doc .mermaid-block .mermaid-canvas[style*="width"] svg {
+  width: 100%;
+  max-width: none;
 }
 
 /* highlight.js token colours on the dark block */

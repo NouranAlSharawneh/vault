@@ -168,3 +168,8 @@ export const OAUTH_LOOPBACK_HOST = "127.0.0.1";
 export const OAUTH_CALLBACK_PATH = "/callback";
 /** How long the listener waits for the browser to come back. */
 export const OAUTH_TIMEOUT_MS = 5 * 60_000;
+/** How long a cancelled OAuth web flow waits before tearing down, so a StrictMode
+ * remount (or a double click) rejoins the same flow instead of starting a second one. */
+export const WEB_FLOW_CANCEL_GRACE_MS = 1500;
+/** Renew an expiring GitHub token this long before its deadline. */
+export const TOKEN_REFRESH_SKEW_MS = 5 * 60 * 1000;
