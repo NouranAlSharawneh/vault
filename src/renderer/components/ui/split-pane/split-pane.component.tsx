@@ -10,6 +10,7 @@ export function SplitPane({
   minRatio = 0.25,
   maxRatio = 0.75,
   storageKey,
+  handle = "line",
   className,
 }: SplitPaneProps) {
   const { ratio, dragging, container, onPointerDown, reset } = useSplitDrag({
@@ -33,10 +34,11 @@ export function SplitPane({
         onPointerDown={onPointerDown}
         onDoubleClick={reset}
         className={cx(
-          "group relative w-px shrink-0 cursor-col-resize bg-line",
-          "after:absolute after:inset-y-0 after:-left-1 after:w-2 after:content-['']",
-          "hover:bg-line-2",
-          dragging && "bg-cherry-3",
+          "relative shrink-0 cursor-col-resize",
+          handle === "line"
+            ? "w-px bg-line after:absolute after:inset-y-0 after:-left-1 after:w-2 after:content-[''] hover:bg-line-2"
+            : "w-2 bg-transparent hover:bg-line/60",
+          dragging && (handle === "line" ? "bg-cherry-3" : "bg-cherry-tint-2"),
         )}
       />
       <div className="flex min-h-0 min-w-0 flex-1 flex-col">{right}</div>
