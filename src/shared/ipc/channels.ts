@@ -56,6 +56,7 @@ export const INVOKE_CHANNELS: InvokeChannel[] = [
   "app:version",
   "app:platform",
   "app:openExternal",
+  "app:reset",
 ];
 
 export const EVENT_CHANNELS: EventChannel[] = [

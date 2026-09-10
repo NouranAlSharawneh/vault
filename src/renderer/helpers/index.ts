@@ -6,3 +6,4 @@ export { isEditableTarget } from "./is-editable-target";
 export { formatBytes } from "./format-bytes";
 export { parentDir } from "./parent-dir";
 export { shortPath } from "./short-path";
+export { toAccelerator, acceleratorLabel } from "./accelerator";
