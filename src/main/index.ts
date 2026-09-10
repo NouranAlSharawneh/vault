@@ -32,12 +32,12 @@ app.whenReady().then(async () => {
   configureNetwork({ getToken: loadToken, onAuthExpired: () => session.markAuthExpired() });
   registerIpcHandlers();
   registerAssetProtocol();
-  buildAppMenu();
   await session.restore();
   createTray();
   session.vault?.on("sync", updateTray);
 
   const settings = getSettings();
+  buildAppMenu(settings.vault?.hotkey);
   if (settings.vault && session.vault) registerHotkey(settings.vault.hotkey);
   getCaptureWindow(); // pre-warm so the sheet appears instantly
   openMainWindow(settings.onboarded && session.vault ? "main" : "onboarding");

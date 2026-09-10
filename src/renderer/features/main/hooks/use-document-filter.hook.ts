@@ -1,16 +1,28 @@
-import { useMemo, useState } from "react";
-import type { DocMeta, IndexSnapshot } from "@shared/types";
+import { useCallback, useMemo, useState } from "react";
+import type { DocMeta, IndexSnapshot, TrashedDoc } from "@shared/types";
 import { RECENT_DAYS } from "@/constants";
 import type { FilteredDocs, ListFilter } from "../main.types";
 
 const DEFAULT: ListFilter = { collection: "all", project: null, tags: [], sort: "newest" };
 
+/** Settings links here as `#main?trash`; consume the flag so a later ⌘\ doesn't re-apply it. */
+function initialFilter(): ListFilter {
+  if (!window.location.hash.includes("?trash")) return DEFAULT;
+  window.history.replaceState(null, "", "#main");
+  return { ...DEFAULT, collection: "trash" };
+}
+
 export function applyFilter(
   index: IndexSnapshot | null,
   f: ListFilter,
+  trash: TrashedDoc[] = [],
   now = Date.now(),
 ): FilteredDocs {
   if (!index) return { docs: [], title: "All documents" };
+  if (f.collection === "trash") {
+    // Already newest-trashed first; tags and sort don't apply here.
+    return { docs: trash.map((t) => t.meta), title: "Trash" };
+  }
   const cutoff = now - RECENT_DAYS * 86_400_000;
   let docs = index.docs;
   let title = "All documents";
@@ -41,9 +53,9 @@ function sorter(sort: ListFilter["sort"]): (a: DocMeta, b: DocMeta) => number {
 }
 
 /** Sidebar selection + tag chips + sort → the visible document list. */
-export function useDocumentFilter(index: IndexSnapshot | null) {
-  const [filter, setFilter] = useState<ListFilter>(DEFAULT);
-  const result = useMemo(() => applyFilter(index, filter), [index, filter]);
+export function useDocumentFilter(index: IndexSnapshot | null, trash: TrashedDoc[] = []) {
+  const [filter, setFilter] = useState<ListFilter>(initialFilter);
+  const result = useMemo(() => applyFilter(index, filter, trash), [index, filter, trash]);
 
   const selectProject = (slug: string | null) =>
     setFilter((f) => ({ ...f, project: slug, collection: "all" }));
@@ -55,7 +67,18 @@ export function useDocumentFilter(index: IndexSnapshot | null) {
       tags: f.tags.includes(tag) ? f.tags.filter((t) => t !== tag) : [...f.tags, tag],
     }));
   const clearTags = () => setFilter((f) => ({ ...f, tags: [] }));
+  /** Back to an unfiltered list, keeping the chosen sort. Stable, so effects can depend on it. */
+  const showAll = useCallback(() => setFilter((f) => ({ ...DEFAULT, sort: f.sort })), []);
   const setSort = (sort: ListFilter["sort"]) => setFilter((f) => ({ ...f, sort }));
 
-  return { filter, ...result, selectProject, selectCollection, toggleTag, clearTags, setSort };
+  return {
+    filter,
+    ...result,
+    selectProject,
+    selectCollection,
+    toggleTag,
+    clearTags,
+    setSort,
+    showAll,
+  };
 }

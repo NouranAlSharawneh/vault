@@ -7,7 +7,10 @@ let subscribed = false;
 export function subscribeToMain(): void {
   if (subscribed) return;
   subscribed = true;
-  on("index:changed", (index) => useApp.setState({ index }));
+  on("index:changed", (index) => {
+    useApp.setState({ index });
+    void useApp.getState().refreshTrash();
+  });
   on("index:progress", (progress) => useApp.setState({ progress }));
   on("sync:status", (sync) => useApp.setState({ sync }));
   on("auth:state", (auth) => useApp.setState({ auth }));

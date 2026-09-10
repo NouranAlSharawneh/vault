@@ -51,7 +51,7 @@ describe("useCapture", () => {
     expect(result.current.phase).toBe("ready");
   });
 
-  it("⌘↵ saves with commit and hides after the flash", async () => {
+  it("⌘↵ saves with commit, then opens the new doc in the main window", async () => {
     const { invoke } = mockVaultApi({
       "capture:readClipboard": () => clip,
       "doc:pathPreview": () => "",
@@ -69,7 +69,10 @@ describe("useCapture", () => {
       commit: true,
       frontmatter: { title: "Pasted spec", project: "Atlas API", source: "chatgpt" },
     });
-    await waitFor(() => expect(invoke).toHaveBeenCalledWith("capture:hide"));
+    // The sheet hands the saved path to the main window rather than just hiding.
+    await waitFor(() =>
+      expect(invoke).toHaveBeenCalledWith("capture:reveal", "atlas-api/pasted-spec.md"),
+    );
   });
 
   it("a failed save shows the error and can retry", async () => {

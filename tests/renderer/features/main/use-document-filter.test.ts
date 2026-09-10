@@ -49,27 +49,45 @@ const base = { collection: "all" as const, project: null, tags: [], sort: "newes
 
 describe("applyFilter", () => {
   it("newest first by default", () => {
-    expect(applyFilter(index, base, NOW).docs.map((d) => d.path)).toEqual(["a", "b", "c"]);
+    expect(applyFilter(index, base, [], NOW).docs.map((d) => d.path)).toEqual(["a", "b", "c"]);
   });
   it("project selection sets the title", () => {
-    const r = applyFilter(index, { ...base, project: "research-log" }, NOW);
+    const r = applyFilter(index, { ...base, project: "research-log" }, [], NOW);
     expect(r.title).toBe("Research log");
     expect(r.docs.map((d) => d.path)).toEqual(["c"]);
   });
   it("recent = last 7 days; starred", () => {
     expect(
-      applyFilter(index, { ...base, collection: "recent" }, NOW).docs.map((d) => d.path),
+      applyFilter(index, { ...base, collection: "recent" }, [], NOW).docs.map((d) => d.path),
     ).toEqual(["a"]);
-    expect(applyFilter(index, { ...base, collection: "starred" }, NOW).title).toBe("Starred");
+    expect(applyFilter(index, { ...base, collection: "starred" }, [], NOW).title).toBe("Starred");
   });
   it("tags are AND-ed; sort by title", () => {
     expect(
-      applyFilter(index, { ...base, tags: ["spec", "infra"] }, NOW).docs.map((d) => d.path),
+      applyFilter(index, { ...base, tags: ["spec", "infra"] }, [], NOW).docs.map((d) => d.path),
     ).toEqual(["b"]);
-    expect(applyFilter(index, { ...base, sort: "title" }, NOW).docs.map((d) => d.title)).toEqual([
-      "Alpha",
-      "Beta",
-      "Gamma",
-    ]);
+    expect(
+      applyFilter(index, { ...base, sort: "title" }, [], NOW).docs.map((d) => d.title),
+    ).toEqual(["Alpha", "Beta", "Gamma"]);
+  });
+
+  it("shows the trash in its own order and ignores tags there", () => {
+    const trashed = [
+      {
+        meta: doc({ path: ".trash/a", title: "Old" }),
+        path: ".trash/a",
+        originalPath: "a",
+        trashedAt: "2026-01-03T00:00:00Z",
+      },
+      {
+        meta: doc({ path: ".trash/b", title: "Older" }),
+        path: ".trash/b",
+        originalPath: "b",
+        trashedAt: "2026-01-02T00:00:00Z",
+      },
+    ];
+    const r = applyFilter(index, { ...base, collection: "trash", tags: ["nope"] }, trashed, NOW);
+    expect(r.title).toBe("Trash");
+    expect(r.docs.map((d) => d.path)).toEqual([".trash/a", ".trash/b"]);
   });
 });

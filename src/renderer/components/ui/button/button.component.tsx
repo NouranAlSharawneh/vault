@@ -9,6 +9,7 @@ const VARIANT_CLASS: Record<ButtonVariant, string> = {
   ghost: "btn btn-ghost",
   link: "btn-link",
   subtle: "btn-link btn-subtle",
+  danger: "btn btn-danger",
 };
 
 const SIZE_CLASS: Record<ButtonSize, string> = {

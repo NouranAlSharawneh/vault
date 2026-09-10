@@ -22,6 +22,9 @@ import { getOAuthConfig } from "../../store/oauth-config";
 import { cancelWebFlow, runWebFlow } from "../../services/auth/web-flow.service";
 import { broadcast, hideCaptureWindow, openEditorWindow, openMainWindow } from "../../windows";
 import { registerHotkey } from "../hotkey/hotkey";
+import { buildAppMenu } from "../menu/menu";
+import { resetApp } from "../session/reset-app";
+import { resolveAssets } from "../../services/assets";
 import { session } from "../session/session";
 
 /** Typed `ipcMain.handle` that normalises errors so the renderer sees a plain message. */
@@ -136,11 +139,16 @@ export function registerIpcHandlers(): void {
     const current = getSettings().vault;
     if (!current) throw new Error("No vault");
     const next = { ...current, ...patch };
+    if (patch.hotkey && patch.hotkey !== current.hotkey && !registerHotkey(patch.hotkey)) {
+      registerHotkey(current.hotkey);
+      throw new Error(`${patch.hotkey} is taken by another app or isn't a valid shortcut.`);
+    }
     updateSettings({ vault: next });
     if (session.vault) Object.assign(session.vault.config, next);
-    if (patch.hotkey) registerHotkey(next.hotkey);
+    if (patch.hotkey) buildAppMenu(next.hotkey);
     return next;
   });
+  handle("app:reset", () => resetApp());
   handle("vault:index", () => session.requireVault().index.snapshot());
   handle("vault:rescan", () => session.requireVault().index.rescan());
   handle("vault:disconnect", async () => {
@@ -164,6 +172,10 @@ export function registerIpcHandlers(): void {
     return res;
   });
   handle("doc:trash", (p) => session.requireVault().trash(p));
+  handle("trash:list", () => session.requireVault().listTrash());
+  handle("trash:read", (p) => session.requireVault().readTrashed(p));
+  handle("trash:restore", (p) => session.requireVault().restoreFromTrash(p));
+  handle("trash:purge", (p) => session.requireVault().purgeTrash(p));
   handle("doc:setStarred", (p, starred) => session.requireVault().setStarred(p, starred));
   handle("doc:history", (p) => session.requireVault().history(p));
   handle("doc:atCommit", (p, sha) => session.requireVault().atCommit(p, sha));
@@ -188,8 +200,24 @@ export function registerIpcHandlers(): void {
   handle("search:query", (text) => session.vault?.search(text) ?? []);
 
   // ---- capture
+  handle("assets:resolve", (baseDir, refs) => resolveAssets(baseDir, refs));
+  handle("assets:chooseFolder", async (defaultPath) => {
+    const r = await dialog.showOpenDialog({
+      title: "Where are these images relative to?",
+      properties: ["openDirectory"],
+      defaultPath: defaultPath ?? join(homedir(), "Documents"),
+    });
+    return r.canceled ? null : r.filePaths[0];
+  });
   handle("capture:readClipboard", () => readClipboard());
   handle("capture:hide", () => hideCaptureWindow());
+  handle("capture:reveal", (path) => {
+    hideCaptureWindow();
+    const win = openMainWindow();
+    const send = () => win.webContents.send("doc:reveal", path);
+    if (win.webContents.isLoading()) win.webContents.once("did-finish-load", send);
+    else send();
+  });
   handle("capture:openEditor", (draft) => {
     hideCaptureWindow();
     const win = openEditorWindow();

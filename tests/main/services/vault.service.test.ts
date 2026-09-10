@@ -131,9 +131,65 @@ describe("VaultService (800-doc fixture)", () => {
       commit: false,
     });
     expect(res.path).toBe("atlas-api/rate-limiting-at-the-edge-2.md");
-    await vault.trash(res.path);
+    const trashed = await vault.trash(res.path);
     expect(vault.index.get(res.path)).toBeUndefined();
     expect(existsSync(join(root, ".trash", res.path))).toBe(true);
+    expect(trashed.originalPath).toBe(res.path);
+    expect(trashed.meta.title).toBe("Rate limiting at the edge");
+  });
+
+  it("lists, restores and purges the trash", async () => {
+    const listed = await vault.listTrash();
+    expect(listed.map((t) => t.originalPath)).toEqual(["atlas-api/rate-limiting-at-the-edge-2.md"]);
+    expect(listed[0].meta.projectSlug).toBe("atlas-api");
+    expect(listed[0].meta.project).toBe("Atlas API");
+    const read = await vault.readTrashed(listed[0].path);
+    expect(read.body.trim()).toBe("second one");
+
+    const restored = await vault.restoreFromTrash(listed[0].path);
+    expect(restored.path).toBe("atlas-api/rate-limiting-at-the-edge-2.md");
+    expect(vault.index.get(restored.path)?.title).toBe("Rate limiting at the edge");
+    expect((await vault.git.git.log()).latest?.message).toBe("restore: Rate limiting at the edge");
+    expect(await vault.listTrash()).toEqual([]);
+
+    await vault.trash(restored.path);
+    await expect(vault.readTrashed("atlas-api/rate-limiting-at-the-edge.md")).rejects.toThrow();
+    expect(await vault.purgeTrash()).toEqual({ removed: 1 });
+    expect(existsSync(join(root, ".trash"))).toBe(false);
+    expect((await vault.git.git.log()).latest?.message).toBe("purge: trash (1 doc)");
+    const status = await vault.git.git.status();
+    expect(status.files.filter((f) => f.path.startsWith(".trash"))).toEqual([]);
+  });
+
+  it("copies referenced images into <project>/assets and rewrites the links in one commit", async () => {
+    const src = mkdtempSync(join(tmpdir(), "vault-assets-"));
+    mkdirSync(join(src, "docs"), { recursive: true });
+    writeFileSync(join(src, "docs", "Hero Fly-in.gif"), Buffer.from("GIF89a"));
+    writeFileSync(join(src, "docs", "hero-fly-in.png"), Buffer.from("PNG"));
+    const res = await vault.save({
+      body: '# Concorde\n\n![hero](<docs/Hero Fly-in.gif>)\n<img src="docs/hero-fly-in.png">\n![gone](docs/missing.png)\n',
+      frontmatter: { title: "Concorde", project: "Personal", tags: [], source: "manual" },
+      commit: true,
+      assets: {
+        baseDir: src,
+        refs: ["docs/Hero Fly-in.gif", "docs/hero-fly-in.png", "docs/missing.png"],
+      },
+    });
+    expect(res.path).toBe("personal/concorde.md");
+    expect(res.assets).toEqual([
+      "personal/assets/hero-fly-in.gif",
+      "personal/assets/hero-fly-in.png",
+    ]);
+    const raw = readFileSync(join(root, res.path), "utf8");
+    expect(raw).toContain("![hero](assets/hero-fly-in.gif)");
+    expect(raw).toContain('<img src="assets/hero-fly-in.png">');
+    expect(raw).toContain("![gone](docs/missing.png)");
+    expect(existsSync(join(root, "personal", "assets", "hero-fly-in.gif"))).toBe(true);
+    const shown = await vault.git.git.show(["--stat", "--format=%s", "HEAD"]);
+    expect(shown).toContain("add: Concorde");
+    expect(shown).toContain("personal/assets/hero-fly-in.gif");
+    expect(shown).toContain("personal/assets/hero-fly-in.png");
+    rmSync(src, { recursive: true, force: true });
   });
 
   it("moves the file when the project changes and keeps `created`", async () => {

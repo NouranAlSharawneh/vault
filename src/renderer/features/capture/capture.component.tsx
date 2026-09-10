@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import { ArrowDownToLine } from "lucide-react";
+import { AssetPanel } from "@/components/asset-panel";
 import { Kbd } from "@/components/ui";
 import { plural } from "@/helpers";
 import { useCapture } from "./hooks/use-capture.hook";
@@ -39,7 +40,8 @@ export function Capture() {
 
       {c.clip && c.phase !== "empty" ? (
         <>
-          <CapturePreview clip={c.clip} />
+          <CapturePreview clip={c.clip} compact={c.assets.refs.length > 0} />
+          <AssetPanel plan={c.assets} dark className="mt-3" />
           <div className="mt-4">
             <CaptureFields
               form={c.form}
