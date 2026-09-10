@@ -1,10 +1,9 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect } from "react";
 import { countWords } from "@shared/helpers";
 import { AssetPanel, useAssetPlan } from "@/components/asset-panel";
 import { Markdown } from "@/components/markdown";
 import { SyncBadge } from "@/components/sync-badge/sync-badge.component";
 import { SectionLabel, SplitPane } from "@/components/ui";
-import { CAPTURE_SAVED_FLASH_MS } from "@/constants";
 import { EDITOR_PLACEHOLDER } from "@/data/editor.data";
 import { parentDir, plural } from "@/helpers";
 import { useApp } from "@/stores/app";
@@ -16,13 +15,13 @@ import { MarkdownEditor } from "./components/markdown-editor/markdown-editor.com
 import { MetadataBar } from "./components/metadata-bar/metadata-bar.component";
 import { EditorFooter } from "./components/editor-footer/editor-footer.component";
 import { UnsavedGuard } from "./components/unsaved-guard/unsaved-guard.component";
+import { useUnsavedGuard } from "./components/unsaved-guard/hooks/use-unsaved-guard.hook";
 
 /** Full save window: raw markdown left, live preview right, metadata bar and actions below. */
 export function Editor() {
   const d = useEditorDraft();
   const index = useApp((s) => s.index);
   const config = useApp((s) => s.config);
-  const [discarding, setDiscarding] = useState(false);
 
   useEditorOpen({ onDoc: d.loadDoc, onDraft: d.loadDraft });
   const plan = useAssetPlan({
@@ -30,16 +29,21 @@ export function Editor() {
     project: d.meta.project,
     sourceDir: d.sourcePath ? parentDir(d.sourcePath) : null,
   });
-  /** Save, then close the window — the main window already shows the result. */
+  const guard = useUnsavedGuard(d.dirty);
+  /**
+   * Save, then close at once. This used to hold the window open for the "Saved" flash,
+   * which read as the window refusing to go; the main window shows the result anyway.
+   */
   const saveAndClose = useCallback(
-    (mode: SaveMode) =>
-      void d
-        .save(mode, plan.request)
-        .then((r) => r && setTimeout(() => window.close(), CAPTURE_SAVED_FLASH_MS)),
-    [d, plan.request],
+    (mode: SaveMode) => void d.save(mode, plan.request).then((r) => r && guard.closeNow()),
+    [d, plan.request, guard],
   );
   const commit = useCallback(() => saveAndClose("commit"), [saveAndClose]);
-  useEditorShortcuts(commit);
+  useEditorShortcuts({
+    onSave: commit,
+    // Nothing to lose: go straight out. Otherwise ask, the same as clicking the X.
+    onEscape: useCallback(() => (d.dirty ? guard.prompt() : guard.closeNow()), [d.dirty, guard]),
+  });
 
   useEffect(() => {
     document.title = `${d.effectiveTitle || "New document"}${d.dirty ? " •" : ""} — Vault`;
@@ -81,7 +85,7 @@ export function Editor() {
             </div>
             <div className="min-h-0 flex-1 overflow-y-auto px-8 pb-16">
               {d.body.trim() ? (
-                <Markdown source={d.body} />
+                <Markdown source={d.body} docPath={d.existingPath ?? d.pathPreview} />
               ) : (
                 <div className="text-sm text-ink-4">Nothing to preview yet.</div>
               )}
@@ -108,13 +112,10 @@ export function Editor() {
         onSave={saveAndClose}
       />
       <UnsavedGuard
-        dirty={d.dirty && !discarding}
-        onDiscard={() => {
-          setDiscarding(true);
-          d.markClean();
-          setTimeout(() => window.close(), 0);
-        }}
-        onSave={() => commit()}
+        open={guard.prompting}
+        onKeepEditing={guard.dismiss}
+        onDiscard={guard.closeNow}
+        onSave={commit}
       />
     </div>
   );
