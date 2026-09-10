@@ -143,7 +143,6 @@ describe("VaultService (800-doc fixture)", () => {
     expect(listed.map((t) => t.originalPath)).toEqual(["atlas-api/rate-limiting-at-the-edge-2.md"]);
     expect(listed[0].meta.projectSlug).toBe("atlas-api");
     expect(listed[0].meta.project).toBe("Atlas API");
-    expect(listed[0].meta.project).toBe("Atlas API");
     const read = await vault.readTrashed(listed[0].path);
     expect(read.body.trim()).toBe("second one");
 

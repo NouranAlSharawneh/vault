@@ -14,7 +14,7 @@ function splitTail(raw: string): SplitResult | null {
   const bodyEnd = openEnd + 1 - open[0].length;
   return {
     yaml: raw.slice(openEnd + 1, close.index),
-    body: raw.slice(0, bodyEnd),
+    body: raw.slice(0, bodyEnd).replace(/^(?:[ \t]*\r?\n)+/, ""),
     position: "bottom",
   };
 }
@@ -28,7 +28,9 @@ function splitHead(raw: string): SplitResult | null {
   if (!close) return null;
   return {
     yaml: rest.slice(0, close.index),
-    body: rest.slice(close.index + close[0].length),
+    // Drop the blank line conventionally written between the closing `---` and the body,
+    // so the editor doesn't open on an empty first line.
+    body: rest.slice(close.index + close[0].length).replace(/^(?:[ \t]*\r?\n)+/, ""),
     position: "top",
   };
 }
