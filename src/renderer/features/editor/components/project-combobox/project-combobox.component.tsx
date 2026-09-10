@@ -1,7 +1,7 @@
 import { ChevronDown } from "lucide-react";
 import { INBOX_COLOR } from "@shared/constants";
 import { projectColor, projectSlug } from "@shared/helpers";
-import { Dot } from "@/components/ui";
+import { Dot, ListRow } from "@/components/ui";
 import { cx } from "@/helpers";
 import { useCombobox } from "./hooks/use-combobox.hook";
 import type { ProjectComboboxProps } from "./project-combobox.types";
@@ -53,23 +53,17 @@ export function ProjectCombobox({ value, onChange, projects, dark, hint }: Proje
         >
           {c.matches.map((m, i) => (
             <li key={m}>
-              <button
-                type="button"
-                className={cx(
-                  "flex w-full items-center gap-2 rounded-xs px-2 py-1 text-left text-sm",
-                  i === c.cursor
-                    ? "bg-cherry-tint text-cherry-2"
-                    : dark
-                      ? "text-overlay-ink-2 hover:bg-overlay-3"
-                      : "hover:bg-paper-2",
-                )}
+              <ListRow
+                kind="menu"
+                dark={dark}
+                selected={i === c.cursor}
                 onMouseDown={(e) => {
                   e.preventDefault();
                   c.pick(m);
                 }}
               >
                 <Dot color={projectColor(projectSlug(m))} /> {m}
-              </button>
+              </ListRow>
             </li>
           ))}
         </ul>

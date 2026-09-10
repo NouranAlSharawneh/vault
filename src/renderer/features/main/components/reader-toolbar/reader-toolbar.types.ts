@@ -1,8 +1,8 @@
-import type { DocContent } from "@shared/types";
+import type { DocMeta } from "@shared/types";
 import type { ReaderView } from "../../main.types";
 
-export interface DocumentReaderProps {
-  doc: DocContent | null;
+export interface ReaderToolbarProps {
+  doc: DocMeta | null;
   view: ReaderView;
   onView: (v: ReaderView) => void;
   onStar: () => void;

@@ -72,7 +72,7 @@ await win.click("text=Doc 5 >> nth=0");
 await win.waitForTimeout(500);
 await win.screenshot({ path: join(out, "smoke-4-main.png") });
 // ---- M2: create a document through the editor window and check the commit landed
-await win.click("text=New");
+await win.click('button:has-text("New")');
 let editor = null;
 for (let i = 0; i < 40 && !editor; i++) {
   editor = app.windows().find((w) => /#editor/.test(w.url())) ?? null;
@@ -108,7 +108,24 @@ if (!readme.includes("[Rate limiting at the edge](atlas-api/rate-limiting-at-the
 await win.bringToFront();
 await win.waitForSelector("text=Rate limiting at the edge", { timeout: 10000 });
 await win.click("text=Rate limiting at the edge >> nth=0");
-await win.waitForTimeout(400);
+await win.waitForTimeout(600);
 await win.screenshot({ path: join(out, "smoke-7-main-after-save.png") });
+// ---- M3: ⌘K palette, sidebar rail, split view
+await win.keyboard.press("Control+K");
+await win.waitForSelector('input[aria-label="search"]');
+await win.keyboard.type("rate limit");
+await win.waitForSelector("text=Documents", { timeout: 5000 });
+await win.waitForTimeout(300);
+await win.screenshot({ path: join(out, "smoke-8-palette.png") });
+await win.keyboard.press("Enter");
+await win.waitForSelector("text=Rate limiting at the edge");
+await win.click('button[aria-label="toggle sidebar"]');
+await win.click("text=Split");
+await win.waitForTimeout(400);
+await win.screenshot({ path: join(out, "smoke-9-rail-split.png") });
+await win.click('button[aria-label="toggle sidebar"]');
+await win.waitForTimeout(300);
+await win.screenshot({ path: join(out, "smoke-10-hidden.png") });
+await win.click('button[aria-label="toggle sidebar"]');
 console.log("errors:", errors.length ? errors : "none");
 await app.close();
