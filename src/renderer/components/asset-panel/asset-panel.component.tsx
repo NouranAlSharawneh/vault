@@ -1,12 +1,17 @@
-import { FolderOpen, Image } from "lucide-react";
+import { FolderOpen, Image, TriangleAlert } from "lucide-react";
 import { ASSET_WARN_BYTES } from "@shared/constants";
 import { Button, Chip } from "@/components/ui";
 import { cx, formatBytes, plural, shortPath } from "@/helpers";
 import type { AssetPanelProps } from "./asset-panel.types";
 
 /**
- * "3 images · 2 found in ~/Coding/concorde · 1 missing" with a folder picker and a row
- * per file. Rendered only when the body references relative images.
+ * "3 images referenced, 2 found in ~/Coding/concorde, 1 missing" with a row per file.
+ * Rendered only when the body references relative images.
+ *
+ * The folder is usually worked out for you, so the picker is a correction rather than a
+ * step: it only says "Choose folder" when nothing was found. What it must never do is stay
+ * quiet about a file that is about to be left behind, because the doc keeps the original
+ * relative link either way and a link with nothing behind it renders as a broken image.
  */
 export function AssetPanel({ plan, dark, className }: AssetPanelProps) {
   if (!plan.refs.length) return null;
@@ -30,10 +35,11 @@ export function AssetPanel({ plan, dark, className }: AssetPanelProps) {
           {plan.baseDir ? (
             <>
               {plan.found} found in <span className="font-mono">{shortPath(plan.baseDir)}</span>
+              {plan.detected && " (found for you)"}
               {plan.missing > 0 && ` · ${plan.missing} missing`}
             </>
           ) : (
-            "relative paths — choose the folder they live in"
+            "nowhere on this Mac holds these paths"
           )}
         </span>
         <Button
@@ -67,12 +73,8 @@ export function AssetPanel({ plan, dark, className }: AssetPanelProps) {
                   </Chip>
                 </>
               ) : (
-                <span className={r.status === "missing" ? "text-cherry-3" : muted}>
-                  {r.status === "missing"
-                    ? "not found"
-                    : r.status === "unsupported"
-                      ? "unsupported type"
-                      : "—"}
+                <span className={r.status === "unsupported" ? muted : "text-cherry-3"}>
+                  {r.status === "unsupported" ? "unsupported type" : "not found"}
                 </span>
               )}
             </li>
@@ -83,6 +85,16 @@ export function AssetPanel({ plan, dark, className }: AssetPanelProps) {
         <div className={cx("mt-1", muted)}>
           {formatBytes(plan.bytes)} will be committed next to the doc as{" "}
           <span className="font-mono">assets/</span>
+        </div>
+      )}
+      {plan.stranded > 0 && (
+        <div className="mt-1 flex items-center gap-1.5 text-warn">
+          <TriangleAlert size={11} />
+          {plan.stranded === plan.refs.length
+            ? plan.refs.length === 1
+              ? "This image won't travel — the link will be broken in the saved doc."
+              : "These images won't travel — their links will be broken in the saved doc."
+            : `${plural(plan.stranded, "image")} won't travel — those links will be broken in the saved doc.`}
         </div>
       )}
     </div>

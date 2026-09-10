@@ -26,7 +26,9 @@ export function useCombobox(value: string, onChange: (v: string) => void, option
     } else if (e.key === "Enter" && open && matches[cursor]) {
       e.preventDefault();
       pick(matches[cursor]);
-    } else if (e.key === "Escape") {
+    } else if (e.key === "Escape" && open) {
+      // Consume it, so the window-level Escape doesn't also close the editor.
+      e.preventDefault();
       setOpen(false);
     }
   };

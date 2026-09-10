@@ -23,6 +23,12 @@ export interface DraftState {
 
 export type SaveMode = "local" | "commit";
 
+export interface EditorShortcutHandlers {
+  onSave: () => void;
+  /** Escape: close a document with nothing to lose, or ask about one that has. */
+  onEscape: () => void;
+}
+
 export interface EditorOpenPayload {
   path?: string;
   draft?: EditorDraft;

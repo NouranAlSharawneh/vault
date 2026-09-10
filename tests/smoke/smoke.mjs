@@ -108,10 +108,29 @@ await editor.waitForSelector("text=atlas-api/rate-limiting-at-the-edge.md");
 await editor.waitForSelector(".mermaid-block svg", { timeout: 20000 });
 await editor.waitForTimeout(300);
 await editor.screenshot({ path: join(out, "smoke-5-editor.png") });
+// Escape on a document with unsaved changes asks rather than throwing work away.
+await editor.keyboard.press("Escape");
+await editor.waitForSelector("text=Unsaved changes", { timeout: 5000 });
+await editor.waitForTimeout(300);
+await editor.screenshot({ path: join(out, "smoke-6-unsaved-prompt.png") });
+await editor.click('button:has-text("Keep editing")');
+await editor.waitForSelector("text=Unsaved changes", { state: "detached" });
 await editor.click('button:has-text("Save & commit")');
-await editor.waitForSelector("text=Saved", { timeout: 15000 });
-await editor.waitForTimeout(400);
-await editor.screenshot({ path: join(out, "smoke-6-editor-saved.png") });
+await editor.waitForEvent("close", { timeout: 15000 });
+await win.bringToFront();
+await win.click('button:has-text("New")');
+let blank = null;
+for (let i = 0; i < 40 && !blank; i++) {
+  blank = app.windows().find((w) => /#editor/.test(w.url())) ?? null;
+  if (!blank) await new Promise((r) => setTimeout(r, 250));
+}
+await blank.waitForSelector(".cm-content");
+await blank.keyboard.press("Escape");
+await blank.waitForEvent("close", { timeout: 5000 });
+if (app.windows().some((w) => /#editor/.test(w.url())))
+  throw new Error("empty editor did not close on Escape");
+console.log("empty editor closed on Escape");
+
 const { execSync } = await import("node:child_process");
 const log = execSync("git log --oneline -1", { cwd: root }).toString().trim();
 console.log("last commit:", log);

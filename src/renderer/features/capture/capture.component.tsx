@@ -1,4 +1,3 @@
-import { useEffect } from "react";
 import { ArrowDownToLine } from "lucide-react";
 import { AssetPanel } from "@/components/asset-panel";
 import { Kbd } from "@/components/ui";
@@ -14,14 +13,6 @@ import { CaptureEmpty } from "./components/capture-empty/capture-empty.component
 export function Capture() {
   const c = useCapture();
   useCaptureKeys({ onSave: () => void c.save(), onOpenEditor: c.openInEditor, onHide: c.hide });
-
-  // The window itself is transparent; only this panel paints.
-  useEffect(() => {
-    document.body.style.background = "transparent";
-    return () => {
-      document.body.style.background = "";
-    };
-  }, []);
 
   return (
     <div className="dark flex h-full flex-col rounded-lg border border-overlay-line bg-overlay/95 p-5 text-overlay-ink shadow-sheet backdrop-blur-xl">
@@ -59,6 +50,7 @@ export function Capture() {
               error={c.error}
               savedPath={c.savedPath}
               hasRemote={c.hasRemote}
+              stranded={c.assets.stranded}
               onOpenEditor={c.openInEditor}
               onSave={() => void c.save()}
               onRetry={c.retry}

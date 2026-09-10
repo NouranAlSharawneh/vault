@@ -54,9 +54,18 @@ export interface AssetRef {
   /** As written in the markdown, e.g. `docs/hero.gif`. */
   ref: string;
   name: string;
-  /** `unknown` = no base folder chosen yet, so nothing has been looked for. */
+  /** `unknown` = nowhere to look, so nothing has been looked for. */
   status: "found" | "missing" | "unsupported" | "unknown";
   bytes: number;
+}
+
+/** What a body's relative refs turned out to be, and the folder they were read against. */
+export interface AssetResolution {
+  /** The folder used — the one passed in, or the one Vault worked out on its own. */
+  baseDir: string | null;
+  /** True when `baseDir` was found automatically rather than supplied. */
+  detected: boolean;
+  refs: AssetRef[];
 }
 
 /** Copy these referenced files into the vault when saving. */

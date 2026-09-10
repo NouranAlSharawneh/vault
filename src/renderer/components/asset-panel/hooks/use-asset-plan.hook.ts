@@ -1,16 +1,17 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { INBOX_SLUG } from "@shared/constants";
 import { findAssetRefs, projectSlug } from "@shared/helpers";
-import type { AssetRef } from "@shared/types";
+import type { AssetResolution } from "@shared/types";
 import { ASSET_RESOLVE_DEBOUNCE_MS } from "@/constants";
 import { api } from "@/lib/api";
 import { useApp } from "@/stores/app";
 import type { AssetPlan, AssetPlanOptions } from "../asset-panel.types";
 
 /**
- * Relative images in a body → where they are on disk → what to copy on save.
- * The base folder comes from the copied file, else the folder remembered for this
- * project, else the user picks one (and it is remembered).
+ * Relative images in a body, where they are on disk, and what to copy on save.
+ * The base folder comes from the copied file, else the folder remembered for this project,
+ * else main works it out from the refs themselves. Picking one by hand is the last resort,
+ * not the first step, and a hand-picked folder is remembered for the project.
  */
 export function useAssetPlan({ body, project, sourceDir }: AssetPlanOptions): AssetPlan {
   const config = useApp((s) => s.config);
@@ -18,31 +19,36 @@ export function useAssetPlan({ body, project, sourceDir }: AssetPlanOptions): As
   const slug = projectSlug(project) || INBOX_SLUG;
   const remembered = config?.assetDirs?.[slug] ?? null;
   const [chosen, setChosen] = useState<string | null>(null);
-  const [resolved, setResolved] = useState<{ key: string; refs: AssetRef[] }>({
+  const [resolved, setResolved] = useState<{ key: string } & AssetResolution>({
     key: "",
+    baseDir: null,
+    detected: false,
     refs: [],
   });
   const [excluded, setExcluded] = useState<string[]>([]);
 
   const paths = useMemo(() => findAssetRefs(body), [body]);
-  const baseDir = chosen ?? sourceDir ?? remembered;
-  const key = `${baseDir ?? ""}\u0000${paths.join("\u0000")}`;
+  /** What we ask about; what comes back may be a folder main worked out on its own. */
+  const asked = chosen ?? sourceDir ?? remembered;
+  const key = `${asked ?? ""} ${paths.join(" ")}`;
 
   useEffect(() => {
     if (!paths.length) return;
     let cancelled = false;
     const t = setTimeout(() => {
-      api("assets:resolve", baseDir, paths)
-        .then((refs) => !cancelled && setResolved({ key, refs }))
+      api("assets:resolve", asked, paths)
+        .then((r) => !cancelled && setResolved({ key, ...r }))
         .catch(() => undefined);
     }, ASSET_RESOLVE_DEBOUNCE_MS);
     return () => {
       cancelled = true;
       clearTimeout(t);
     };
-  }, [baseDir, paths, key]);
+  }, [asked, paths, key]);
 
-  const refs = paths.length && resolved.key === key ? resolved.refs : [];
+  const settled = paths.length > 0 && resolved.key === key;
+  const refs = settled ? resolved.refs : [];
+  const baseDir = settled ? resolved.baseDir : asked;
 
   const chooseFolder = useCallback(async () => {
     const dir = await api("assets:chooseFolder", baseDir ?? undefined);
@@ -62,9 +68,12 @@ export function useAssetPlan({ body, project, sourceDir }: AssetPlanOptions): As
   return {
     refs,
     baseDir,
+    detected: settled && resolved.detected,
     excluded,
     found: refs.filter((r) => r.status === "found").length,
     missing: refs.filter((r) => r.status === "missing").length,
+    /** Referenced but not going into the commit: never located, or deliberately skipped. */
+    stranded: refs.filter((r) => r.status !== "found" || excluded.includes(r.ref)).length,
     bytes: included.reduce((n, r) => n + r.bytes, 0),
     chooseFolder,
     toggle,
