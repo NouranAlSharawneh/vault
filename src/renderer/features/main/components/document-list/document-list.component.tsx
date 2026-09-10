@@ -19,7 +19,12 @@ export function DocumentList({ docs, selected, onSelect }: DocumentListProps) {
           >
             <div className="flex items-baseline justify-between gap-2">
               <span className="truncate text-base font-medium">{d.title}</span>
-              <span className="shrink-0 text-2xs text-ink-4">{relativeTime(d.created)}</span>
+              <span className="flex shrink-0 items-center gap-1.5 text-2xs text-ink-4">
+                {d.unpushed && (
+                  <span className="h-1.5 w-1.5 rounded-full bg-warn" title="Not pushed yet" />
+                )}
+                {relativeTime(d.created)}
+              </span>
             </div>
             <div className="mt-0.5 line-clamp-2 text-xs text-ink-3">{d.excerpt}</div>
           </ListRow>

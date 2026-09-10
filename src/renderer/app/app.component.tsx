@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { AuthExpiredBanner } from "@/components/auth-expired-banner/auth-expired-banner.component";
 import { Logo } from "@/components/ui";
 import { ROUTES } from "@/routes";
 import { subscribeToMain, useApp } from "@/stores/app";
@@ -22,5 +23,13 @@ export function App() {
     );
   }
   const Route = ROUTES[route];
-  return <Route />;
+  if (route === "onboarding" || route === "capture") return <Route />;
+  return (
+    <div className="flex h-full flex-col">
+      <AuthExpiredBanner />
+      <div className="min-h-0 flex-1">
+        <Route />
+      </div>
+    </div>
+  );
 }
