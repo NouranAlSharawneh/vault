@@ -1,9 +1,10 @@
-node_modules
-out
-release
-dist
-.DS_Store
 *.log
+.DS_Store
 .env
 .env.local
 .sync/
+dist
+node_modules
+out
+release
+Claude outputs/
