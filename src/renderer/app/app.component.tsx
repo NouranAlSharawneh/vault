@@ -26,7 +26,7 @@ export function App() {
   const Route = ROUTES[route];
   if (route === "capture") {
     return (
-      <div className="h-full p-3">
+      <div className="p-3">
         <Route />
       </div>
     );

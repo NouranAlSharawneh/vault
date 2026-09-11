@@ -157,7 +157,12 @@ class Session {
 
   async openVault(config: VaultConfig): Promise<VaultService> {
     await this.vaultService?.close();
-    const vault = new VaultService(config, userDataDir(), () => loadToken());
+    const vault = new VaultService(
+      config,
+      userDataDir(),
+      () => loadToken(),
+      () => this.freshenToken(),
+    );
     vault.on("index", (s) => broadcast("index:changed", s));
     vault.on("progress", (p) => broadcast("index:progress", p));
     vault.on("sync", (s) => broadcast("sync:status", s));

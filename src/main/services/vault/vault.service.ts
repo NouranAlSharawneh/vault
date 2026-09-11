@@ -73,6 +73,12 @@ export class VaultService extends EventEmitter {
     readonly config: VaultConfig,
     cacheDir: string,
     private readonly tokenProvider: TokenProvider,
+    /**
+     * Renew an expiring token before we use it. Without this the first push after the
+     * token's deadline always fails in the user's face before recovery kicks in, because
+     * the only other refresh happens at startup.
+     */
+    private readonly freshenToken: () => Promise<void> = async () => undefined,
   ) {
     super();
     this.git = new GitService(config.root, tokenProvider);
@@ -539,6 +545,7 @@ export class VaultService extends EventEmitter {
     this.pushing = true;
     this.setSync({ state: "pushing", lastError: null });
     try {
+      await this.freshenToken();
       await this.ensureRemote();
       try {
         await this.git.push();
