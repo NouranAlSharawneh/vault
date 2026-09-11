@@ -6,7 +6,6 @@ import { registerHotkey } from "./app/hotkey/hotkey";
 import { buildAppMenu } from "./app/menu/menu";
 import { registerAssetProtocol, registerAssetScheme } from "./app/protocol/protocol";
 import { session } from "./app/session/session";
-import { createTray, updateTray } from "./app/tray/tray";
 import { configureNetwork } from "./network/axios";
 import { getSettings } from "./store/settings.store";
 import { loadToken } from "./store/token.store";
@@ -33,8 +32,6 @@ app.whenReady().then(async () => {
   registerIpcHandlers();
   registerAssetProtocol();
   await session.restore();
-  createTray();
-  session.vault?.on("sync", updateTray);
 
   const settings = getSettings();
   buildAppMenu(settings.vault?.hotkey);
@@ -48,7 +45,8 @@ app.whenReady().then(async () => {
 });
 
 app.on("window-all-closed", () => {
-  // Stay alive in the menu bar for the global hotkey on macOS.
+  // Stay running on macOS so the global capture hotkey keeps working with no window
+  // open; the dock icon reopens the vault. Other platforms quit as usual.
   if (!IS_MAC) app.quit();
 });
 

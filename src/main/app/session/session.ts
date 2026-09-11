@@ -14,7 +14,7 @@ import type { AuthListener } from "./session.types";
 
 /**
  * Process-wide state: who is signed in and which vault is open.
- * Everything else (IPC, tray, menu) reads through here.
+ * Everything else (IPC, menu) reads through here.
  */
 class Session {
   private vaultService: VaultService | null = null;
