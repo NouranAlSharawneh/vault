@@ -17,10 +17,17 @@ import {
 import { readClipboard } from "../../services/capture/capture.service";
 import { GitService } from "../../services/git/git.service";
 import { getSettings, updateSettings } from "../../store/settings.store";
-import { loadToken } from "../../store/token.store";
+import { loadCredentials, loadToken } from "../../store/token.store";
 import { getOAuthConfig } from "../../store/oauth-config";
 import { cancelWebFlow, runWebFlow } from "../../services/auth/web-flow.service";
-import { broadcast, hideCaptureWindow, openEditorWindow, openMainWindow } from "../../windows";
+import {
+  broadcast,
+  hideCaptureWindow,
+  openEditorWindow,
+  openMainWindow,
+  resizeCaptureWindow,
+  revealDoc,
+} from "../../windows";
 import { registerHotkey } from "../hotkey/hotkey";
 import { buildAppMenu } from "../menu/menu";
 import { resetApp } from "../session/reset-app";
@@ -92,6 +99,14 @@ export function registerIpcHandlers(): void {
   });
   handle("auth:deviceCancel", () => deviceAbort?.abort());
   handle("auth:signOut", () => session.signOut());
+  handle("auth:tokenStatus", () => {
+    const creds = loadCredentials();
+    return {
+      present: !!creds,
+      expiresAt: creds?.expiresAt ?? null,
+      canRefresh: !!creds?.refreshToken && !!getOAuthConfig()?.clientSecret,
+    };
+  });
 
   // ---- github
   handle("github:listRepos", () => listRepos());
@@ -220,11 +235,9 @@ export function registerIpcHandlers(): void {
   handle("capture:hide", () => hideCaptureWindow());
   handle("capture:reveal", (path) => {
     hideCaptureWindow();
-    const win = openMainWindow();
-    const send = () => win.webContents.send("doc:reveal", path);
-    if (win.webContents.isLoading()) win.webContents.once("did-finish-load", send);
-    else send();
+    revealDoc(path);
   });
+  handle("capture:resize", (height) => resizeCaptureWindow(height));
   handle("capture:openEditor", (draft) => {
     hideCaptureWindow();
     const win = openEditorWindow();
@@ -233,6 +246,7 @@ export function registerIpcHandlers(): void {
 
   // ---- windows
   handle("window:openMain", (route) => void openMainWindow(route));
+  handle("window:revealDoc", (path) => revealDoc(path));
   handle("window:openEditor", (p) => {
     const win = openEditorWindow(p ? `?path=${encodeURIComponent(p)}` : "");
     if (p)

@@ -1,7 +1,7 @@
 import { ArrowLeft, FolderOpen, RefreshCw, Trash2 } from "lucide-react";
 import { Button, Card, Empty, SectionLabel } from "@/components/ui";
 import { PUSH_DEBOUNCE_LABELS } from "@/data/settings.data";
-import { plural, shortPath } from "@/helpers";
+import { describeToken, plural, shortPath } from "@/helpers";
 import { api } from "@/lib/api";
 import { useSettings } from "./hooks/use-settings.hook";
 import { HotkeyRecorder } from "./components/hotkey-recorder/hotkey-recorder.component";
@@ -152,9 +152,16 @@ export function Settings() {
             <SettingRow
               label={s.auth.user ? `@${s.auth.user.login}` : "Not signed in"}
               description={
-                s.auth.user
-                  ? `${plural(s.docCount, "document")} · ${config.remote ?? "local only"}`
-                  : "Sign in to push to GitHub."
+                s.auth.user ? (
+                  <>
+                    {plural(s.docCount, "document")} · {config.remote ?? "local only"}
+                    {describeToken(s.token) && (
+                      <div className="mt-0.5 text-ink-4">{describeToken(s.token)}</div>
+                    )}
+                  </>
+                ) : (
+                  "Sign in to push to GitHub."
+                )
               }
             >
               {s.auth.user ? (

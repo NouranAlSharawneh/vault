@@ -2,6 +2,7 @@ import { useCallback, useEffect } from "react";
 import { countWords } from "@shared/helpers";
 import { AssetPanel, useAssetPlan } from "@/components/asset-panel";
 import { AuthExpiredBanner } from "@/components/auth-expired-banner/auth-expired-banner.component";
+import { api } from "@/lib/api";
 import { Markdown } from "@/components/markdown";
 import { SyncBadge } from "@/components/sync-badge/sync-badge.component";
 import { SectionLabel, SplitPane } from "@/components/ui";
@@ -36,7 +37,13 @@ export function Editor() {
    * which read as the window refusing to go; the main window shows the result anyway.
    */
   const saveAndClose = useCallback(
-    (mode: SaveMode) => void d.save(mode, plan.request).then((r) => r && guard.closeNow()),
+    (mode: SaveMode) =>
+      void d.save(mode, plan.request).then((r) => {
+        if (!r) return;
+        // Same as the capture sheet: hand the new doc to the main window on the way out.
+        void api("window:revealDoc", r.path);
+        guard.closeNow();
+      }),
     [d, plan.request, guard],
   );
   const commit = useCallback(() => saveAndClose("commit"), [saveAndClose]);

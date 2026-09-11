@@ -117,6 +117,9 @@ await editor.click('button:has-text("Keep editing")');
 await editor.waitForSelector("text=Unsaved changes", { state: "detached" });
 await editor.click('button:has-text("Save & commit")');
 await editor.waitForEvent("close", { timeout: 15000 });
+// Saving from the editor hands the new doc to the main window, like the capture sheet.
+await win.waitForSelector("text=atlas-api/rate-limiting-at-the-edge.md", { timeout: 10000 });
+console.log("editor save revealed the doc in main");
 await win.bringToFront();
 await win.click('button:has-text("New")');
 let blank = null;
@@ -254,6 +257,22 @@ await app.evaluate(async ({ BrowserWindow, clipboard }) => {
 });
 await sheet.waitForSelector("text=Capture from clipboard");
 await sheet.waitForSelector("text=Edge POP inventory");
+const hitsSelect = await sheet.evaluate(() => {
+  const hint = [...document.querySelectorAll("span")].find((s) => s.textContent === "detected");
+  const r = hint.getBoundingClientRect();
+  const el = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+  return el?.tagName === "SELECT" || el?.closest("select") !== null;
+});
+if (!hitsSelect) throw new Error("clicking the FROM hint does not reach the select");
+console.log("FROM dropdown is clickable across the whole control");
+const sheetFits = await sheet.evaluate(() => {
+  const panel = document.querySelector(".dark.flex.flex-col");
+  return { panel: Math.round(panel.getBoundingClientRect().height), win: window.innerHeight };
+});
+// The window used to be a fixed height, leaving dead space under the buttons.
+if (sheetFits.win - sheetFits.panel > 40)
+  throw new Error(`capture sheet leaves dead space: panel ${sheetFits.panel} in ${sheetFits.win}`);
+console.log("capture sheet fits its content:", JSON.stringify(sheetFits));
 await sheet.waitForTimeout(400);
 await sheet.screenshot({ path: join(out, "smoke-11-capture.png") });
 await sheet.keyboard.press("Control+Enter");

@@ -35,3 +35,11 @@ export function openMainWindow(route = "main"): BrowserWindow {
   loadRoute(mainWin, route);
   return mainWin;
 }
+
+/** Bring the main window forward with one document selected. */
+export function revealDoc(path: string): void {
+  const win = openMainWindow();
+  const send = () => win.webContents.send("doc:reveal", path);
+  if (win.webContents.isLoading()) win.webContents.once("did-finish-load", send);
+  else send();
+}
