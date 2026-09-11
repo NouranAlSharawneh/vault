@@ -244,3 +244,12 @@ export interface EditorDraft {
 }
 
 export type AppRoute = (typeof APP_ROUTES)[number];
+
+/** Enough about the stored credential to explain a sign-out, with no secret in it. */
+export interface TokenStatus {
+  present: boolean;
+  /** Epoch ms, or null when the token does not expire. */
+  expiresAt: number | null;
+  /** False means an expiry can only be resolved by authorizing again. */
+  canRefresh: boolean;
+}

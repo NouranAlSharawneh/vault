@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, expect, it, vi } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { CommandPalette } from "@/features/main/components/command-palette/command-palette.component";
 import { useApp } from "@/stores/app";
@@ -48,6 +48,27 @@ describe("CommandPalette", () => {
     render(<CommandPalette onClose={() => undefined} onOpenDoc={() => undefined} />);
     expect(screen.getByText("Recent")).toBeTruthy();
     expect(screen.getByText("Push 3 pending docs")).toBeTruthy();
+  });
+
+  it("Recent is a glance — at most two, however many docs exist", () => {
+    // It used to list eight and swallow the whole panel.
+    mockVaultApi();
+    setIndex();
+    render(<CommandPalette onClose={() => undefined} onOpenDoc={() => undefined} />);
+    expect(screen.getByText("Recent")).toBeTruthy();
+    // Titles also appear in the preview pane, so count rather than expect one node.
+    expect(screen.getAllByText("Rate limiting at the edge").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Weekly sync").length).toBeGreaterThan(0);
+    expect(screen.queryAllByText("Starred thing")).toHaveLength(0);
+  });
+
+  it("a filtered search still shows the full list, not the Recent glance", () => {
+    mockVaultApi();
+    setIndex();
+    render(<CommandPalette onClose={() => undefined} onOpenDoc={() => undefined} />);
+    fireEvent.change(screen.getByLabelText("search"), { target: { value: "source:chatgpt" } });
+    expect(screen.getByText("Matching")).toBeTruthy();
+    expect(screen.getAllByText("Starred thing").length).toBeGreaterThan(0);
   });
 
   it("text query groups title hits and in-text hits, Enter opens the first", async () => {

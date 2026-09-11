@@ -3,6 +3,7 @@ import { AssetPanel } from "@/components/asset-panel";
 import { Kbd } from "@/components/ui";
 import { plural } from "@/helpers";
 import { useCapture } from "./hooks/use-capture.hook";
+import { useFitWindow } from "./hooks/use-fit-window.hook";
 import { useCaptureKeys } from "./hooks/use-capture-keys.hook";
 import { CapturePreview } from "./components/capture-preview/capture-preview.component";
 import { CaptureFields } from "./components/capture-fields/capture-fields.component";
@@ -12,10 +13,14 @@ import { CaptureEmpty } from "./components/capture-empty/capture-empty.component
 /** ⌃⌥V sheet: clipboard → two tabs → ⌘↵. The main window never opens. */
 export function Capture() {
   const c = useCapture();
+  const fit = useFitWindow<HTMLDivElement>();
   useCaptureKeys({ onSave: () => void c.save(), onOpenEditor: c.openInEditor, onHide: c.hide });
 
   return (
-    <div className="dark flex h-full flex-col rounded-lg border border-overlay-line bg-overlay/95 p-5 text-overlay-ink shadow-sheet backdrop-blur-xl">
+    <div
+      ref={fit}
+      className="dark flex flex-col rounded-lg border border-overlay-line bg-overlay/95 p-5 text-overlay-ink shadow-sheet backdrop-blur-xl"
+    >
       <div className="mb-4 flex items-center justify-between">
         <div className="flex items-center gap-2 text-base">
           <ArrowDownToLine size={14} className="text-overlay-ink-3" />

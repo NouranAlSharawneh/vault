@@ -1,7 +1,12 @@
 import { useCallback, useEffect, useMemo, useState, type KeyboardEvent } from "react";
 import { matchesFilters, parseQuery } from "@shared/query";
 import type { DocMeta, SearchHit } from "@shared/types";
-import { PALETTE_MAX_DOCS, PALETTE_MAX_TEXT, SEARCH_DEBOUNCE_MS } from "@/constants";
+import {
+  PALETTE_MAX_DOCS,
+  PALETTE_MAX_RECENT,
+  PALETTE_MAX_TEXT,
+  SEARCH_DEBOUNCE_MS,
+} from "@/constants";
 import { PALETTE_ACTIONS, type PaletteActionKey } from "@/data/palette.data";
 import { acceleratorLabel } from "@/helpers";
 import { api } from "@/lib/api";
@@ -65,10 +70,13 @@ export function useCommandPalette(
         out.push({ title: "In text", items: textHits.slice(0, PALETTE_MAX_TEXT) });
     } else {
       // Filters only (e.g. `tags:spec is:starred`) or empty → newest matching docs.
-      const filtered = docs.filter(passes).slice(0, PALETTE_MAX_DOCS);
+      const searching = !!query.trim();
+      const filtered = docs
+        .filter(passes)
+        .slice(0, searching ? PALETTE_MAX_DOCS : PALETTE_MAX_RECENT);
       if (filtered.length)
         out.push({
-          title: query.trim() ? "Matching" : "Recent",
+          title: searching ? "Matching" : "Recent",
           items: filtered.map((doc) => ({ kind: "doc", doc })),
         });
     }

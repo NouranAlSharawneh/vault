@@ -14,7 +14,7 @@ import type { AuthListener } from "./session.types";
 
 /**
  * Process-wide state: who is signed in and which vault is open.
- * Everything else (IPC, tray, menu) reads through here.
+ * Everything else (IPC, menu) reads through here.
  */
 class Session {
   private vaultService: VaultService | null = null;
@@ -157,7 +157,12 @@ class Session {
 
   async openVault(config: VaultConfig): Promise<VaultService> {
     await this.vaultService?.close();
-    const vault = new VaultService(config, userDataDir(), () => loadToken());
+    const vault = new VaultService(
+      config,
+      userDataDir(),
+      () => loadToken(),
+      () => this.freshenToken(),
+    );
     vault.on("index", (s) => broadcast("index:changed", s));
     vault.on("progress", (p) => broadcast("index:progress", p));
     vault.on("sync", (s) => broadcast("sync:status", s));
