@@ -20,6 +20,7 @@ import type {
   ScanProgress,
   SearchHit,
   SyncStatus,
+  TokenStatus,
   Template,
   TrashedDoc,
   VaultConfig,
@@ -40,6 +41,8 @@ export interface IpcInvoke {
   "auth:webStart": () => void;
   "auth:webCancel": () => void;
   "auth:signOut": () => void;
+  /** What the stored credential looks like — never the token itself. */
+  "auth:tokenStatus": () => TokenStatus;
 
   "github:listRepos": () => GitHubRepo[];
   "github:createRepo": (name: string, isPrivate: boolean) => GitHubRepo;
@@ -91,10 +94,14 @@ export interface IpcInvoke {
   "capture:readClipboard": () => ClipboardCapture;
   /** Hide the sheet and open the just-saved document in the main window. */
   "capture:reveal": (path: string) => void;
+  /** Grow or shrink the capture sheet to the height its content actually needs. */
+  "capture:resize": (height: number) => void;
   "capture:hide": () => void;
   "capture:openEditor": (draft: EditorDraft) => void;
 
   "window:openMain": (route?: string) => void;
+  /** Bring the main window forward with this document selected. */
+  "window:revealDoc": (path: string) => void;
   "window:openEditor": (path?: string) => void;
   "app:version": () => string;
   "app:platform": () => NodeJS.Platform;

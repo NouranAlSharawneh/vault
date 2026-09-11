@@ -1,5 +1,5 @@
-import { useCallback, useState } from "react";
-import type { VaultConfig } from "@shared/types";
+import { useCallback, useEffect, useState } from "react";
+import type { TokenStatus, VaultConfig } from "@shared/types";
 import { errorMessage, plural } from "@/helpers";
 import { api } from "@/lib/api";
 import { useApp } from "@/stores/app";
@@ -16,6 +16,13 @@ export function useSettings() {
   const refreshTrash = useApp((s) => s.refreshTrash);
   const show = useToast((s) => s.show);
   const [state, setState] = useState<SettingsState>({ error: null, busy: null });
+  const [token, setToken] = useState<TokenStatus | null>(null);
+
+  useEffect(() => {
+    api("auth:tokenStatus")
+      .then(setToken)
+      .catch(() => undefined);
+  }, [auth.status]);
 
   const update = useCallback(
     async (patch: Partial<VaultConfig>) => {
@@ -70,6 +77,7 @@ export function useSettings() {
     ...state,
     config,
     auth,
+    token,
     docCount: index?.docs.length ?? 0,
     trashCount: trash.length,
     projectNames: new Map((index?.projects ?? []).map((p) => [p.slug, p.name])),

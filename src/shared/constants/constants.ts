@@ -173,3 +173,6 @@ export const OAUTH_TIMEOUT_MS = 5 * 60_000;
 export const WEB_FLOW_CANCEL_GRACE_MS = 1500;
 /** Renew an expiring GitHub token this long before its deadline. */
 export const TOKEN_REFRESH_SKEW_MS = 5 * 60 * 1000;
+/** The capture sheet is sized to its content between these bounds. */
+export const CAPTURE_MIN_HEIGHT = 220;
+export const CAPTURE_MAX_HEIGHT = 520;

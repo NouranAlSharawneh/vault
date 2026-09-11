@@ -1,5 +1,10 @@
 import { app, BrowserWindow, screen } from "electron";
-import { CAPTURE_WINDOW, OVERLAY_BG } from "@shared/constants";
+import {
+  CAPTURE_MAX_HEIGHT,
+  CAPTURE_MIN_HEIGHT,
+  CAPTURE_WINDOW,
+  OVERLAY_BG,
+} from "@shared/constants";
 import { COMMON_WINDOW_OPTIONS, IS_MAC, loadRoute } from "./load-route";
 import { getMainWindow } from "./main.window";
 import { editorWindowCount } from "./editor.window";
@@ -57,4 +62,16 @@ export function hideCaptureWindow(): void {
 
 export function isCaptureVisible(): boolean {
   return !!captureWin && !captureWin.isDestroyed() && captureWin.isVisible();
+}
+
+/**
+ * Fit the sheet to its content. A short clip used to leave dead space below the buttons,
+ * because the window was a fixed height whatever was in it.
+ */
+export function resizeCaptureWindow(height: number): void {
+  const win = captureWin;
+  if (!win || win.isDestroyed()) return;
+  const wanted = Math.round(Math.min(Math.max(height, CAPTURE_MIN_HEIGHT), CAPTURE_MAX_HEIGHT));
+  const [w, h] = win.getContentSize();
+  if (Math.abs(h - wanted) > 1) win.setContentSize(w, wanted, false);
 }
