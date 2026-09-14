@@ -5,27 +5,23 @@ import { parse as parseYaml, stringify as stringifyYaml } from "yaml";
 import {
   ASSETS_DIR,
   DEFAULT_BRANCH,
+  FROM_REMOTE_SUFFIX,
   GIT_IDENTITY,
   INBOX_SLUG,
+  PULL_INTERVAL_MS,
   PUSH_RETRY_MAX_MS,
   PUSH_RETRY_MIN_MS,
   README_FILE,
+  REBASE_MAX_STOPS,
   TRASH_DIR,
   VAULT_DIR,
 } from "@shared/constants";
 import { composeDoc, parseDoc, splitFrontmatter } from "@shared/frontmatter";
-import {
-  countWords,
-  inferTitle,
-  projectSlug,
-  rewriteAssetRefs,
-  slugify,
-  unslug,
-} from "@shared/helpers";
+import { inferTitle, projectSlug, rewriteAssetRefs, slugify, unslug } from "@shared/helpers";
 import type {
   CommitInfo,
   ConflictChoice,
-  ConflictFile,
+  ConflictPair,
   DocContent,
   DocMeta,
   Frontmatter,
@@ -64,9 +60,12 @@ export class VaultService extends EventEmitter {
     lastPushAt: null,
     lastError: null,
     remote: null,
+    conflicts: 0,
   };
   private pushTimer: NodeJS.Timeout | null = null;
+  private pullTimer: NodeJS.Timeout | null = null;
   private pushing = false;
+  private pullInFlight: Promise<{ conflicts: ConflictPair[] }> | null = null;
   private retryDelay = PUSH_RETRY_MIN_MS;
 
   constructor(
@@ -102,12 +101,28 @@ export class VaultService extends EventEmitter {
     if (!existsSync(join(this.root, README_FILE))) await this.writeReadme();
     this.index.watch();
     void this.refreshSyncStatus();
+    this.startPulling();
     return snap;
   }
 
   async close(): Promise<void> {
     if (this.pushTimer) clearTimeout(this.pushTimer);
+    if (this.pullTimer) clearInterval(this.pullTimer);
     await this.index.close();
+  }
+
+  /**
+   * A quiet fetch on a long interval. Without it a document written on another machine —
+   * or on github.com — never reaches this one until you happen to save something here,
+   * because only a push ever goes to the network. An interrupted rebase from a previous
+   * run is also cleaned up by the first tick.
+   */
+  private startPulling(): void {
+    if (!this.config.remote || this.pullTimer) return;
+    this.pullTimer = setInterval(() => void this.pull(), PULL_INTERVAL_MS);
+    // Node keeps the process alive for a pending timer; a background fetch should not.
+    this.pullTimer.unref?.();
+    void this.pull();
   }
 
   private async ensureScaffold(): Promise<void> {
@@ -533,16 +548,17 @@ export class VaultService extends EventEmitter {
   async refreshSyncStatus(): Promise<SyncStatus> {
     const ab = await this.git.aheadBehind();
     await this.index.markUnpushed(await this.git.unpushedPaths());
-    const sticky =
-      this.sync.state === "error" ||
-      this.sync.state === "offline" ||
-      this.sync.state === "conflict";
+    // Counted off the documents themselves rather than remembered, so it survives a
+    // restart with a pair still unanswered and clears itself the moment the last one is
+    // settled. Error and offline stay sticky until something changes them.
+    const conflicts = (await this.conflicts()).length;
+    const sticky = this.sync.state === "error" || this.sync.state === "offline";
     const state: SyncStatus["state"] = sticky
       ? this.sync.state
       : ab.ahead > 0
         ? "pending"
         : "synced";
-    this.setSync({ ...ab, state });
+    this.setSync({ ...ab, state, conflicts });
     return this.sync;
   }
 
@@ -568,13 +584,13 @@ export class VaultService extends EventEmitter {
         // non fast-forward → rebase on top of the remote first
         if (!/rejected|non-fast-forward|fetch first/i.test(String((e as Error).message ?? e)))
           throw e;
-        const conflicts = await this.git.pullRebase();
-        if (conflicts.length) {
-          this.setSync({
-            state: "conflict",
-            lastError: `${conflicts.length} file(s) changed on both machines`,
-          });
-          return this.sync;
+        // Both versions are kept and committed, so the push that follows carries them
+        // both up. It never stops here waiting for an answer.
+        const conflicted = await this.git.pullRebase();
+        if (conflicted.length) {
+          await this.settleRebase(conflicted);
+          await this.index.rescan();
+          this.emit("index", this.index.snapshot());
         }
         await this.git.push();
       }
@@ -600,62 +616,184 @@ export class VaultService extends EventEmitter {
     return this.sync;
   }
 
-  async pull(): Promise<{ conflicts: ConflictFile[] }> {
+  /**
+   * Fetch and rebase. A conflict is never left sitting in the working tree: both versions
+   * are kept, committed, and the copy is stamped so it can be found again — so the repo
+   * is clean by the time this returns and nothing downstream has to know what a rebase is.
+   */
+  async pull(): Promise<{ conflicts: ConflictPair[] }> {
     if (!this.config.remote) return { conflicts: [] };
-    await this.ensureRemote();
-    const paths = await this.git.pullRebase();
-    const conflicts: ConflictFile[] = [];
-    for (const p of paths) {
-      const abs = join(this.root, p);
-      let ours = { words: 0, mtime: 0 };
-      try {
-        const st = await fs.stat(abs);
-        ours = { words: countWords(await fs.readFile(abs, "utf8")), mtime: st.mtimeMs };
-      } catch {
-        /* deleted locally */
-      }
-      let theirs = { words: 0, mtime: 0 };
-      try {
-        theirs = {
-          words: countWords(await this.git.show(p, `origin/${this.sync.branch}`)),
-          mtime: 0,
-        };
-      } catch {
-        /* not on remote */
-      }
-      conflicts.push({ path: p, ours, theirs });
+    // Asking for a pull while one is already running joins it rather than being told
+    // "nothing happened" — the timer and a button press land on the same answer.
+    if (!this.pullInFlight) {
+      this.pullInFlight = this.runPull();
+      void this.pullInFlight.finally(() => {
+        this.pullInFlight = null;
+      });
     }
-    if (!paths.length) {
+    return this.pullInFlight;
+  }
+
+  private async runPull(): Promise<{ conflicts: ConflictPair[] }> {
+    try {
+      await this.freshenToken();
+      await this.ensureRemote();
+      // A rebase left over from a crash has to finish before a new one can start.
+      if (this.git.rebaseInProgress()) await this.settleRebase();
+      else {
+        const conflicted = await this.git.pullRebase();
+        if (conflicted.length) await this.settleRebase(conflicted);
+      }
       await this.index.rescan();
+      this.emit("index", this.index.snapshot());
       await this.refreshSyncStatus();
-    } else this.setSync({ state: "conflict" });
-    return { conflicts };
+      return { conflicts: await this.conflicts() };
+    } catch (e) {
+      // Whatever went wrong, do not leave the vault half-rebased: the next save would
+      // commit onto a detached HEAD and the user would have no way to see why.
+      await this.git.abortRebase();
+      const msg = redact(String((e as Error).message ?? e), this.tokenProvider());
+      const failure = classifyPushError(msg);
+      if (failure === "bad-credentials" || failure === "no-permission") this.emit("auth-suspect");
+      this.setSync({ state: failure === "offline" ? "offline" : "error", lastError: msg });
+      return { conflicts: [] };
+    }
   }
 
   /**
-   * Resolve a rebase conflict. `mine` keeps this machine's version, `theirs` keeps the
-   * remote, `both` keeps the remote at the path and saves mine as a copy. Nothing is
-   * destroyed: the loser stays in git history.
+   * Carry a rebase to the end, keeping both sides of every conflict it stops on. A rebase
+   * replays each local commit in turn, so it can stop more than once — hence the loop.
    */
-  async resolveConflict(relPath: string, choice: ConflictChoice): Promise<void> {
-    const abs = join(this.root, relPath);
-    if (choice === "both") {
-      const raw = await fs.readFile(abs, "utf8");
-      const mine = raw.replace(/<<<<<<<[^\n]*\n([\s\S]*?)=======\n[\s\S]*?>>>>>>>[^\n]*\n?/g, "$1");
-      const copy = await this.uniquePath(relPath.replace(/\.md$/, "-this-mac.md"));
-      await fs.writeFile(join(this.root, copy), mine);
-      await this.git.checkoutSide(relPath, "ours");
-      await this.git.git.add([copy]);
-    } else {
-      await this.git.checkoutSide(relPath, choice === "mine" ? "theirs" : "ours");
-    }
-    const status = await this.git.git.status();
-    if (!status.conflicted.length) {
+  private async settleRebase(first?: string[]): Promise<void> {
+    let conflicted = first ?? (await this.git.conflictedPaths());
+    for (let i = 0; this.git.rebaseInProgress() && i < REBASE_MAX_STOPS; i++) {
+      if (conflicted.length) await this.keepBothSides(conflicted);
       await this.git.continueRebase();
-      await this.index.rescan();
-      this.setSync({ state: "pending", lastError: null });
-      this.schedulePush();
+      conflicted = await this.git.conflictedPaths();
     }
+    if (this.git.rebaseInProgress()) throw new Error("Rebase did not finish");
+  }
+
+  /**
+   * Resolve every conflicted path without asking and without losing anything: this
+   * machine's version stays where it is, and the version from GitHub is written beside it
+   * as its own document, stamped so the pair can be found again.
+   */
+  private async keepBothSides(paths: string[]): Promise<void> {
+    for (const path of paths) {
+      const mine = await this.git.conflictSide(path, "mine");
+      const remote = await this.git.conflictSide(path, "remote");
+      // The README is generated from the index, so there is nothing to choose between.
+      if (path === README_FILE) {
+        await this.git.takeSide(path, mine === null ? "remote" : "mine");
+        continue;
+      }
+      // One side deleted it. Keeping the surviving text is the only non-destructive move.
+      if (mine === null || remote === null) {
+        await this.git.takeSide(path, mine === null ? "remote" : "mine");
+        continue;
+      }
+      // Assets and anything else that isn't a document get the same treatment by bytes:
+      // mine stays, theirs lands beside it under a name that says where it came from.
+      if (!path.endsWith(".md")) {
+        await this.git.takeSide(path, "mine");
+        const copy = await this.uniqueSibling(path, FROM_REMOTE_SUFFIX);
+        await fs.writeFile(join(this.root, copy), remote);
+        await this.git.git.add([copy]);
+        continue;
+      }
+      await this.git.takeSide(path, "mine");
+      const copy = await this.uniqueSibling(path, FROM_REMOTE_SUFFIX);
+      const parsed = parseDoc(remote);
+      const fm: Frontmatter = {
+        ...(parsed.frontmatter ?? {
+          title: inferTitle(parsed.body) ?? "Untitled",
+          project: "",
+          tags: [],
+          created: new Date().toISOString(),
+          source: "other",
+        }),
+        conflict: { of: path, from: "github", at: await this.remoteDateFor(path) },
+      };
+      await fs.writeFile(join(this.root, copy), composeDoc(fm, parsed.body, parsed.extra));
+      await this.git.git.add([copy]);
+    }
+  }
+
+  /** When the version on GitHub was written, for "GitHub · today 14:29". */
+  private async remoteDateFor(path: string): Promise<string> {
+    try {
+      const out = await this.git.git.raw([
+        "log",
+        "-1",
+        "--format=%aI",
+        `origin/${this.sync.branch}`,
+        "--",
+        path,
+      ]);
+      return out.trim() || new Date().toISOString();
+    } catch {
+      return new Date().toISOString();
+    }
+  }
+
+  private async uniqueSibling(path: string, suffix: string): Promise<string> {
+    const dot = path.lastIndexOf(".");
+    const [stem, ext] = dot > 0 ? [path.slice(0, dot), path.slice(dot)] : [path, ""];
+    if (ext === ".md") return this.uniquePath(`${stem}${suffix}.md`);
+    for (let i = 1; i < 1000; i++) {
+      const p = i === 1 ? `${stem}${suffix}${ext}` : `${stem}${suffix}-${i}${ext}`;
+      if (!existsSync(join(this.root, p))) return p;
+    }
+    throw new Error("Could not find a unique filename");
+  }
+
+  /** Every pair of versions still waiting on a decision, newest arrival first. */
+  async conflicts(): Promise<ConflictPair[]> {
+    const docs = this.index.snapshot().docs;
+    const byPath = new Map(docs.map((d) => [d.path, d]));
+    const pairs: ConflictPair[] = [];
+    for (const theirs of docs) {
+      const mark = theirs.conflict;
+      const mine = mark && byPath.get(mark.of);
+      if (mark && mine) pairs.push({ mine, theirs, mark });
+    }
+    return pairs.sort((a, b) => b.mark.at.localeCompare(a.mark.at));
+  }
+
+  /**
+   * Settle one pair. `copyPath` is the stamped copy; the choice is about which text ends
+   * up at the original path. Nothing is deleted — the loser goes to the trash, and both
+   * versions stay in history either way.
+   */
+  async resolveConflict(copyPath: string, choice: ConflictChoice): Promise<void> {
+    const copy = await this.read(copyPath);
+    const mark = copy.meta.conflict;
+    if (!mark) throw new Error(`Not a conflict copy: ${copyPath}`);
+    if (choice === "theirs") {
+      // The version from GitHub wins: it takes the original's path, and the original
+      // goes to the trash where it can still be brought back.
+      const original = await this.read(mark.of).catch(() => null);
+      if (original) await this.trash(mark.of);
+      await this.save({
+        body: copy.body,
+        frontmatter: pickFrontmatter(original?.meta ?? copy.meta),
+        existingPath: copyPath,
+        commit: true,
+      });
+    } else if (choice === "mine") {
+      await this.trash(copyPath);
+    } else {
+      // Keep both as separate documents. The stamp goes, and with it the only thing
+      // telling the two apart — they share a title — so the title says it instead.
+      await this.save({
+        body: copy.body,
+        frontmatter: { ...pickFrontmatter(copy.meta), title: `${copy.meta.title} (from GitHub)` },
+        existingPath: copyPath,
+        commit: true,
+      });
+    }
+    await this.refreshSyncStatus();
   }
 }
 

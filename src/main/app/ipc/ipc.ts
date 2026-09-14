@@ -211,7 +211,8 @@ export function registerIpcHandlers(): void {
   handle("sync:status", () => session.requireVault().status());
   handle("sync:pushNow", () => session.requireVault().pushNow());
   handle("sync:pull", () => session.requireVault().pull());
-  handle("sync:resolveConflict", (p, choice) => session.requireVault().resolveConflict(p, choice));
+  handle("conflicts:list", () => session.requireVault().conflicts());
+  handle("conflicts:resolve", (p, choice) => session.requireVault().resolveConflict(p, choice));
 
   // ---- views / templates / search
   handle("views:list", () => session.requireVault().listViews());

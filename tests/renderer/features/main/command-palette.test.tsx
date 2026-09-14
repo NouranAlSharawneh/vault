@@ -38,6 +38,7 @@ const setIndex = () =>
       lastPushAt: null,
       lastError: null,
       remote: "x",
+      conflicts: 0,
     },
   });
 
