@@ -172,6 +172,69 @@ const drawerBox = await win.evaluate(() => {
 if (!drawerBox || drawerBox.w < 300 || drawerBox.right > drawerBox.vw + 1)
   throw new Error("history drawer is not visible on screen: " + JSON.stringify(drawerBox));
 console.log("history drawer shows the commit diff, visible:", JSON.stringify(drawerBox));
+// Alignment. Text sits in a line box that reserves room for descenders, so a string
+// without any — an all-caps label, a commit sha — floats above the middle of the band
+// it is centred in and leans away from the icon beside it. These are the facts that
+// keep the drawer straight; each one is something that has already gone wrong once.
+const align = await win.evaluate(() => {
+  const d = document.querySelector('[data-testid="history-drawer"]');
+  const header = d.querySelector("header");
+  const ul = d.querySelector("ul");
+  const rows = [...ul.querySelectorAll("li > button")];
+  const box = (el) => el.getBoundingClientRect();
+  const mid = (el) => +(box(el).y + box(el).height / 2).toFixed(1);
+  const tight = (el) => {
+    const s = getComputedStyle(el);
+    return Math.abs(parseFloat(s.lineHeight) - parseFloat(s.fontSize)) < 0.5;
+  };
+  return {
+    headerPadTop: getComputedStyle(header).paddingTop,
+    tight: [header.firstElementChild, d.querySelector("ul + div").firstElementChild].map(tight),
+    headerMid: mid(header),
+    labelMid: mid(header.firstElementChild),
+    closeMid: mid(header.querySelector("button")),
+    gapTop: +(box(rows[0]).top - box(ul).top).toFixed(1),
+    gapBottom: +(box(ul).bottom - box(rows.at(-1)).bottom).toFixed(1),
+    // Three columns the eye reads as one: text starts, text ends, chips end.
+    left: [
+      header.firstElementChild,
+      rows[0].firstElementChild,
+      d.querySelector("ul + div").firstElementChild,
+    ].map((el) => Math.round(box(el).x)),
+    right: [header.querySelector("svg"), rows[0].lastElementChild].map((el) =>
+      Math.round(box(el).right),
+    ),
+    chips: [header.querySelector("button"), rows[0]].map((el) => Math.round(box(el).right)),
+  };
+});
+if (align.headerPadTop !== "0px")
+  throw new Error("drawer header is padded off its own centre: " + align.headerPadTop);
+if (align.tight.some((t) => !t))
+  throw new Error(
+    "drawer text is not set leading-none, so it rides high: " + JSON.stringify(align.tight),
+  );
+for (const [name, v] of [
+  ["label", align.labelMid],
+  ["close button", align.closeMid],
+])
+  if (Math.abs(v - align.headerMid) > 0.5)
+    throw new Error(`drawer ${name} is off the header's centre: ${v} vs ${align.headerMid}`);
+if (align.gapTop !== align.gapBottom)
+  throw new Error("commit list is not evenly inset: " + JSON.stringify(align));
+for (const [name, col] of [
+  ["left", align.left],
+  ["right", align.right],
+  ["chip", align.chips],
+])
+  if (new Set(col).size !== 1)
+    throw new Error(`drawer ${name} edges do not share a column: ` + JSON.stringify(col));
+console.log("drawer alignment:", JSON.stringify(align));
+// Icon-only buttons say what they do on hover.
+await win.hover('button[aria-label="history"]');
+await win.waitForSelector('[role="tooltip"]', { timeout: 3000 });
+const tipText = await win.textContent('[role="tooltip"]');
+if (!tipText.startsWith("History")) throw new Error("history tooltip reads: " + tipText);
+console.log("tooltip:", tipText);
 // Close it before editing; the button is a toggle, so leaving it open would shut it later.
 // Escape closes it, like every other overlay in the app.
 await win.keyboard.press("Escape");
@@ -179,6 +242,17 @@ await win.waitForSelector('[data-testid="history-drawer"]', { state: "detached",
 await win.click('button[aria-label="history"]');
 await win.waitForSelector('[data-testid="history-drawer"]');
 await win.click('button[aria-label="close history"]');
+// With the drawer shut the last button sits against the window edge, which is the case
+// a centred label hangs off. It has to slide back in instead.
+await win.hover('button[aria-label="move to trash"]');
+await win.waitForSelector('[role="tooltip"]', { timeout: 3000 });
+const tipEdge = await win.evaluate(() => {
+  const b = document.querySelector('[role="tooltip"]').getBoundingClientRect();
+  return { left: Math.round(b.x), right: Math.round(b.right), vw: window.innerWidth };
+});
+if (tipEdge.right > tipEdge.vw || tipEdge.left < 0)
+  throw new Error("tooltip hangs off the window: " + JSON.stringify(tipEdge));
+console.log("tooltip stays on screen:", JSON.stringify(tipEdge));
 
 // Edit the doc so there are two versions, then restore the older one.
 const [ed2] = await Promise.all([
