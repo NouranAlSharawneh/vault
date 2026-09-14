@@ -35,6 +35,7 @@ export const INVOKE_CHANNELS = [
   "doc:history",
   "doc:atCommit",
   "doc:restore",
+  "doc:diff",
   "doc:pathPreview",
   "project:rename",
   "project:list",

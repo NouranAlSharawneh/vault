@@ -65,6 +65,7 @@ export interface IpcInvoke {
   "doc:history": (path: string) => CommitInfo[];
   "doc:atCommit": (path: string, sha: string) => string;
   "doc:restore": (path: string, sha: string) => SaveResult;
+  "doc:diff": (path: string, sha: string) => string;
   "doc:pathPreview": (project: string, title: string) => string;
 
   "trash:list": () => TrashedDoc[];

@@ -6,10 +6,11 @@ interface Handlers {
   onSearch: () => void;
   onTrash: () => void;
   onSettings: () => void;
+  onHistory: () => void;
 }
 
 /** Menu shortcuts routed to the main window (⌘K search, ⌘N new, ⌘⌫ trash, ⌘, settings). */
-export function useMainShortcuts({ onSearch, onTrash, onSettings }: Handlers) {
+export function useMainShortcuts({ onSearch, onTrash, onSettings, onHistory }: Handlers) {
   useEffect(
     () =>
       on("shortcut", (s) => {
@@ -17,8 +18,9 @@ export function useMainShortcuts({ onSearch, onTrash, onSettings }: Handlers) {
         if (s === "new") void api("window:openEditor");
         if (s === "trash") onTrash();
         if (s === "settings") onSettings();
+        if (s === "history") onHistory();
       }),
-    [onSearch, onTrash, onSettings],
+    [onSearch, onTrash, onSettings, onHistory],
   );
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -33,9 +35,12 @@ export function useMainShortcuts({ onSearch, onTrash, onSettings }: Handlers) {
       } else if (e.key === ",") {
         e.preventDefault();
         onSettings();
+      } else if (e.key.toLowerCase() === "y") {
+        e.preventDefault();
+        onHistory();
       }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [onSearch, onTrash, onSettings]);
+  }, [onSearch, onTrash, onSettings, onHistory]);
 }

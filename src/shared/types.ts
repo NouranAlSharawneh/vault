@@ -100,6 +100,12 @@ export interface CommitInfo {
   date: string;
   relative: string;
   author: string;
+  /**
+   * The document's path *at that commit*. Changing a doc's project is a `git mv`, so
+   * this is not always its path today — reading or restoring an old version has to use
+   * the historical one or it looks up a file that did not exist yet.
+   */
+  path: string;
 }
 
 export interface ProjectSummary {
@@ -252,4 +258,18 @@ export interface TokenStatus {
   expiresAt: number | null;
   /** False means an expiry can only be resolved by authorizing again. */
   canRefresh: boolean;
+}
+
+export interface DiffLine {
+  kind: "added" | "removed" | "context";
+  text: string;
+  /** Line number on each side; null on the side where the line does not exist. */
+  oldLine: number | null;
+  newLine: number | null;
+}
+
+export interface DiffHunk {
+  /** The function/section context git puts after the @@ marker, when there is one. */
+  heading: string;
+  lines: DiffLine[];
 }

@@ -4,6 +4,8 @@ import { createServer, type Server } from "node:http";
 // `electron` can't load under vitest; the "browser" here just follows the authorize
 // URL like a user clicking Authorize, then GitHub redirecting back to 127.0.0.1.
 const opened: string[] = [];
+/** Set to hold the redirect back, so a test can keep a flow genuinely in flight. */
+const browser = { hold: false, pending: [] as (() => Promise<void>)[] };
 vi.mock("electron", () => ({
   shell: {
     openExternal: async (url: string) => {
@@ -12,7 +14,9 @@ vi.mock("electron", () => ({
       const redirect = new URL(u.searchParams.get("redirect_uri")!);
       redirect.searchParams.set("code", "one-time-code");
       redirect.searchParams.set("state", u.searchParams.get("state")!);
-      await fetch(redirect);
+      const follow = async () => void (await fetch(redirect));
+      if (browser.hold) browser.pending.push(follow);
+      else await follow();
     },
   },
 }));
@@ -71,12 +75,26 @@ describe("web flow end-to-end", () => {
   it("joins a flow already in flight instead of opening a second browser tab", async () => {
     // React StrictMode mounts the sign-in screen twice in dev. Starting a second flow
     // would issue a fresh `state`, so authorizing the first tab failed as a mismatch.
+    //
+    // The redirect is held back rather than racing it: without that, the first flow can
+    // finish before the second call is made, and the test asserts nothing about joining.
     opened.length = 0;
+    browser.hold = true;
     const config = { clientId: "cid", clientSecret: "sekret" };
-    const [a, b] = await Promise.all([
-      runWebFlow(config, () => undefined),
-      runWebFlow(config, () => undefined),
-    ]);
+    const first = runWebFlow(config, () => undefined);
+    // The tab opens only after the loopback server is listening, so wait for the first
+    // flow to actually be in flight — that is the state the second call has to join.
+    for (let i = 0; i < 200 && opened.length === 0; i++) {
+      await new Promise((r) => setTimeout(r, 10));
+    }
+    expect(opened).toHaveLength(1);
+
+    const second = runWebFlow(config, () => undefined);
+    expect(opened).toHaveLength(1); // the second call must not have opened its own tab
+
+    browser.hold = false;
+    await Promise.all(browser.pending.splice(0).map((follow) => follow()));
+    const [a, b] = await Promise.all([first, second]);
     expect(opened).toHaveLength(1);
     expect(a.accessToken).toBe("gho_test");
     expect(b).toBe(a);
