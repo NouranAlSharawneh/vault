@@ -22,6 +22,8 @@ export function DocumentReader({
   onView,
   onStar,
   onTrash,
+  onHistory,
+  historyOpen,
   trashed,
   onRestore,
   onPurge,
@@ -35,6 +37,8 @@ export function DocumentReader({
         onView={onView}
         onStar={onStar}
         onTrash={onTrash}
+        onHistory={onHistory}
+        historyOpen={historyOpen}
         trashed={trashed}
         onRestore={onRestore}
         onPurge={onPurge}

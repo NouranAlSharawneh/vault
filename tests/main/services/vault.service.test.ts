@@ -336,6 +336,42 @@ describe("VaultService (800-doc fixture)", () => {
     );
   });
 
+  it("follows a document through a project move for history, diff and restore", async () => {
+    // Changing a doc's project is a `git mv`. Every one of these used to ask git for
+    // the doc's *current* path at an older commit, which is a file that did not exist
+    // yet — so history worked and everything built on it broke, but only for docs that
+    // had moved. Exactly the case a real vault hits and a fresh fixture never does.
+    const first = await vault.save({
+      body: "# Travelling doc\n\nOriginal body.\n",
+      frontmatter: { title: "Travelling doc", project: "Atlas API", tags: [], source: "manual" },
+      commit: true,
+    });
+    expect(first.path).toBe("atlas-api/travelling-doc.md");
+
+    const moved = await vault.save({
+      body: "# Travelling doc\n\nBody after the move.\n",
+      frontmatter: { title: "Travelling doc", project: "Research log", tags: [], source: "manual" },
+      existingPath: first.path,
+      commit: true,
+    });
+    expect(moved.path).toBe("research-log/travelling-doc.md");
+
+    const log = await vault.history(moved.path);
+    expect(log.length).toBeGreaterThanOrEqual(2);
+    // The oldest entry remembers the name it had back then, not the name it has now.
+    const oldest = log[log.length - 1];
+    expect(oldest.path).toBe("atlas-api/travelling-doc.md");
+
+    // Reading that version by today's path would find nothing.
+    expect(await vault.atCommit(moved.path, oldest.sha)).toContain("Original body.");
+    expect(await vault.diff(moved.path, oldest.sha)).toContain("+Original body.");
+
+    const restored = await vault.restore(moved.path, oldest.sha);
+    expect(readFileSync(join(root, restored.path), "utf8")).toContain("Original body.");
+    // Restoring is a new commit — the history is never rewritten.
+    expect((await vault.git.git.log()).latest?.message).toContain("Travelling doc");
+  });
+
   it("warm-starts from cache + git diff", async () => {
     const head = await vault.git.headSha();
     const idx = new IndexerService(root, cache, vault.git);

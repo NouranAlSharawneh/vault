@@ -1,4 +1,4 @@
-import { ExternalLink, Pencil, RotateCcw, Star, Trash2 } from "lucide-react";
+import { ExternalLink, History, Pencil, RotateCcw, Star, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui";
 import { MOD_KEY } from "@/constants";
 import { READER_VIEWS } from "@/data/main.data";
@@ -13,6 +13,8 @@ export function ReaderToolbar({
   onView,
   onStar,
   onTrash,
+  onHistory,
+  historyOpen,
   trashed,
   onRestore,
   onPurge,
@@ -49,32 +51,56 @@ export function ReaderToolbar({
           </Button>
         </div>
       ) : (
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-0.5">
           <Button
             variant="ghost"
             size="sm"
+            className="w-7 px-0"
             onClick={onStar}
             title={doc.starred ? "Unstar" : "Star"}
             aria-label="star"
           >
             <Star size={12} className={cx(doc.starred && "fill-warn text-warn")} />
           </Button>
-          <Button variant="ghost" size="sm" onClick={() => api("window:openEditor", doc.path)}>
-            <Pencil size={11} /> Edit
+          {/* Icons only: with the history drawer open the reader is narrow, and labelled
+              buttons ran into each other. Every one keeps a tooltip and a label. */}
+          <Button
+            variant="ghost"
+            size="sm"
+            className="w-7 px-0"
+            onClick={() => api("window:openEditor", doc.path)}
+            title="Edit"
+            aria-label="edit"
+          >
+            <Pencil size={12} />
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            className={cx("w-7 px-0", historyOpen && "bg-paper-3 text-ink")}
+            onClick={onHistory}
+            title={`History (${MOD_KEY}Y)`}
+            aria-label="history"
+            aria-pressed={historyOpen}
+          >
+            <History size={12} />
           </Button>
           {remote && (
             <Button
               variant="ghost"
               size="sm"
+              className="w-7 px-0"
               onClick={() => api("github:openInBrowser", `${remote}/blob/${branch}/${doc.path}`)}
               title="Open on GitHub"
+              aria-label="open on github"
             >
-              <ExternalLink size={11} /> GitHub
+              <ExternalLink size={12} />
             </Button>
           )}
           <Button
             variant="ghost"
             size="sm"
+            className="w-7 px-0"
             onClick={onTrash}
             title={`Move to trash (${MOD_KEY}⌫)`}
             aria-label="move to trash"
