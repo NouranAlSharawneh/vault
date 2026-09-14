@@ -5,7 +5,7 @@ import type {
   ClipboardCapture,
   CommitInfo,
   ConflictChoice,
-  ConflictFile,
+  ConflictPair,
   DeviceCodeSession,
   DevicePollStatus,
   DocContent,
@@ -79,8 +79,11 @@ export interface IpcInvoke {
 
   "sync:status": () => SyncStatus;
   "sync:pushNow": () => SyncStatus;
-  "sync:pull": () => { conflicts: ConflictFile[] };
-  "sync:resolveConflict": (path: string, choice: ConflictChoice) => void;
+  /** Fetch and rebase. Conflicts are kept as pairs, never left in the working tree. */
+  "sync:pull": () => { conflicts: ConflictPair[] };
+  "conflicts:list": () => ConflictPair[];
+  /** `copyPath` is the stamped copy; the choice decides what ends up at the original path. */
+  "conflicts:resolve": (copyPath: string, choice: ConflictChoice) => void;
 
   "views:list": () => SavedView[];
   "views:save": (view: SavedView) => SavedView[];

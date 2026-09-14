@@ -14,6 +14,8 @@ export interface Frontmatter {
   created: string;
   source: Source;
   starred?: boolean;
+  /** Present only on the copy a sync conflict left behind. See ConflictMark. */
+  conflict?: ConflictMark;
 }
 
 /** What the index knows about a document without holding its body. */
@@ -142,7 +144,8 @@ export interface SearchHit {
   snippet: string | null;
 }
 
-export type SyncState = "synced" | "pending" | "pushing" | "offline" | "conflict" | "error";
+/** Only ever about pushing. Two versions of a document is a separate fact — see `conflicts`. */
+export type SyncState = "synced" | "pending" | "pushing" | "offline" | "error";
 
 export interface SyncStatus {
   state: SyncState;
@@ -152,12 +155,35 @@ export interface SyncStatus {
   lastPushAt: number | null;
   lastError: string | null;
   remote: string | null;
+  /**
+   * Documents waiting on a decision about which version wins. Its own field rather than
+   * a state, because you can be perfectly well pushed and still owe one an answer — as a
+   * state it vanished the moment you typed anything.
+   */
+  conflicts: number;
 }
 
-export interface ConflictFile {
-  path: string;
-  ours: { words: number; mtime: number };
-  theirs: { words: number; mtime: number };
+/**
+ * Stamped on the copy a conflict leaves behind, never on the document that was already
+ * here. It points back at its twin, so a pair can be found again after a restart without
+ * any state living outside the vault.
+ */
+export interface ConflictMark {
+  /** Path of the document this is the other version of. */
+  of: string;
+  /** Where this version arrived from. Only one origin exists today. */
+  from: "github";
+  /** ISO date of the commit that wrote it, for "GitHub · today 14:29". */
+  at: string;
+}
+
+/** Two versions of one document, waiting for you to say which one wins. */
+export interface ConflictPair {
+  /** The version that was already on this machine, at its original path. */
+  mine: DocMeta;
+  /** The copy that came down from GitHub, saved beside it. */
+  theirs: DocMeta;
+  mark: ConflictMark;
 }
 
 export type ConflictChoice = "mine" | "theirs" | "both";

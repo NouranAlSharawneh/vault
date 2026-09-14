@@ -32,6 +32,30 @@ writeFileSync(
   join(root, "research-log", "with-image.md"),
   "# With image\n\n![hero](assets/hero.png)\n\n---\n\n```yaml\ntitle: With image\nproject: Research log\ntags: [spec]\ncreated: 2026-01-01T10:00:00Z\nsource: manual\n```\n",
 );
+// A document that changed in two places. The pair is what a pull leaves behind — the
+// copy carries the stamp pointing back at the original — so the review can be driven
+// without standing up a remote.
+const CONFLICT_DOC = "atlas-api/deploy-checklist.md";
+const CONFLICT_COPY = "atlas-api/deploy-checklist-from-github.md";
+const conflictDoc = (body, stamp) =>
+  `# Deploy checklist\n\n${body}\n\n---\n\n\`\`\`yaml\ntitle: Deploy checklist\nproject: Atlas API\ntags: [spec]\ncreated: 2026-02-02T09:00:00Z\nsource: manual${stamp ? `\nconflict: { of: ${CONFLICT_DOC}, from: github, at: 2026-09-12T09:15:00Z }` : ""}\n\`\`\`\n`;
+mkdirSync(join(root, "atlas-api"), { recursive: true });
+writeFileSync(join(root, CONFLICT_DOC), conflictDoc("Drain the queue before the deploy.", false));
+writeFileSync(join(root, CONFLICT_COPY), conflictDoc("Drain the queue AFTER the deploy.", true));
+
+// A second pair, far longer than its card: two versions must be reviewable side by side
+// without either one pushing the sheet off the screen.
+const LONG_DOC = "atlas-api/runbook.md";
+const LONG_COPY = "atlas-api/runbook-from-github.md";
+const longBody = (who) =>
+  Array.from({ length: 60 }, (_, i) =>
+    i % 4 === 0 ? `${i + 1}. Step ${i + 1}, rewritten on ${who}.` : `${i + 1}. Step ${i + 1}.`,
+  ).join("\n");
+const longDoc = (who, stamp) =>
+  `# Runbook\n\n${longBody(who)}\n\n---\n\n\`\`\`yaml\ntitle: Runbook\nproject: Atlas API\ntags: [spec]\ncreated: 2026-02-03T09:00:00Z\nsource: manual${stamp ? `\nconflict: { of: ${LONG_DOC}, from: github, at: 2026-09-13T11:20:00Z }` : ""}\n\`\`\`\n`;
+writeFileSync(join(root, LONG_DOC), longDoc("this mac", false));
+writeFileSync(join(root, LONG_COPY), longDoc("the other one", true));
+
 const { execSync: sh } = await import("node:child_process");
 sh(
   "git init -q -b main && git add -A && git -c user.name=smoke -c user.email=smoke@test commit -qm seed",
@@ -253,6 +277,112 @@ const tipEdge = await win.evaluate(() => {
 if (tipEdge.right > tipEdge.vw || tipEdge.left < 0)
   throw new Error("tooltip hangs off the window: " + JSON.stringify(tipEdge));
 console.log("tooltip stays on screen:", JSON.stringify(tipEdge));
+
+// ---- M5: two versions of one document, and a way to say which one wins
+// The badge is the only way in, and it has to be read off the documents themselves —
+// a restart with a pair still unanswered must still say so.
+const REVIEW = 'button[aria-label^="review "]';
+const badge = await win.textContent(REVIEW);
+if (!/2 to review/.test(badge)) throw new Error("the badge does not ask for a review: " + badge);
+await win.click(REVIEW);
+await win.waitForSelector('[data-testid="conflict-sheet"]');
+await win.waitForSelector("text=Deploy checklist");
+await win.waitForTimeout(400);
+await win.screenshot({ path: join(out, "smoke-21-conflicts.png") });
+const review = await win.innerText('[data-testid="conflict-sheet"]');
+for (const want of ["This Mac", "GitHub", "Keep both", "before the deploy", "AFTER the deploy"])
+  if (!review.includes(want)) throw new Error(`conflict sheet is missing "${want}":\n` + review);
+// Never "mine"/"theirs": every study of this says readers invert them.
+if (/\bmine\b|\btheirs\b/i.test(review)) throw new Error("conflict sheet still says mine/theirs");
+
+// Both pairs are offered at once — a list, not a queue you have to finish.
+const pairsShown = await win.locator('[data-testid="conflict-sheet"] section').count();
+if (pairsShown !== 2) throw new Error(`expected two documents to review, got ${pairsShown}`);
+
+// A document longer than its card scrolls inside it, and neither the sheet nor the
+// window grows to fit: a 60-step runbook must not push the buttons off the screen.
+const longPair = await win.evaluate(() => {
+  const sheet = document.querySelector('[data-testid="conflict-sheet"]');
+  const panes = [...sheet.querySelectorAll("section")]
+    .find((s) => s.textContent.includes("Runbook"))
+    .querySelectorAll(".overflow-auto");
+  const box = sheet.getBoundingClientRect();
+  return {
+    panes: [...panes].map((p) => ({
+      scroll: p.scrollHeight,
+      visible: p.clientHeight,
+      scrollable: p.scrollHeight > p.clientHeight + 1,
+    })),
+    sheetBottom: Math.round(box.bottom),
+    vh: window.innerHeight,
+    bodyOverflows: document.body.scrollHeight > window.innerHeight,
+  };
+});
+if (longPair.panes.length !== 2 || !longPair.panes.every((p) => p.scrollable))
+  throw new Error("a long version does not scroll inside its card: " + JSON.stringify(longPair));
+if (longPair.sheetBottom > longPair.vh || longPair.bodyOverflows)
+  throw new Error("the review grew past the window: " + JSON.stringify(longPair));
+const cardScroll = await win.evaluate(() => {
+  const pane = [...document.querySelectorAll('[data-testid="conflict-sheet"] section')]
+    .find((s) => s.textContent.includes("Runbook"))
+    .querySelector(".overflow-auto");
+  pane.scrollTop = 600;
+  return pane.scrollTop;
+});
+if (cardScroll < 100) throw new Error("the card did not scroll: " + cardScroll);
+// Scrolling one version carries the other with it — two long versions line up almost
+// everywhere, so comparing them should not mean scrolling each in turn.
+await win.waitForTimeout(200);
+const together = await win.evaluate(() =>
+  [
+    ...[...document.querySelectorAll('[data-testid="conflict-sheet"] section')]
+      .find((s) => s.textContent.includes("Runbook"))
+      .querySelectorAll(".overflow-auto"),
+  ].map((p) => p.scrollTop),
+);
+if (together[0] !== together[1])
+  throw new Error("the two versions scrolled apart: " + JSON.stringify(together));
+await win.waitForTimeout(300);
+await win.screenshot({ path: join(out, "smoke-21b-conflicts-long.png") });
+console.log("long versions scroll in place:", JSON.stringify(longPair.panes));
+
+// Keep both on the long one: it stays, renamed so the two are told apart.
+await win.click('[data-testid="conflict-sheet"] >> section:has-text("Runbook") >> text=Keep both');
+await win.waitForFunction(
+  () => document.querySelectorAll('[data-testid="conflict-sheet"] section').length === 1,
+  { timeout: 10000 },
+);
+if (!readFileSync(join(root, LONG_COPY), "utf8").includes("Runbook (from GitHub)"))
+  throw new Error("keeping both did not give the surviving copy a name of its own");
+
+// Take the version from GitHub: it lands on the original path, and what was there goes
+// to the trash rather than being deleted.
+await win.click(
+  '[data-testid="conflict-sheet"] >> section:has-text("Deploy checklist") >> text=GitHub >> xpath=../.. >> text=Use this one',
+);
+await win.waitForSelector('[data-testid="conflict-sheet"] >> text=Nothing to review', {
+  timeout: 10000,
+});
+await win.waitForTimeout(600);
+// With nothing left to show, the sheet keeps a floor rather than collapsing to a strip.
+const settled = await win.evaluate(() =>
+  Math.round(
+    document.querySelector('[data-testid="conflict-sheet"]').getBoundingClientRect().height,
+  ),
+);
+if (settled < 220) throw new Error("the empty review collapsed to " + settled + "px");
+await win.screenshot({ path: join(out, "smoke-22-conflicts-done.png") });
+const winner = readFileSync(join(root, CONFLICT_DOC), "utf8");
+if (!winner.includes("AFTER the deploy")) throw new Error("the chosen version did not win");
+if (winner.includes("conflict:")) throw new Error("the conflict stamp survived the choice");
+if (existsSync(join(root, CONFLICT_COPY))) throw new Error("the copy was left behind");
+if (!existsSync(join(root, ".trash", CONFLICT_DOC)))
+  throw new Error("the version that lost was deleted instead of trashed");
+await win.keyboard.press("Escape");
+await win.waitForSelector('[data-testid="conflict-sheet"]', { state: "detached" });
+if (await win.locator(REVIEW).count())
+  throw new Error("the badge still asks for a review after the last pair was settled");
+console.log("conflict review: resolved, loser in the trash, badge cleared");
 
 // Edit the doc so there are two versions, then restore the older one.
 const [ed2] = await Promise.all([

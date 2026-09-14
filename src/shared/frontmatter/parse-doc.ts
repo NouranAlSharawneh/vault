@@ -1,6 +1,6 @@
 import { parse as parseYaml } from "yaml";
 import { SOURCES } from "../constants";
-import type { Frontmatter, Source } from "../types";
+import type { ConflictMark, Frontmatter, Source } from "../types";
 import { inferTitle } from "../helpers/infer-title";
 import { splitFrontmatter } from "./split-frontmatter";
 import type { ParsedDoc } from "./frontmatter.types";
@@ -56,7 +56,19 @@ export function parseDoc(raw: string): ParsedDoc {
     source: asSource(d.source),
   };
   if (d.starred === true) fm.starred = true;
+  const conflict = asConflict(d.conflict);
+  if (conflict) fm.conflict = conflict;
   const extra: Record<string, unknown> = {};
-  for (const k of Object.keys(d)) if (!(k in fm) && k !== "starred") extra[k] = d[k];
+  for (const k of Object.keys(d))
+    if (!(k in fm) && k !== "starred" && k !== "conflict") extra[k] = d[k];
   return { frontmatter: fm, body, extra };
+}
+
+/** The conflict stamp, or nothing — a half-written one is no better than none. */
+function asConflict(v: unknown): ConflictMark | undefined {
+  if (!v || typeof v !== "object") return undefined;
+  const d = v as Record<string, unknown>;
+  const of = asString(d.of);
+  const at = asString(d.at);
+  return of && at && d.from === "github" ? { of, from: "github", at } : undefined;
 }
