@@ -109,6 +109,17 @@
 
 :root {
   color-scheme: light;
+
+  /* Left gutter of the draggable title bar. macOS overlays its traffic lights on the
+     window content (`hiddenInset`, see TRAFFIC_LIGHTS in @shared/constants), so the
+     header has to clear them. Every other platform draws a native title bar above
+     instead, where that gutter would be dead space — so it collapses to ordinary
+     padding. `html.is-mac` is set once at renderer boot. */
+  --titlebar-inset: 0.75rem;
+}
+
+html.is-mac {
+  --titlebar-inset: 5rem;
 }
 
 html,
@@ -140,6 +151,10 @@ body {
 }
 @utility no-drag {
   -webkit-app-region: no-drag;
+}
+/* Left padding of a title bar: room for the traffic lights on macOS, nothing elsewhere. */
+@utility pl-titlebar {
+  padding-left: var(--titlebar-inset);
 }
 
 /* Scrollbars */
