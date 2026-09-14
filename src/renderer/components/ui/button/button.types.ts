@@ -1,4 +1,4 @@
-import type { ButtonHTMLAttributes } from "react";
+import type { ButtonHTMLAttributes, ReactNode } from "react";
 
 /**
  * default — quiet grey · primary — cherry fill · outline — bordered · ghost — icon-ish
@@ -12,4 +12,10 @@ export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: ButtonVariant;
   size?: ButtonSize;
   loading?: boolean;
+  /** Hover label. Icon-only buttons should always carry one, alongside `aria-label`. */
+  tooltip?: ReactNode;
+  /** The button's shortcut, shown quieter inside the tooltip. */
+  tooltipKeys?: string;
+  /** Which way the tooltip opens. Default "bottom". */
+  tooltipSide?: "top" | "bottom";
 }

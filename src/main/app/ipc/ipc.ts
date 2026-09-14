@@ -200,6 +200,7 @@ export function registerIpcHandlers(): void {
   handle("doc:history", (p) => session.requireVault().history(p));
   handle("doc:atCommit", (p, sha) => session.requireVault().atCommit(p, sha));
   handle("doc:restore", (p, sha) => session.requireVault().restore(p, sha));
+  handle("doc:diff", (p, sha) => session.requireVault().diff(p, sha));
   handle("doc:pathPreview", (project, title) => session.requireVault().previewPath(project, title));
 
   // ---- projects

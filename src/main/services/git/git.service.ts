@@ -208,32 +208,49 @@ export class GitService {
 
   async log(path: string, max = 50): Promise<CommitInfo[]> {
     const SEP = "\u001f";
+    // `--name-only` alongside `--follow` gives the name the file had in each commit,
+    // which is what `show` and `diff` below must be asked for.
     const out = await this.git.raw([
       "log",
       `--max-count=${max}`,
       "--follow",
-      `--format=%H${SEP}%aI${SEP}%an${SEP}%s`,
+      "--name-only",
+      `--format=${SEP}%H${SEP}%aI${SEP}%an${SEP}%s`,
       "--",
       path,
     ]);
-    return out
-      .split("\n")
-      .filter(Boolean)
-      .map((line) => {
-        const [sha, date, author, message] = line.split(SEP);
-        return {
+    const commits: CommitInfo[] = [];
+    for (const line of out.split("\n")) {
+      if (line.startsWith(SEP)) {
+        const [, sha, date, author, message] = line.split(SEP);
+        commits.push({
           sha,
           shortSha: sha.slice(0, 7),
           message,
           date,
           relative: relativeTime(date),
           author,
-        };
-      });
+          path,
+        });
+      } else if (line.trim() && commits.length) {
+        // The first name under a commit is this file's name in it.
+        const current = commits[commits.length - 1];
+        if (current.path === path) current.path = line.trim();
+      }
+    }
+    return commits;
   }
 
   async show(path: string, sha: string): Promise<string> {
     return this.git.show([`${sha}:${path}`]);
+  }
+
+  /**
+   * What one commit did to one file, as a unified diff. `show` rather than `diff A^ B`
+   * so a root commit — which has no parent — renders as all-additions instead of failing.
+   */
+  async diff(path: string, sha: string): Promise<string> {
+    return this.git.raw(["show", "--format=", "--unified=3", sha, "--", path]);
   }
 
   /** Paths with commits not on origin. */

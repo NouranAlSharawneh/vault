@@ -26,7 +26,7 @@ export function Settings() {
   const assetDirs = Object.entries(config.assetDirs ?? {});
   return (
     <div className="flex h-full flex-col bg-paper-2">
-      <header className="flex h-12 shrink-0 items-center pr-3 pl-20 drag">
+      <header className="flex h-12 shrink-0 items-center pr-3 pl-titlebar drag">
         <Button variant="ghost" size="sm" className="no-drag" onClick={s.back}>
           <ArrowLeft size={12} /> Back to vault
         </Button>

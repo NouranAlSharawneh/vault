@@ -10,3 +10,4 @@ export { toAccelerator, acceleratorLabel } from "./accelerator";
 export { svgIntrinsicWidth } from "./svg-intrinsic-width";
 export { relaxMermaidWidth } from "./relax-mermaid-width";
 export { describeToken } from "./describe-token";
+export { parseUnifiedDiff, diffStat } from "./parse-diff";

@@ -62,7 +62,7 @@ export function Editor() {
 
   return (
     <div className="relative flex h-full flex-col">
-      <div className="flex h-12 shrink-0 items-center justify-between pr-4 pl-20 drag">
+      <div className="flex h-12 shrink-0 items-center justify-between pr-4 pl-titlebar drag">
         <span className="text-sm text-ink-3">{d.existingPath ?? "New document"}</span>
         <div className="flex items-center gap-3 no-drag">
           <SyncBadge />
