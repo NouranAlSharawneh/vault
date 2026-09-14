@@ -4,7 +4,7 @@ import { dirname } from "node:path";
 import type { CommitInfo } from "@shared/types";
 import { DEFAULT_BRANCH } from "@shared/constants";
 import { relativeTime } from "@shared/helpers";
-import type { AheadBehind, ChangedFile, TokenProvider } from "./git.types";
+import type { AheadBehind, ChangedFile, ConflictSide, TokenProvider } from "./git.types";
 
 /**
  * Thin wrapper around simple-git. The token is injected per-command through an
@@ -177,14 +177,20 @@ export class GitService {
     await this.git.raw([...this.authArgs(), "push", "-u", "origin", branch]);
   }
 
-  /** Rebase local commits onto origin. Returns conflicted paths (empty = clean). */
+  /**
+   * Rebase local commits onto origin. Returns conflicted paths (empty = clean).
+   * A failure that left nothing conflicted was not a conflict — it was the network, or
+   * auth, or a repo that isn't there — so it is re-thrown rather than read as success.
+   */
   async pullRebase(): Promise<string[]> {
     const branch = await this.currentBranch();
     try {
       await this.git.raw([...this.authArgs(), "pull", "--rebase", "--autostash", "origin", branch]);
       return [];
-    } catch {
-      return (await this.git.status()).conflicted;
+    } catch (e) {
+      const conflicted = await this.conflictedPaths();
+      if (!conflicted.length) throw e;
+      return conflicted;
     }
   }
 
@@ -196,14 +202,72 @@ export class GitService {
     }
   }
 
+  /**
+   * Finish the commit a rebase stopped on, with every conflicted path already staged.
+   *
+   * `rebase --continue` opens an editor for the message even when there is nothing to
+   * decide, and simple-git blocks both ways of silencing one: `-c core.editor=true` is
+   * refused outright, and setting `GIT_EDITOR` means handing it a whole environment,
+   * which trips its `GIT_SSH_COMMAND` guard. So the commit is made here instead —
+   * `--no-edit` takes the message the rebase already prepared — and `--continue` then
+   * has nothing left to write and no editor to open. This is the documented path: git's
+   * own message says "If you have committed the changes yourself, run rebase --continue".
+   *
+   * Resolving to exactly what upstream already has leaves an empty commit, which git
+   * refuses; that is what `--skip` is for.
+   */
   async continueRebase(): Promise<void> {
-    await this.git.raw(["-c", "core.editor=true", "rebase", "--continue"]);
+    try {
+      await this.git.raw(["commit", "--no-edit"]);
+    } catch {
+      /* nothing left to commit — --continue or --skip below decides which */
+    }
+    try {
+      await this.git.raw(["rebase", "--continue"]);
+    } catch (e) {
+      if (!/no changes|nothing to commit|did you forget/i.test(String((e as Error).message ?? e)))
+        throw e;
+      await this.git.raw(["rebase", "--skip"]);
+    }
   }
 
-  /** During a rebase "ours" is upstream and "theirs" is the local commit being replayed. */
-  async checkoutSide(path: string, side: "ours" | "theirs"): Promise<void> {
-    await this.git.raw(["checkout", side === "ours" ? "--theirs" : "--ours", "--", path]);
+  /**
+   * Which stage in the index holds which side of a conflict.
+   *
+   * A rebase replays YOUR commits on top of the remote's, so the roles are the reverse
+   * of a merge: stage 2 ("ours", `--ours`) is the REMOTE, stage 3 ("theirs", `--theirs`)
+   * is yours. Getting this backwards is the classic rebase mistake — and it is not
+   * hypothetical, an earlier version of this file made it — so nothing below is allowed
+   * to say "ours" or "theirs". Sides are named for where the content came from, and the
+   * one place the git words appear is here.
+   */
+  private static STAGE = { remote: 2, mine: 3 } as const;
+
+  /** One side of a conflicted file, read from the index. `null` = that side deleted it. */
+  async conflictSide(path: string, side: ConflictSide): Promise<string | null> {
+    try {
+      return await this.git.raw(["show", `:${GitService.STAGE[side]}:${path}`]);
+    } catch {
+      return null;
+    }
+  }
+
+  /** Resolve a conflicted path to one side, staged and ready for `rebase --continue`. */
+  async takeSide(path: string, side: ConflictSide): Promise<void> {
+    await this.git.raw(["checkout", side === "remote" ? "--ours" : "--theirs", "--", path]);
     await this.git.add([path]);
+  }
+
+  /** True while a rebase is stopped part-way — after a crash, or between conflicts. */
+  rebaseInProgress(): boolean {
+    return (
+      existsSync(`${this.root}/.git/rebase-merge`) || existsSync(`${this.root}/.git/rebase-apply`)
+    );
+  }
+
+  /** Paths still conflicted right now. */
+  async conflictedPaths(): Promise<string[]> {
+    return (await this.git.status()).conflicted;
   }
 
   async log(path: string, max = 50): Promise<CommitInfo[]> {
