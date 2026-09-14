@@ -1,5 +1,6 @@
 import { cx } from "@/helpers";
 import { Spinner } from "../spinner/spinner.component";
+import { Tooltip } from "../tooltip/tooltip.component";
 import type { ButtonProps, ButtonSize, ButtonVariant } from "./button.types";
 
 const VARIANT_CLASS: Record<ButtonVariant, string> = {
@@ -23,6 +24,9 @@ export function Button({
   variant = "default",
   size = "md",
   loading,
+  tooltip,
+  tooltipKeys,
+  tooltipSide,
   className,
   children,
   disabled,
@@ -30,7 +34,7 @@ export function Button({
   ...rest
 }: ButtonProps) {
   const inline = variant === "link" || variant === "subtle";
-  return (
+  const el = (
     <button
       type={type}
       className={cx(VARIANT_CLASS[variant], !inline && SIZE_CLASS[size], className)}
@@ -40,5 +44,12 @@ export function Button({
       {loading && <Spinner />}
       {children}
     </button>
+  );
+  return tooltip ? (
+    <Tooltip label={tooltip} keys={tooltipKeys} side={tooltipSide}>
+      {el}
+    </Tooltip>
+  ) : (
+    el
   );
 }

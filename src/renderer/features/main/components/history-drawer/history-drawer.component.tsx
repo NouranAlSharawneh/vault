@@ -19,14 +19,22 @@ export function HistoryDrawer({ path, onClose, onRestored }: HistoryDrawerProps)
       // so it never crushes the document.
       className="mr-2 mb-2 flex w-110 max-w-[42vw] shrink-0 flex-col overflow-hidden rounded-lg border border-line bg-paper-2 shadow-pop"
     >
-      {/* No document title here — it is already on the document this sits beside. */}
-      <header className="flex h-9 shrink-0 items-center justify-between gap-2 px-4 pt-1">
-        <SectionLabel>History</SectionLabel>
+      {/* No document title here — it is already on the document this sits beside.
+          Every line of text in this drawer sits in a fixed-height band, and every one of
+          them carries `leading-none`: a line box reserves room for descenders, so text
+          that happens to have none — an all-caps label, a commit sha — floats above the
+          band's middle and leans away from the icon or button beside it. */}
+      <header className="flex h-9 shrink-0 items-center justify-between gap-2 px-4">
+        <SectionLabel className="leading-none">History</SectionLabel>
         <Button
           variant="ghost"
           size="sm"
-          className="w-7 px-0"
+          // Pulled out by its own padding so the icon — not the button's invisible box —
+          // ends on the same column as the timestamps below it. The hit area stays 28px.
+          className="-mr-2 w-7 px-0"
           onClick={onClose}
+          tooltip="Close"
+          tooltipKeys="Esc"
           aria-label="close history"
         >
           <X size={13} />
@@ -41,14 +49,14 @@ export function HistoryDrawer({ path, onClose, onRestored }: HistoryDrawerProps)
         <Empty title="No history yet" hint="This document hasn't been committed." />
       ) : (
         <div className="flex min-h-0 flex-1 flex-col">
-          {/* The rows carry their own 4px margin; padding on top of that is what made the
-              label feel detached from the list. Only the bottom edge needs a little. */}
-          <ul className="max-h-56 shrink-0 overflow-y-auto px-2 pb-1.5">
+          {/* The rows carry their own 2px margin, so this is the other 2px of an even
+              4px above the first commit and below the last one. */}
+          <ul className="max-h-56 shrink-0 overflow-y-auto px-2 py-0.5">
             {h.commits.map((c) => (
               <li key={c.sha}>
                 <ListRow selected={c.sha === h.selected} onClick={() => h.select(c.sha)}>
-                  <span className="min-w-0 flex-1 truncate">{c.message}</span>
-                  <span className="ml-auto shrink-0 font-mono text-2xs text-ink-4">
+                  <span className="min-w-0 flex-1 truncate leading-none">{c.message}</span>
+                  <span className="ml-auto shrink-0 font-mono text-2xs leading-none text-ink-4">
                     {c.relative}
                   </span>
                 </ListRow>
@@ -57,7 +65,7 @@ export function HistoryDrawer({ path, onClose, onRestored }: HistoryDrawerProps)
           </ul>
 
           <div className="flex h-9 shrink-0 items-center justify-between gap-2 border-y border-line px-4">
-            <span className="font-mono text-2xs text-ink-4">
+            <span className="font-mono text-2xs leading-none text-ink-4">
               {h.selected?.slice(0, 7)}
               {hunks.length > 0 && (
                 <>
@@ -73,7 +81,7 @@ export function HistoryDrawer({ path, onClose, onRestored }: HistoryDrawerProps)
                 size="sm"
                 loading={h.restoring}
                 onClick={() => void h.restore()}
-                title="Bring this version back as a new commit"
+                tooltip="Brings it back as a new commit — nothing is rewritten"
               >
                 <RotateCcw size={11} /> Restore this version
               </Button>
@@ -90,7 +98,7 @@ export function HistoryDrawer({ path, onClose, onRestored }: HistoryDrawerProps)
             ) : (
               hunks.map((hunk, i) => (
                 <div key={i}>
-                  <div className="bg-paper-3/60 px-4 py-1 font-mono text-2xs text-ink-4">
+                  <div className="flex h-5.5 items-center bg-paper-3/60 px-4 font-mono text-2xs leading-none text-ink-4">
                     {hunk.heading || lineRange(hunk)}
                   </div>
                   <pre className="m-0 rounded-none border-0 bg-transparent p-0 font-mono text-xs leading-relaxed">

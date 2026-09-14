@@ -46,7 +46,7 @@ export function ReaderToolbar({
           <Button variant="outline" size="sm" onClick={onRestore}>
             <RotateCcw size={11} /> Restore
           </Button>
-          <Button variant="danger" size="sm" onClick={onPurge} title="Delete forever">
+          <Button variant="danger" size="sm" onClick={onPurge} tooltip="Permanently, everywhere">
             <Trash2 size={11} /> Delete forever
           </Button>
         </div>
@@ -57,19 +57,19 @@ export function ReaderToolbar({
             size="sm"
             className="w-7 px-0"
             onClick={onStar}
-            title={doc.starred ? "Unstar" : "Star"}
+            tooltip={doc.starred ? "Unstar" : "Star"}
             aria-label="star"
           >
             <Star size={12} className={cx(doc.starred && "fill-warn text-warn")} />
           </Button>
           {/* Icons only: with the history drawer open the reader is narrow, and labelled
-              buttons ran into each other. Every one keeps a tooltip and a label. */}
+              buttons ran into each other. Every one names itself on hover instead. */}
           <Button
             variant="ghost"
             size="sm"
             className="w-7 px-0"
             onClick={() => api("window:openEditor", doc.path)}
-            title="Edit"
+            tooltip="Edit"
             aria-label="edit"
           >
             <Pencil size={12} />
@@ -79,7 +79,8 @@ export function ReaderToolbar({
             size="sm"
             className={cx("w-7 px-0", historyOpen && "bg-paper-3 text-ink")}
             onClick={onHistory}
-            title={`History (${MOD_KEY}Y)`}
+            tooltip="History"
+            tooltipKeys={`${MOD_KEY}Y`}
             aria-label="history"
             aria-pressed={historyOpen}
           >
@@ -91,7 +92,7 @@ export function ReaderToolbar({
               size="sm"
               className="w-7 px-0"
               onClick={() => api("github:openInBrowser", `${remote}/blob/${branch}/${doc.path}`)}
-              title="Open on GitHub"
+              tooltip="Open on GitHub"
               aria-label="open on github"
             >
               <ExternalLink size={12} />
@@ -102,7 +103,8 @@ export function ReaderToolbar({
             size="sm"
             className="w-7 px-0"
             onClick={onTrash}
-            title={`Move to trash (${MOD_KEY}⌫)`}
+            tooltip="Move to trash"
+            tooltipKeys={`${MOD_KEY}⌫`}
             aria-label="move to trash"
           >
             <Trash2 size={12} />
