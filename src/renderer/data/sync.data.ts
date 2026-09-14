@@ -12,6 +12,5 @@ export const SYNC_PRESENTATION: Record<SyncState, SyncPresentation> = {
   pending: { label: (n) => (n > 0 ? `${n} not pushed` : "not pushed"), dot: "bg-warn" },
   pushing: { label: () => "pushing…", dot: "bg-warn", busy: true },
   offline: { label: (n) => `offline · ${n} waiting`, dot: "bg-warn" },
-  conflict: { label: () => "conflict", dot: "bg-cherry" },
   error: { label: () => "push failed", dot: "bg-cherry" },
 };

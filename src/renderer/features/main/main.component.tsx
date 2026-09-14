@@ -17,6 +17,7 @@ import { SidebarRail } from "./components/sidebar-rail/sidebar-rail.component";
 import { DocumentList } from "./components/document-list/document-list.component";
 import { DocumentReader } from "./components/document-reader/document-reader.component";
 import { CommandPalette } from "./components/command-palette/command-palette.component";
+import { ConflictSheet } from "./components/conflict-sheet/conflict-sheet.component";
 import { HistoryDrawer } from "./components/history-drawer/history-drawer.component";
 
 /**
@@ -36,6 +37,7 @@ export function Main() {
   const [view, setView] = useState<ReaderView>("preview");
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
+  const [conflictsOpen, setConflictsOpen] = useState(false);
   const inTrash = list.filter.collection === "trash";
   const doc = useDocument(selected, inTrash ? trash.map((t) => t.meta) : index?.docs);
   const trashActions = useTrashActions(doc?.meta ?? null, setSelected);
@@ -69,12 +71,23 @@ export function Main() {
   useEffect(() => {
     if (!showHistory) return;
     const onKey = (e: KeyboardEvent) => {
-      // The palette handles its own Escape and sits above this one.
-      if (e.key === "Escape" && !e.defaultPrevented && !paletteOpen) setHistoryOpen(false);
+      // The palette and the conflict sheet handle their own Escape and sit above this one.
+      if (e.key === "Escape" && !e.defaultPrevented && !paletteOpen && !conflictsOpen)
+        setHistoryOpen(false);
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [showHistory, paletteOpen]);
+  }, [showHistory, paletteOpen, conflictsOpen]);
+
+  // Escape closes the review, like every other overlay in the app.
+  useEffect(() => {
+    if (!conflictsOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && !e.defaultPrevented) setConflictsOpen(false);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [conflictsOpen]);
 
   const star = useCallback(() => {
     if (doc) void api("doc:setStarred", doc.meta.path, !doc.meta.starred);
@@ -142,7 +155,12 @@ export function Main() {
 
   return (
     <div className="relative flex h-full flex-col bg-paper-2">
-      <TopBar sidebar={sidebar.state} onToggleSidebar={sidebar.cycle} onSearch={openPalette} />
+      <TopBar
+        sidebar={sidebar.state}
+        onToggleSidebar={sidebar.cycle}
+        onSearch={openPalette}
+        onReviewConflicts={() => setConflictsOpen(true)}
+      />
       <AuthExpiredBanner />
       <div className="flex min-h-0 flex-1">
         {sidebar.state === "rail" && (
@@ -175,6 +193,7 @@ export function Main() {
           />
         )}
       </div>
+      {conflictsOpen && <ConflictSheet onClose={() => setConflictsOpen(false)} />}
       {paletteOpen && (
         <CommandPalette
           onClose={() => setPaletteOpen(false)}

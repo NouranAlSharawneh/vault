@@ -1,4 +1,4 @@
-import { Star } from "lucide-react";
+import { GitMerge, Star } from "lucide-react";
 import { relativeTime } from "@shared/helpers";
 import { Empty, ListRow } from "@/components/ui";
 import { ListHeader } from "../list-header/list-header.component";
@@ -40,6 +40,13 @@ export function DocumentList({
             <div className="flex items-baseline justify-between gap-2">
               <span className="flex min-w-0 items-center gap-1.5">
                 {d.starred && <Star size={10} className="shrink-0 fill-warn text-warn" />}
+                {d.conflict && (
+                  <GitMerge
+                    size={10}
+                    className="shrink-0 text-cherry"
+                    aria-label="another version of this document"
+                  />
+                )}
                 <span className="truncate text-base font-medium">{d.title}</span>
               </span>
               <span className="flex shrink-0 items-center gap-1.5 text-2xs text-ink-4">

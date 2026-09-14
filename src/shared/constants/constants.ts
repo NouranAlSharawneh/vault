@@ -176,3 +176,17 @@ export const TOKEN_REFRESH_SKEW_MS = 5 * 60 * 1000;
 /** The capture sheet is sized to its content between these bounds. */
 export const CAPTURE_MIN_HEIGHT = 220;
 export const CAPTURE_MAX_HEIGHT = 520;
+
+/**
+ * How often the vault quietly fetches. Long enough that an idle app is not chattering at
+ * GitHub, short enough that something written on another machine turns up while you are
+ * still thinking about it. A push always rebases first regardless, so this only exists
+ * for the case where you have written nothing locally.
+ */
+export const PULL_INTERVAL_MS = 5 * 60_000;
+
+/** Suffix for the copy a conflict leaves behind, e.g. `spec-from-github.md`. */
+export const FROM_REMOTE_SUFFIX = "-from-github";
+
+/** A rebase stops once per conflicting commit; past this something is wrong. */
+export const REBASE_MAX_STOPS = 50;

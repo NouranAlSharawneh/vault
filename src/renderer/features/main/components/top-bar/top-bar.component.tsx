@@ -6,7 +6,7 @@ import { api } from "@/lib/api";
 import type { TopBarProps } from "./top-bar.types";
 
 /** Full-width title bar: sidebar toggle · centred search pill (opens ⌘K) · sync · New. */
-export function TopBar({ sidebar, onToggleSidebar, onSearch }: TopBarProps) {
+export function TopBar({ sidebar, onToggleSidebar, onSearch, onReviewConflicts }: TopBarProps) {
   return (
     <header className="grid h-12 shrink-0 grid-cols-[1fr_auto_1fr] items-center bg-paper-2 pr-3 pl-titlebar drag">
       <div className="flex items-center gap-1 no-drag">
@@ -33,7 +33,7 @@ export function TopBar({ sidebar, onToggleSidebar, onSearch }: TopBarProps) {
         <span className="text-xs text-ink-4">{MOD_KEY} K</span>
       </Button>
       <div className="flex items-center justify-end gap-2 no-drag">
-        <SyncBadge />
+        <SyncBadge onReviewConflicts={onReviewConflicts} />
         <Button variant="primary" size="sm" onClick={() => api("window:openEditor")}>
           <Plus size={11} /> New
         </Button>

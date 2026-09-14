@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { SyncBadge } from "@/components/sync-badge/sync-badge.component";
@@ -23,6 +23,7 @@ const status = (state: "synced" | "pending" | "pushing" | "offline" | "error", a
   lastPushAt: null,
   lastError: state === "error" ? "401 Bad credentials" : null,
   remote: "nunu/vault",
+  conflicts: 0,
 });
 
 describe("SyncBadge", () => {
@@ -44,6 +45,19 @@ describe("SyncBadge", () => {
     useApp.setState({ config, sync: status(state, ahead) });
     render(<SyncBadge />);
     expect(screen.getByText(label)).toBeTruthy();
+  });
+
+  it("asks for a review only when something is waiting, and only where it can show one", () => {
+    mockVaultApi();
+    const onReviewConflicts = vi.fn();
+    useApp.setState({ config, sync: { ...status("synced"), conflicts: 2 } });
+    // Being pushed and owing an answer are separate facts; both are said.
+    render(<SyncBadge onReviewConflicts={onReviewConflicts} />);
+    expect(screen.getByText("pushed")).toBeTruthy();
+    expect(screen.getByText("2 to review")).toBeTruthy();
+    // The editor window has nowhere to open a review, so it does not offer one.
+    render(<SyncBadge />);
+    expect(screen.getAllByText("2 to review")).toHaveLength(1);
   });
 
   it("pushes now when clicked in a pending state, not when already synced", async () => {

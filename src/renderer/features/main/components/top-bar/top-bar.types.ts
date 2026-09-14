@@ -4,4 +4,5 @@ export interface TopBarProps {
   sidebar: SidebarState;
   onToggleSidebar: () => void;
   onSearch: () => void;
+  onReviewConflicts: () => void;
 }
