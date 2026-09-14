@@ -8,7 +8,7 @@ import type { TopBarProps } from "./top-bar.types";
 /** Full-width title bar: sidebar toggle · centred search pill (opens ⌘K) · sync · New. */
 export function TopBar({ sidebar, onToggleSidebar, onSearch }: TopBarProps) {
   return (
-    <header className="grid h-12 shrink-0 grid-cols-[1fr_auto_1fr] items-center bg-paper-2 pr-3 pl-20 drag">
+    <header className="grid h-12 shrink-0 grid-cols-[1fr_auto_1fr] items-center bg-paper-2 pr-3 pl-titlebar drag">
       <div className="flex items-center gap-1 no-drag">
         <Button
           variant="ghost"

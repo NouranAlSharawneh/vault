@@ -86,13 +86,11 @@ await win.click("text=Doc 5 >> nth=0");
 await win.waitForTimeout(500);
 await win.screenshot({ path: join(out, "smoke-4-main.png") });
 // ---- M2: create a document through the editor window and check the commit landed
-await win.click('button:has-text("New")');
-let editor = null;
-for (let i = 0; i < 40 && !editor; i++) {
-  editor = app.windows().find((w) => /#editor/.test(w.url())) ?? null;
-  if (!editor) await new Promise((r) => setTimeout(r, 250));
-}
-if (!editor) throw new Error("editor window never appeared");
+const [editor] = await Promise.all([
+  app.waitForEvent("window"),
+  win.click('button:has-text("New")'),
+]);
+await editor.waitForLoadState("domcontentloaded");
 editor.on("console", (m) => m.type() === "error" && errors.push("editor: " + m.text()));
 editor.on("pageerror", (e) => errors.push("editor PAGEERROR: " + e.message));
 await editor.waitForSelector(".cm-content");
@@ -121,15 +119,20 @@ await editor.waitForEvent("close", { timeout: 15000 });
 await win.waitForSelector("text=atlas-api/rate-limiting-at-the-edge.md", { timeout: 10000 });
 console.log("editor save revealed the doc in main");
 await win.bringToFront();
-await win.click('button:has-text("New")');
-let blank = null;
-for (let i = 0; i < 40 && !blank; i++) {
-  blank = app.windows().find((w) => /#editor/.test(w.url())) ?? null;
-  if (!blank) await new Promise((r) => setTimeout(r, 250));
-}
+// Wait for the window event rather than polling the list: a window that just closed can
+// still be listed, and a page picked from it dies under the next keystroke.
+const [blank] = await Promise.all([
+  app.waitForEvent("window"),
+  win.click('button:has-text("New")'),
+]);
+await blank.waitForLoadState("domcontentloaded");
 await blank.waitForSelector(".cm-content");
-await blank.keyboard.press("Escape");
-await blank.waitForEvent("close", { timeout: 5000 });
+// Escape closes the window, which can tear the page down while `press` is still in
+// flight — so the press rejecting here means it worked. The close event is the result.
+await Promise.all([
+  blank.waitForEvent("close", { timeout: 5000 }),
+  blank.keyboard.press("Escape").catch(() => undefined),
+]);
 if (app.windows().some((w) => /#editor/.test(w.url())))
   throw new Error("empty editor did not close on Escape");
 console.log("empty editor closed on Escape");
@@ -146,6 +149,154 @@ await win.waitForSelector("text=Rate limiting at the edge", { timeout: 10000 });
 await win.click("text=Rate limiting at the edge >> nth=0");
 await win.waitForTimeout(600);
 await win.screenshot({ path: join(out, "smoke-7-main-after-save.png") });
+// ---- M5: history drawer — commits, the diff of one, and restoring it
+await win.click('button[aria-label="history"]');
+await win.waitForSelector("text=add: Rate limiting at the edge", { timeout: 10000 });
+await win.waitForSelector("text=/\\+\\d+/", { timeout: 10000 });
+await win.waitForTimeout(400);
+await win.screenshot({ path: join(out, "smoke-18-history.png") });
+const firstDiff = await win.evaluate(() =>
+  [...document.querySelectorAll('[data-testid="history-drawer"] .whitespace-pre-wrap')]
+    .map((n) => n.textContent)
+    .join("\n"),
+);
+if (!firstDiff.includes("Rate limiting at the edge"))
+  throw new Error("history diff does not show the document's content:\n" + firstDiff.slice(0, 200));
+// It has to be on screen, not merely in the DOM — the first version was nested inside
+// the reader's card, which has overflow-hidden, so it rendered and was never visible.
+const drawerBox = await win.evaluate(() => {
+  const el = document.querySelector('[data-testid="history-drawer"]');
+  const r = el?.getBoundingClientRect();
+  return r ? { w: Math.round(r.width), right: Math.round(r.right), vw: window.innerWidth } : null;
+});
+if (!drawerBox || drawerBox.w < 300 || drawerBox.right > drawerBox.vw + 1)
+  throw new Error("history drawer is not visible on screen: " + JSON.stringify(drawerBox));
+console.log("history drawer shows the commit diff, visible:", JSON.stringify(drawerBox));
+// Alignment. Text sits in a line box that reserves room for descenders, so a string
+// without any — an all-caps label, a commit sha — floats above the middle of the band
+// it is centred in and leans away from the icon beside it. These are the facts that
+// keep the drawer straight; each one is something that has already gone wrong once.
+const align = await win.evaluate(() => {
+  const d = document.querySelector('[data-testid="history-drawer"]');
+  const header = d.querySelector("header");
+  const ul = d.querySelector("ul");
+  const rows = [...ul.querySelectorAll("li > button")];
+  const box = (el) => el.getBoundingClientRect();
+  const mid = (el) => +(box(el).y + box(el).height / 2).toFixed(1);
+  const tight = (el) => {
+    const s = getComputedStyle(el);
+    return Math.abs(parseFloat(s.lineHeight) - parseFloat(s.fontSize)) < 0.5;
+  };
+  return {
+    headerPadTop: getComputedStyle(header).paddingTop,
+    tight: [header.firstElementChild, d.querySelector("ul + div").firstElementChild].map(tight),
+    headerMid: mid(header),
+    labelMid: mid(header.firstElementChild),
+    closeMid: mid(header.querySelector("button")),
+    gapTop: +(box(rows[0]).top - box(ul).top).toFixed(1),
+    gapBottom: +(box(ul).bottom - box(rows.at(-1)).bottom).toFixed(1),
+    // Three columns the eye reads as one: text starts, text ends, chips end.
+    left: [
+      header.firstElementChild,
+      rows[0].firstElementChild,
+      d.querySelector("ul + div").firstElementChild,
+    ].map((el) => Math.round(box(el).x)),
+    right: [header.querySelector("svg"), rows[0].lastElementChild].map((el) =>
+      Math.round(box(el).right),
+    ),
+    chips: [header.querySelector("button"), rows[0]].map((el) => Math.round(box(el).right)),
+  };
+});
+if (align.headerPadTop !== "0px")
+  throw new Error("drawer header is padded off its own centre: " + align.headerPadTop);
+if (align.tight.some((t) => !t))
+  throw new Error(
+    "drawer text is not set leading-none, so it rides high: " + JSON.stringify(align.tight),
+  );
+for (const [name, v] of [
+  ["label", align.labelMid],
+  ["close button", align.closeMid],
+])
+  if (Math.abs(v - align.headerMid) > 0.5)
+    throw new Error(`drawer ${name} is off the header's centre: ${v} vs ${align.headerMid}`);
+if (align.gapTop !== align.gapBottom)
+  throw new Error("commit list is not evenly inset: " + JSON.stringify(align));
+for (const [name, col] of [
+  ["left", align.left],
+  ["right", align.right],
+  ["chip", align.chips],
+])
+  if (new Set(col).size !== 1)
+    throw new Error(`drawer ${name} edges do not share a column: ` + JSON.stringify(col));
+console.log("drawer alignment:", JSON.stringify(align));
+// Icon-only buttons say what they do on hover.
+await win.hover('button[aria-label="history"]');
+await win.waitForSelector('[role="tooltip"]', { timeout: 3000 });
+const tipText = await win.textContent('[role="tooltip"]');
+if (!tipText.startsWith("History")) throw new Error("history tooltip reads: " + tipText);
+console.log("tooltip:", tipText);
+// Close it before editing; the button is a toggle, so leaving it open would shut it later.
+// Escape closes it, like every other overlay in the app.
+await win.keyboard.press("Escape");
+await win.waitForSelector('[data-testid="history-drawer"]', { state: "detached", timeout: 5000 });
+await win.click('button[aria-label="history"]');
+await win.waitForSelector('[data-testid="history-drawer"]');
+await win.click('button[aria-label="close history"]');
+// With the drawer shut the last button sits against the window edge, which is the case
+// a centred label hangs off. It has to slide back in instead.
+await win.hover('button[aria-label="move to trash"]');
+await win.waitForSelector('[role="tooltip"]', { timeout: 3000 });
+const tipEdge = await win.evaluate(() => {
+  const b = document.querySelector('[role="tooltip"]').getBoundingClientRect();
+  return { left: Math.round(b.x), right: Math.round(b.right), vw: window.innerWidth };
+});
+if (tipEdge.right > tipEdge.vw || tipEdge.left < 0)
+  throw new Error("tooltip hangs off the window: " + JSON.stringify(tipEdge));
+console.log("tooltip stays on screen:", JSON.stringify(tipEdge));
+
+// Edit the doc so there are two versions, then restore the older one.
+const [ed2] = await Promise.all([
+  app.waitForEvent("window"),
+  win.click('button[aria-label="edit"]'),
+]);
+await ed2.waitForLoadState("domcontentloaded");
+await ed2.waitForSelector(".cm-content");
+await ed2.click(".cm-content");
+await ed2.keyboard.press("Control+End");
+await ed2.keyboard.type("\n\nA second revision.\n");
+await ed2.click('button:has-text("Save & commit")');
+await ed2.waitForEvent("close", { timeout: 15000 });
+await win.bringToFront();
+await win.waitForTimeout(800);
+if (
+  !readFileSync(join(root, "atlas-api", "rate-limiting-at-the-edge.md"), "utf8").includes(
+    "A second revision.",
+  )
+)
+  throw new Error("second revision was not saved");
+
+await win.click('button[aria-label="history"]');
+await win.waitForSelector("text=add: Rate limiting at the edge", { timeout: 10000 });
+await win.click("text=add: Rate limiting at the edge");
+await win.waitForSelector('button:has-text("Restore this version")', { timeout: 10000 });
+await win.click('button:has-text("Restore this version")');
+await win.waitForSelector("text=/Restored .* as a new commit/", { timeout: 15000 });
+await win.waitForTimeout(800);
+const afterRestore = readFileSync(join(root, "atlas-api", "rate-limiting-at-the-edge.md"), "utf8");
+if (afterRestore.includes("A second revision."))
+  throw new Error("restore did not bring the older version back");
+const restoreLog = execSync("git log --oneline -3", { cwd: root }).toString();
+console.log("after restore, top commits:", restoreLog.split("\n")[0]);
+// The restore is itself a commit, so the list it came from must not still be stale.
+await win.waitForSelector(
+  '[data-testid="history-drawer"] >> text=update: Rate limiting at the edge',
+  {
+    timeout: 10000,
+  },
+);
+console.log("history refreshed itself after the restore");
+await win.click('button[aria-label="close history"]');
+
 // ---- M3: ⌘K palette, sidebar rail, split view
 await win.keyboard.press("Control+K");
 await win.waitForSelector('input[aria-label="search"]');

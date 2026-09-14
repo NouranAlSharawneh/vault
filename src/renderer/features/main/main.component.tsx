@@ -17,6 +17,7 @@ import { SidebarRail } from "./components/sidebar-rail/sidebar-rail.component";
 import { DocumentList } from "./components/document-list/document-list.component";
 import { DocumentReader } from "./components/document-reader/document-reader.component";
 import { CommandPalette } from "./components/command-palette/command-palette.component";
+import { HistoryDrawer } from "./components/history-drawer/history-drawer.component";
 
 /**
  * Top bar across the window, then navigation · document list · reader.
@@ -34,6 +35,7 @@ export function Main() {
   const [selected, setSelected] = useState<string | null>(null);
   const [view, setView] = useState<ReaderView>("preview");
   const [paletteOpen, setPaletteOpen] = useState(false);
+  const [historyOpen, setHistoryOpen] = useState(false);
   const inTrash = list.filter.collection === "trash";
   const doc = useDocument(selected, inTrash ? trash.map((t) => t.meta) : index?.docs);
   const trashActions = useTrashActions(doc?.meta ?? null, setSelected);
@@ -50,12 +52,29 @@ export function Main() {
   );
 
   const openPalette = useCallback(() => setPaletteOpen(true), []);
+  // History is about one document, so it is meaningless with nothing selected.
+  const toggleHistory = useCallback(() => setHistoryOpen((open) => !open), []);
   const openSettings = useCallback(() => (window.location.hash = "settings"), []);
   useMainShortcuts({
     onSearch: openPalette,
     onTrash: trashActions.trash,
     onSettings: openSettings,
+    onHistory: toggleHistory,
   });
+
+  // History belongs to a document; with none open, or one in the trash, there is nothing
+  // to show — and a stale drawer beside an empty reader would be worse than none.
+  const showHistory = historyOpen && !!doc && !inTrash;
+
+  useEffect(() => {
+    if (!showHistory) return;
+    const onKey = (e: KeyboardEvent) => {
+      // The palette handles its own Escape and sits above this one.
+      if (e.key === "Escape" && !e.defaultPrevented && !paletteOpen) setHistoryOpen(false);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [showHistory, paletteOpen]);
 
   const star = useCallback(() => {
     if (doc) void api("doc:setStarred", doc.meta.path, !doc.meta.starred);
@@ -110,6 +129,8 @@ export function Main() {
             onView={setView}
             onStar={star}
             onTrash={trashActions.trash}
+            onHistory={toggleHistory}
+            historyOpen={historyOpen}
             trashed={isTrashed(doc?.meta.path ?? null)}
             onRestore={trashActions.restore}
             onPurge={trashActions.purge}
@@ -144,6 +165,15 @@ export function Main() {
           />
         )}
         {content}
+        {showHistory && (
+          <HistoryDrawer
+            // Remounts per document, so its state starts clean without an effect reset.
+            key={doc.meta.path}
+            path={doc.meta.path}
+            onClose={() => setHistoryOpen(false)}
+            onRestored={setSelected}
+          />
+        )}
       </div>
       {paletteOpen && (
         <CommandPalette

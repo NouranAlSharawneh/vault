@@ -341,11 +341,26 @@ export class VaultService extends EventEmitter {
   }
 
   async atCommit(relPath: string, sha: string): Promise<string> {
-    return this.git.show(relPath, sha);
+    return this.git.show(await this.pathAt(relPath, sha), sha);
   }
 
+  /** What this commit changed, as a unified diff. */
+  async diff(relPath: string, sha: string): Promise<string> {
+    return this.git.diff(await this.pathAt(relPath, sha), sha);
+  }
+
+  /**
+   * Where this document lived at that commit. Moving a doc between projects is a
+   * `git mv`, so asking for today's path at an older commit finds nothing.
+   */
+  private async pathAt(relPath: string, sha: string): Promise<string> {
+    const found = (await this.git.log(relPath)).find((c) => c.sha === sha);
+    return found?.path ?? relPath;
+  }
+
+  /** Bring an old version back as a new commit; the history is never rewritten. */
   async restore(relPath: string, sha: string): Promise<SaveResult> {
-    const { frontmatter, body } = parseDoc(await this.git.show(relPath, sha));
+    const { frontmatter, body } = parseDoc(await this.atCommit(relPath, sha));
     const fm = frontmatter ?? this.index.get(relPath);
     if (!fm) throw new Error("Nothing to restore");
     return this.save({
