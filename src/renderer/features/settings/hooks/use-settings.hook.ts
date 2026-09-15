@@ -9,6 +9,18 @@ import type { SettingsState } from "../settings.types";
 /** Read config from the store, write patches through main, surface refusals (bad hotkey). */
 export function useSettings() {
   const config = useApp((s) => s.config);
+  // The app knew its own version and told nobody: `app:version` was registered and never
+  // called. It is the first thing you want when something looks wrong.
+  const [version, setVersion] = useState("");
+  useEffect(() => {
+    let live = true;
+    void api("app:version")
+      .then((v) => live && setVersion(v))
+      .catch(() => undefined);
+    return () => {
+      live = false;
+    };
+  }, []);
   const auth = useApp((s) => s.auth);
   const index = useApp((s) => s.index);
   const trash = useApp((s) => s.trash);
@@ -76,6 +88,7 @@ export function useSettings() {
   return {
     ...state,
     config,
+    version,
     auth,
     token,
     docCount: index?.docs.length ?? 0,

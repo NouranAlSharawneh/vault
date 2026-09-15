@@ -6,6 +6,8 @@ export interface CommandPaletteProps {
   onOpenDoc: (path: string) => void;
   /** Present while a doc is open in the reader; enables "Move document to trash". */
   onTrashDoc?: () => void;
+  /** Opens the review of documents that changed in two places. */
+  onReviewConflicts?: () => void;
 }
 
 export type PaletteItem =

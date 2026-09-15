@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useRef } from "react";
 import {
   ChevronRight,
+  Download,
   FileText,
+  GitMerge,
   Pilcrow,
   Plus,
   RefreshCw,
@@ -22,6 +24,8 @@ const ACTION_ICONS: Record<PaletteActionKey, LucideIcon> = {
   newDocument: FileText,
   trashDoc: Trash2,
   pushPending: Upload,
+  pullNow: Download,
+  reviewConflicts: GitMerge,
   rescan: RefreshCw,
   settings: Settings,
 };
@@ -31,8 +35,13 @@ function itemKey(item: PaletteItem): string {
 }
 
 /** ⌘K — the primary navigation surface: grouped results with a live preview. */
-export function CommandPalette({ onClose, onOpenDoc, onTrashDoc }: CommandPaletteProps) {
-  const p = useCommandPalette(onOpenDoc, onClose, onTrashDoc);
+export function CommandPalette({
+  onClose,
+  onOpenDoc,
+  onTrashDoc,
+  onReviewConflicts,
+}: CommandPaletteProps) {
+  const p = useCommandPalette(onOpenDoc, onClose, onTrashDoc, onReviewConflicts);
   const input = useRef<HTMLInputElement>(null);
 
   // Arrows and Enter are the palette's whole interaction, and they used to live on the
