@@ -28,6 +28,7 @@ export async function startLoopbackServer(opts: LoopbackOptions): Promise<Loopba
     const url = new URL(req.url ?? "/", `http://${opts.host}`);
     if (url.pathname !== opts.path) {
       res.writeHead(404).end();
+
       return;
     }
     const error = url.searchParams.get("error");
@@ -72,6 +73,7 @@ function listenOnFirstFree(
     const onError = (e: NodeJS.ErrnoException) => {
       if (e.code === "EADDRINUSE" && ++i < ports.length) {
         server.listen(ports[i], host);
+
         return;
       }
       server.off("error", onError);

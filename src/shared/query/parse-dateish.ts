@@ -13,8 +13,10 @@ export function parseDateish(v: string, now: number): number | null {
           : unit === "m"
             ? n * 30 * day
             : n * 365 * day;
+
     return now - span;
   }
   const t = Date.parse(v);
+
   return Number.isNaN(t) ? null : t;
 }

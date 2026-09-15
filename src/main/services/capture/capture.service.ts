@@ -1,6 +1,6 @@
-import { clipboard } from "electron";
 import { promises as fs } from "node:fs";
 import { fileURLToPath } from "node:url";
+import { clipboard } from "electron";
 import type { ClipboardCapture } from "@shared/types";
 import { analyseClipboard } from "./analyse-clipboard";
 
@@ -24,6 +24,7 @@ export async function readClipboard(): Promise<ClipboardCapture> {
   } catch {
     /* clipboard empty or non-text */
   }
+
   return analyseClipboard(text, html);
 }
 
@@ -42,10 +43,12 @@ async function readClipboardFile(): Promise<{ path: string; text: string } | nul
       if (!url.startsWith("file:")) return null;
       const path = fileURLToPath(url);
       if (!/\.(md|markdown|txt)$/i.test(path)) return null;
+
       return { path, text: await fs.readFile(path, "utf8") };
     }
   } catch {
     /* not a file, or unreadable */
   }
+
   return null;
 }

@@ -22,8 +22,10 @@ export function useFitWindow<T extends HTMLElement>() {
     fit();
     const observer = new ResizeObserver(fit);
     observer.observe(el);
+
     return () => observer.disconnect();
   }, []);
+
   return ref;
 }
 
@@ -32,5 +34,6 @@ function outerPadding(el: HTMLElement): number {
   const wrapper = el.parentElement ? getComputedStyle(el.parentElement) : null;
   const pad = (s: CSSStyleDeclaration | null) =>
     s ? parseFloat(s.paddingTop) + parseFloat(s.paddingBottom) : 0;
+
   return pad(body) + pad(wrapper);
 }

@@ -1,8 +1,8 @@
-import { safeStorage } from "electron";
 import { readFileSync, unlinkSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { userDataDir } from "./user-data-dir";
+import { safeStorage } from "electron";
 import type { StoredCredentials } from "./token.store.types";
+import { userDataDir } from "./user-data-dir";
 
 /**
  * GitHub credentials, encrypted with Electron's safeStorage (macOS Keychain-backed key).
@@ -30,6 +30,7 @@ function read(): string | null {
     if (buf.subarray(0, PLAIN_PREFIX.length).toString() === PLAIN_PREFIX) {
       return buf.subarray(PLAIN_PREFIX.length).toString();
     }
+
     return safeStorage.decryptString(buf);
   } catch {
     return null;
@@ -50,6 +51,7 @@ export function loadCredentials(): StoredCredentials | null {
   try {
     const parsed = JSON.parse(raw) as Partial<StoredCredentials>;
     if (!parsed.accessToken) return null;
+
     return {
       accessToken: parsed.accessToken,
       refreshToken: parsed.refreshToken ?? null,

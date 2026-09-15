@@ -11,6 +11,7 @@ export function TagInput({
   placeholder = "type to add…",
 }: TagInputProps) {
   const t = useTagInput(value, onChange, suggestions);
+
   return (
     <div className="relative">
       <div

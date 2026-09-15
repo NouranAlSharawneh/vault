@@ -1,6 +1,6 @@
 import { create } from "zustand";
-import type { IndexSnapshot, ScanProgress, SyncStatus, TrashedDoc } from "@shared/types";
 import { api } from "@/lib/api";
+import type { IndexSnapshot, ScanProgress, SyncStatus, TrashedDoc } from "@shared/types";
 import type { AppState } from "./app.types";
 
 const EMPTY_PROGRESS: ScanProgress = { phase: "idle", done: 0, total: 0 };

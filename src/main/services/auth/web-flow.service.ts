@@ -10,8 +10,8 @@ import {
 import { buildAuthorizeUrl, exchangeCode } from "../../network/github";
 import type { OAuthConfig } from "../../store/oauth-config.types";
 import type { StoredCredentials } from "../../store/token.store.types";
-import type { WebFlowReporter } from "./web-flow.types";
 import { startLoopbackServer } from "./loopback-server";
+import type { WebFlowReporter } from "./web-flow.types";
 
 interface Flow {
   close: () => void;
@@ -68,6 +68,7 @@ export async function runWebFlow(
         redirectUri: server.redirectUri,
       });
       report("ok");
+
       return credentials;
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
@@ -90,6 +91,7 @@ export async function runWebFlow(
   void flow.promise.finally(() => {
     if (active === flow) active = null;
   });
+
   return flow.promise;
 }
 

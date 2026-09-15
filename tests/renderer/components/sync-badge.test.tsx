@@ -1,7 +1,7 @@
-// @vitest-environment jsdom
-import { describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+// @vitest-environment jsdom
+import { describe, expect, it, vi } from "vitest";
 import { SyncBadge } from "@/components/sync-badge/sync-badge.component";
 import { useApp } from "@/stores/app";
 import { mockVaultApi } from "../helpers/mock-vault-api";

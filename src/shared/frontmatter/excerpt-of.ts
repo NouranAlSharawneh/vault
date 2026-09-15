@@ -8,5 +8,6 @@ export function excerptOf(body: string, max = EXCERPT_LENGTH): string {
     .replace(/[*_`>#[\]()!]/g, "")
     .replace(/\s+/g, " ")
     .trim();
+
   return text.length > max ? text.slice(0, max - 1).trimEnd() + "…" : text;
 }

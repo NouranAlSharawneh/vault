@@ -1,10 +1,10 @@
 import { Dot } from "@/components/ui";
-import { useOnboardingStep } from "./hooks/use-onboarding-step.hook";
-import { Welcome } from "./components/welcome/welcome.component";
-import { SignIn } from "./components/sign-in/sign-in.component";
-import { RepoPicker } from "./components/repo-picker/repo-picker.component";
-import { FirstScan } from "./components/first-scan/first-scan.component";
 import { Done } from "./components/done/done.component";
+import { FirstScan } from "./components/first-scan/first-scan.component";
+import { RepoPicker } from "./components/repo-picker/repo-picker.component";
+import { SignIn } from "./components/sign-in/sign-in.component";
+import { Welcome } from "./components/welcome/welcome.component";
+import { useOnboardingStep } from "./hooks/use-onboarding-step.hook";
 
 /** Five screens, target ninety seconds. Success = one document saved. */
 export function Onboarding() {

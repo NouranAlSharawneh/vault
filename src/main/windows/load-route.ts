@@ -1,6 +1,6 @@
-import type { BrowserWindow } from "electron";
 import { join } from "node:path";
 import { is } from "@electron-toolkit/utils";
+import type { BrowserWindow } from "electron";
 
 export const PRELOAD_PATH = join(__dirname, "../preload/index.js");
 export const IS_MAC = process.platform === "darwin";

@@ -13,6 +13,7 @@ export function analyseClipboard(text: string, html = ""): ClipboardCapture {
     (/\[[^\]]+\]\([^)]+\)/.test(text) ? 1 : 0) +
     (/^\s*>\s/m.test(text) ? 1 : 0) +
     (/^\s*\|.*\|\s*$/m.test(text) ? 1 : 0);
+
   return {
     text,
     words: countWords(text),

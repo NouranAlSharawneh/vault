@@ -1,7 +1,7 @@
-// @vitest-environment jsdom
-import { describe, expect, it } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+// @vitest-environment jsdom
+import { describe, expect, it } from "vitest";
 import { SignIn } from "@/features/onboarding/components/sign-in/sign-in.component";
 import { mockVaultApi } from "../../helpers/mock-vault-api";
 

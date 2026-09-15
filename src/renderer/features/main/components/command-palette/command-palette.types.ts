@@ -1,5 +1,5 @@
-import type { DocMeta } from "@shared/types";
 import type { PaletteActionKey } from "@/data/palette.data";
+import type { DocMeta } from "@shared/types";
 
 export interface CommandPaletteProps {
   onClose: () => void;

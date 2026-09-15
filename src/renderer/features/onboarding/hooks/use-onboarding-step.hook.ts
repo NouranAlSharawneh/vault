@@ -16,6 +16,7 @@ function intent(): "signin" | "connect" | null {
   const hash = window.location.hash;
   const asked = hash.includes("?connect") ? "connect" : hash.includes("?signin") ? "signin" : null;
   if (asked) window.history.replaceState(null, "", "#onboarding");
+
   return asked;
 }
 
@@ -40,5 +41,6 @@ export function useOnboardingStep() {
   // yet or the user came here to attach one, and otherwise straight to done.
   const effectiveStep: OnboardingStep =
     step === "signin" && signedIn ? (config && asked !== "connect" ? "done" : "repo") : step;
+
   return { step: effectiveStep, setStep, signedIn, user: auth.user };
 }

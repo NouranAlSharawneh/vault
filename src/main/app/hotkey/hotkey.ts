@@ -13,6 +13,7 @@ export function toggleCapture(): void {
   if (isCaptureVisible()) return hideCaptureWindow();
   if (!session.vault) {
     openMainWindow("onboarding");
+
     return;
   }
   const win = showCaptureWindow();
@@ -29,9 +30,11 @@ export function registerHotkey(accelerator: string): boolean {
   try {
     const ok = globalShortcut.register(accelerator, toggleCapture);
     if (!ok) console.warn("Hotkey unavailable:", accelerator);
+
     return ok;
   } catch (e) {
     console.warn("Hotkey failed", e);
+
     return false;
   }
 }

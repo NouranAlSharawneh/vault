@@ -1,7 +1,7 @@
-// @vitest-environment jsdom
-import { describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+// @vitest-environment jsdom
+import { describe, expect, it, vi } from "vitest";
 import { CommandPalette } from "@/features/main/components/command-palette/command-palette.component";
 import { useApp } from "@/stores/app";
 import type { DocMeta } from "@shared/types";
@@ -95,6 +95,7 @@ describe("CommandPalette", () => {
     setIndex();
     render(<CommandPalette onClose={() => undefined} onOpenDoc={() => undefined} />);
     const input = screen.getByLabelText("search");
+
     // fireEvent-style typing of operators
     return userEvent.type(input, "is:starred source:chatgpt").then(() => {
       expect(screen.getByText("Matching")).toBeTruthy();

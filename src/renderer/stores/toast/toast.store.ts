@@ -13,6 +13,7 @@ export const useToast = create<ToastState>((set, get) => ({
     if (timer) clearTimeout(timer);
     set({ toast: { id, message, action } });
     timer = setTimeout(() => get().dismiss(id), TOAST_MS);
+
     return id;
   },
   dismiss: (id) => {

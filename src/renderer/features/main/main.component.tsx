@@ -5,20 +5,20 @@ import { cx } from "@/helpers";
 import { api, on } from "@/lib/api";
 import { useApp } from "@/stores/app";
 import { useToast } from "@/stores/toast";
-import type { ReaderView } from "./main.types";
-import { isTrashed, useDocument } from "./hooks/use-document.hook";
-import { useTrashActions } from "./hooks/use-trash-actions.hook";
-import { useDocumentFilter } from "./hooks/use-document-filter.hook";
-import { useSidebarState } from "./hooks/use-sidebar-state.hook";
-import { useMainShortcuts } from "./hooks/use-main-shortcuts.hook";
-import { TopBar } from "./components/top-bar/top-bar.component";
-import { Sidebar } from "./components/sidebar/sidebar.component";
-import { SidebarRail } from "./components/sidebar-rail/sidebar-rail.component";
-import { DocumentList } from "./components/document-list/document-list.component";
-import { DocumentReader } from "./components/document-reader/document-reader.component";
 import { CommandPalette } from "./components/command-palette/command-palette.component";
 import { ConflictSheet } from "./components/conflict-sheet/conflict-sheet.component";
+import { DocumentList } from "./components/document-list/document-list.component";
+import { DocumentReader } from "./components/document-reader/document-reader.component";
 import { HistoryDrawer } from "./components/history-drawer/history-drawer.component";
+import { SidebarRail } from "./components/sidebar-rail/sidebar-rail.component";
+import { Sidebar } from "./components/sidebar/sidebar.component";
+import { TopBar } from "./components/top-bar/top-bar.component";
+import { useDocumentFilter } from "./hooks/use-document-filter.hook";
+import { isTrashed, useDocument } from "./hooks/use-document.hook";
+import { useMainShortcuts } from "./hooks/use-main-shortcuts.hook";
+import { useSidebarState } from "./hooks/use-sidebar-state.hook";
+import { useTrashActions } from "./hooks/use-trash-actions.hook";
+import type { ReaderView } from "./main.types";
 
 /**
  * Top bar across the window, then navigation · document list · reader.
@@ -63,7 +63,7 @@ export function Main() {
   const openSettings = useCallback(() => (window.location.hash = "settings"), []);
   useMainShortcuts({
     onSearch: openPalette,
-    onTrash: trashActions.trash,
+    onTrash: () => void trashActions.trash(),
     onSettings: openSettings,
     onHistory: toggleHistory,
   });
@@ -80,6 +80,7 @@ export function Main() {
         setHistoryOpen(false);
     };
     window.addEventListener("keydown", onKey);
+
     return () => window.removeEventListener("keydown", onKey);
   }, [showHistory, paletteOpen, conflictsOpen]);
 
@@ -90,6 +91,7 @@ export function Main() {
       if (e.key === "Escape" && !e.defaultPrevented) setConflictsOpen(false);
     };
     window.addEventListener("keydown", onKey);
+
     return () => window.removeEventListener("keydown", onKey);
   }, [conflictsOpen]);
 

@@ -37,6 +37,7 @@ export function Chip({
       )}
     </>
   );
+
   return onClick ? (
     <button
       type="button"

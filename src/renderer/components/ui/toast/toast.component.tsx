@@ -5,6 +5,7 @@ import type { ToastProps } from "./toast.types";
 /** Dark pill at the bottom of the window with an optional action ("Undo"). */
 export function Toast({ toast, onDismiss }: ToastProps) {
   if (!toast) return null;
+
   return (
     <div
       role="status"

@@ -1,7 +1,7 @@
-import { describe, expect, it, beforeAll, afterAll, vi } from "vitest";
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { describe, expect, it, beforeAll, afterAll, vi } from "vitest";
 import { resolveAssets } from "@main/services/assets";
 
 // Kept off the real Spotlight index so the folder under test is the only one in play.

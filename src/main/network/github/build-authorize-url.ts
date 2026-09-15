@@ -9,5 +9,6 @@ export function buildAuthorizeUrl({ clientId, redirectUri, state }: AuthorizePar
   url.searchParams.set("scope", OAUTH_SCOPE);
   url.searchParams.set("state", state);
   url.searchParams.set("allow_signup", "false");
+
   return url.toString();
 }

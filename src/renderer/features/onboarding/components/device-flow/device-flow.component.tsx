@@ -1,13 +1,13 @@
-import { useState } from "react";
 import { Copy } from "lucide-react";
+import { useState } from "react";
 import { Button, Card, Spinner } from "@/components/ui";
 import { COPIED_FEEDBACK_MS } from "@/constants";
 import { DEVICE_FLOW_STATUS_TEXT } from "@/data/auth.data";
 import { DEVICE_LOGIN_PATH } from "@/data/onboarding.data";
 import { cx } from "@/helpers";
 import { api } from "@/lib/api";
-import { useDeviceFlow } from "./hooks/use-device-flow.hook";
 import type { DeviceFlowProps } from "./device-flow.types";
+import { useDeviceFlow } from "./hooks/use-device-flow.hook";
 
 export function DeviceFlow({ onBack }: DeviceFlowProps) {
   const { session, status, error, secondsLeft, terminal, restart } = useDeviceFlow();

@@ -1,5 +1,5 @@
-import { githubOAuth, NetworkError } from "../axios";
 import type { StoredCredentials } from "../../store/token.store.types";
+import { githubOAuth, NetworkError } from "../axios";
 import type { RawDeviceToken, RefreshParams } from "./github.types";
 import { toCredentials } from "./token-grant";
 
@@ -21,5 +21,6 @@ export async function refreshAccessToken({
   if (!data.access_token) {
     throw new NetworkError(data.error ?? "GitHub refused to refresh the token", 401);
   }
+
   return toCredentials(data);
 }

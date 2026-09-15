@@ -30,6 +30,7 @@ export function DocImage({ src, alt, title, width, height, docPath }: DocImagePr
       />
     );
   }
+
   return (
     <img
       className="inline-block h-auto max-w-full rounded-md align-middle"

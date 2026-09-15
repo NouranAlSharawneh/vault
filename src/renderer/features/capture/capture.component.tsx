@@ -2,13 +2,13 @@ import { ArrowDownToLine } from "lucide-react";
 import { AssetPanel } from "@/components/asset-panel";
 import { Kbd } from "@/components/ui";
 import { plural } from "@/helpers";
-import { useCapture } from "./hooks/use-capture.hook";
-import { useFitWindow } from "./hooks/use-fit-window.hook";
-import { useCaptureKeys } from "./hooks/use-capture-keys.hook";
-import { CapturePreview } from "./components/capture-preview/capture-preview.component";
+import { CaptureEmpty } from "./components/capture-empty/capture-empty.component";
 import { CaptureFields } from "./components/capture-fields/capture-fields.component";
 import { CaptureFooter } from "./components/capture-footer/capture-footer.component";
-import { CaptureEmpty } from "./components/capture-empty/capture-empty.component";
+import { CapturePreview } from "./components/capture-preview/capture-preview.component";
+import { useCaptureKeys } from "./hooks/use-capture-keys.hook";
+import { useCapture } from "./hooks/use-capture.hook";
+import { useFitWindow } from "./hooks/use-fit-window.hook";
 
 /** ⌃⌥V sheet: clipboard → two tabs → ⌘↵. The main window never opens. */
 export function Capture() {

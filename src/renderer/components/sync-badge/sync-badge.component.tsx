@@ -26,6 +26,7 @@ export function SyncBadge({ className, onReviewConflicts }: SyncBadgeProps) {
   const state = sync?.state ?? "synced";
   const p = SYNC_PRESENTATION[state];
   const canPush = state === "pending" || state === "offline" || state === "error";
+
   return (
     <span className={cx("flex items-center gap-1", className)}>
       {hasRemote && (

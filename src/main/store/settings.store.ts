@@ -1,8 +1,8 @@
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { DEFAULT_HOTKEY, LEGACY_HOTKEYS } from "@shared/constants";
-import { userDataDir } from "./user-data-dir";
 import type { AppSettings } from "./settings.types";
+import { userDataDir } from "./user-data-dir";
 
 /**
  * Tiny JSON settings store in userData. Holds app config only — nothing that
@@ -28,12 +28,14 @@ export function getSettings(): AppSettings {
   } catch {
     cache = { ...DEFAULTS };
   }
+
   return cache!;
 }
 
 export function updateSettings(patch: Partial<AppSettings>): AppSettings {
   cache = { ...getSettings(), ...patch };
   writeFileSync(configPath(), JSON.stringify(cache, null, 2));
+
   return cache;
 }
 
@@ -43,5 +45,6 @@ function migrate(settings: AppSettings): AppSettings {
   if (vault && (LEGACY_HOTKEYS as readonly string[]).includes(vault.hotkey)) {
     return { ...settings, vault: { ...vault, hotkey: DEFAULT_HOTKEY } };
   }
+
   return settings;
 }

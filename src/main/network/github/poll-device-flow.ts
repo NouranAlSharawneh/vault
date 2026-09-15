@@ -1,9 +1,9 @@
-import type { DevicePollStatus } from "@shared/types";
 import { OAUTH_DEVICE_GRANT } from "@shared/constants";
-import { githubOAuth, NetworkError } from "../axios";
-import { toCredentials } from "./token-grant";
+import type { DevicePollStatus } from "@shared/types";
 import type { StoredCredentials } from "../../store/token.store.types";
+import { githubOAuth, NetworkError } from "../axios";
 import type { RawDeviceToken } from "./github.types";
+import { toCredentials } from "./token-grant";
 
 const sleep = (s: number) => new Promise((r) => setTimeout(r, s * 1000));
 
@@ -29,6 +29,7 @@ export async function pollDeviceFlow(
     });
     if (data.access_token) {
       onStatus("ok");
+
       return toCredentials(data);
     }
     switch (data.error) {

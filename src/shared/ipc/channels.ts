@@ -85,5 +85,6 @@ export const EVENT_CHANNELS = [
  * Here it is a type error instead — `AssertNever` rejects any left-over channel name.
  */
 type AssertNever<T extends never> = T;
+
 export type UnlistedInvoke = AssertNever<Exclude<InvokeChannel, (typeof INVOKE_CHANNELS)[number]>>;
 export type UnlistedEvent = AssertNever<Exclude<EventChannel, (typeof EVENT_CHANNELS)[number]>>;

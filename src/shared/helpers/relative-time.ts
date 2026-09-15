@@ -11,6 +11,7 @@ export function relativeTime(input: string | number, now = Date.now()): string {
   const d = Math.round(h / 24);
   if (d < 7) return `${d}d`;
   const date = new Date(ts);
+
   return date.toLocaleDateString(undefined, {
     day: "numeric",
     month: "short",

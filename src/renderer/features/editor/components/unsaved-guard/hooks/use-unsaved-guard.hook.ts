@@ -20,6 +20,7 @@ export function useUnsavedGuard(dirty: boolean) {
       setPrompting(true);
     };
     window.addEventListener("beforeunload", handler);
+
     return () => window.removeEventListener("beforeunload", handler);
   }, [dirty]);
 

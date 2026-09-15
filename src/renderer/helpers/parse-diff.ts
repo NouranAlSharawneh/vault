@@ -43,6 +43,7 @@ export function parseUnifiedDiff(diff: string): DiffHunk[] {
     if (kind !== "added") oldLine++;
     if (kind !== "removed") newLine++;
   }
+
   return hunks;
 }
 
@@ -56,5 +57,6 @@ export function diffStat(hunks: DiffHunk[]): { added: number; removed: number } 
       else if (l.kind === "removed") removed++;
     }
   }
+
   return { added, removed };
 }

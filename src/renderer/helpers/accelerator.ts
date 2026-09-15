@@ -31,6 +31,7 @@ export function toAccelerator(e: KeyboardEvent): string | null {
   else if (/^Digit\d$/.test(code)) key = code.slice(5);
   else if (/^F\d{1,2}$/.test(code)) key = code;
   else key = KEY_NAMES[e.key] ?? (e.key.length === 1 ? e.key.toUpperCase() : e.key);
+
   return [...MOD_ORDER.filter((m) => mods.includes(m)), key].join("+");
 }
 
@@ -41,5 +42,6 @@ export function acceleratorLabel(accelerator: string): string {
     .map((p) => (p === "CmdOrCtrl" ? (IS_MAC ? "Super" : "Control") : p));
   if (!IS_MAC)
     return parts.map((p) => (p === "Super" ? "Win" : p === "Control" ? "Ctrl" : p)).join("+");
+
   return parts.map((p) => MAC_GLYPH[p] ?? p).join("");
 }

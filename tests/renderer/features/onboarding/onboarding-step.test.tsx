@@ -1,9 +1,9 @@
+import { renderHook } from "@testing-library/react";
 // @vitest-environment jsdom
 import { beforeEach, describe, expect, it } from "vitest";
-import { renderHook } from "@testing-library/react";
-import type { AuthState, VaultConfig } from "@shared/types";
 import { useOnboardingStep } from "@/features/onboarding/hooks/use-onboarding-step.hook";
 import { useApp } from "@/stores/app";
+import type { AuthState, VaultConfig } from "@shared/types";
 
 const config = { root: "/v", remote: "nunu/vault2", branch: "main" } as VaultConfig;
 const expired: AuthState = { status: "expired", user: null, method: "oauth" };

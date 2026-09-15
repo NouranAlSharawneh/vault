@@ -11,6 +11,7 @@ export async function startDeviceFlow(clientId: string): Promise<DeviceFlowStart
     client_id: clientId,
     scope: OAUTH_SCOPE,
   });
+
   return {
     deviceCode: data.device_code,
     userCode: data.user_code,

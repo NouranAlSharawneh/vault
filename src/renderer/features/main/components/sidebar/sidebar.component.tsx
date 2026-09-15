@@ -1,10 +1,10 @@
-import { useState } from "react";
 import { Clock, Layers, RefreshCw, Star } from "lucide-react";
-import { INBOX_COLOR, INBOX_SLUG } from "@shared/constants";
-import { projectColor } from "@shared/helpers";
+import { useState } from "react";
 import { Button, Chip, Dot, ListRow, Logo, SectionLabel } from "@/components/ui";
 import { COLLECTIONS } from "@/data/main.data";
 import { api } from "@/lib/api";
+import { INBOX_COLOR, INBOX_SLUG } from "@shared/constants";
+import { projectColor } from "@shared/helpers";
 import type { SidebarProps } from "./sidebar.types";
 
 const ICONS = { all: Layers, recent: Clock, starred: Star } as const;
@@ -25,6 +25,7 @@ export function Sidebar({ index, config, filter, onCollection, onProject, onTag 
           const active = !filter.project && filter.collection === c.key;
           const count =
             c.key === "all" ? index?.docs.length : c.key === "starred" ? starred : undefined;
+
           return (
             <ListRow key={c.key} selected={active} onClick={() => onCollection(c.key)}>
               {c.key === "all" ? (

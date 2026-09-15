@@ -15,6 +15,7 @@ import { userDataDir } from "./user-data-dir";
 function draftsDir(): string {
   const dir = join(userDataDir(), "drafts");
   if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
+
   return dir;
 }
 
@@ -34,6 +35,7 @@ export function saveDraft(key: string, draft: StoredDraft): void {
 export function loadDraft(key: string): StoredDraft | null {
   try {
     const raw = JSON.parse(readFileSync(draftPath(key), "utf8")) as StoredDraft;
+
     return typeof raw?.body === "string" ? raw : null;
   } catch {
     return null;

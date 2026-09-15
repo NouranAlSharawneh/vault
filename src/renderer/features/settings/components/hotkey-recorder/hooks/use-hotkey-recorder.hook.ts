@@ -12,6 +12,7 @@ export function useHotkeyRecorder(onChange: (accelerator: string) => void) {
       e.stopPropagation();
       if (e.key === "Escape") {
         setRecording(false);
+
         return;
       }
       const accel = toAccelerator(e.nativeEvent);

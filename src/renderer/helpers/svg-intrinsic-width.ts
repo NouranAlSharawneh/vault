@@ -11,5 +11,6 @@ export function svgIntrinsicWidth(svg: string | null): number | null {
   const width = /<svg[^>]*\swidth="([\d.]+)(?:px)?"/i.exec(head);
   if (width) return Number(width[1]);
   const viewBox = /<svg[^>]*\sviewBox="[\d.-]+ [\d.-]+ ([\d.]+) [\d.]+"/i.exec(head);
+
   return viewBox ? Number(viewBox[1]) : null;
 }

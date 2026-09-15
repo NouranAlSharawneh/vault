@@ -1,7 +1,7 @@
-import { net, protocol } from "electron";
 import { existsSync } from "node:fs";
 import { join, resolve, sep } from "node:path";
 import { pathToFileURL } from "node:url";
+import { net, protocol } from "electron";
 import { ASSET_HOST, ASSET_MIME, ASSET_SCHEME, TRASH_DIR } from "@shared/constants";
 import { session } from "../session/session";
 
@@ -42,6 +42,7 @@ export function registerAssetProtocol(): void {
         /* unreadable — fall through to 404 */
       }
     }
+
     return new Response(null, { status: 404 });
   });
 }

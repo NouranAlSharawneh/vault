@@ -16,8 +16,7 @@ export function useCaptureKeys({ onSave, onOpenEditor, onHide }: Handlers) {
       // editor window has always got this right; the sheet had not.
       if (e.key === "Escape") {
         if (!e.defaultPrevented) onHide();
-      }
-      else if (mod && e.key === "Enter") {
+      } else if (mod && e.key === "Enter") {
         e.preventDefault();
         onSave();
       } else if (mod && e.key.toLowerCase() === "e") {
@@ -26,6 +25,7 @@ export function useCaptureKeys({ onSave, onOpenEditor, onHide }: Handlers) {
       }
     };
     window.addEventListener("keydown", onKey);
+
     return () => window.removeEventListener("keydown", onKey);
   }, [onSave, onOpenEditor, onHide]);
 }

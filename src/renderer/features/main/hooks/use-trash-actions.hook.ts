@@ -1,9 +1,9 @@
 import { useCallback } from "react";
-import type { DocMeta } from "@shared/types";
 import { errorMessage, plural } from "@/helpers";
 import { api } from "@/lib/api";
 import { useApp } from "@/stores/app";
 import { useToast } from "@/stores/toast";
+import type { DocMeta } from "@shared/types";
 import { isTrashed } from "./use-document.hook";
 
 /**

@@ -6,8 +6,8 @@ import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "nod
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { simpleGit } from "simple-git";
-import { VaultService } from "@main/services/vault/vault.service";
 import { GitService } from "@main/services/git/git.service";
+import { VaultService } from "@main/services/vault/vault.service";
 import type { VaultConfig } from "@shared/types";
 
 const doc = (title: string, body: string): string =>
@@ -29,13 +29,16 @@ let mine: string;
 const temps: string[] = [];
 
 const ahead = async (root: string): Promise<number> =>
-  Number((await simpleGit({ baseDir: root }).raw(["rev-list", "--count", "origin/main..main"])).trim());
+  Number(
+    (await simpleGit({ baseDir: root }).raw(["rev-list", "--count", "origin/main..main"])).trim(),
+  );
 
 const openVault = async (root: string): Promise<VaultService> => {
   const cache = mkdtempSync(join(tmpdir(), "sync-cache-"));
   temps.push(cache);
   const v = new VaultService(config(root), cache, () => null);
   await v.open();
+
   return v;
 };
 
@@ -113,7 +116,9 @@ describe("an edit made outside Vault", () => {
       commit: true,
     });
     expect(res.preservedExternalEdit).toBeFalsy();
-    expect((await v.history(first.path)).some((c) => c.message.startsWith("external:"))).toBe(false);
+    expect((await v.history(first.path)).some((c) => c.message.startsWith("external:"))).toBe(
+      false,
+    );
     await v.close();
   }, 60_000);
 });

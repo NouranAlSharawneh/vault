@@ -12,17 +12,20 @@ export function mockVaultApi(answers: Partial<Record<InvokeChannel, unknown>> = 
   const invoke = vi.fn(async (channel: InvokeChannel, ...args: unknown[]) => {
     const a = answers[channel];
     if (a instanceof Error) throw a;
+
     // Answers get the call's arguments, so a handler can reply the way main would.
     return typeof a === "function" ? (a as (...a: unknown[]) => unknown)(...args) : a;
   });
   const on = vi.fn((channel: EventChannel, listener: Listener) => {
     if (!listeners.has(channel)) listeners.set(channel, new Set());
     listeners.get(channel)!.add(listener);
+
     return () => listeners.get(channel)!.delete(listener);
   });
   const emit = <C extends EventChannel>(channel: C, payload: IpcEvents[C]) => {
     for (const l of listeners.get(channel) ?? []) l(payload);
   };
   Object.defineProperty(window, "vault", { value: { invoke, on }, configurable: true });
+
   return { invoke, on, emit };
 }

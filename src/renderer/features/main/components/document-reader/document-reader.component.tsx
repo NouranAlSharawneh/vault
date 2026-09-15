@@ -1,9 +1,9 @@
-import { INBOX_COLOR, INBOX_SLUG, TRASH_DIR } from "@shared/constants";
-import { projectColor, relativeTime } from "@shared/helpers";
 import { Markdown } from "@/components/markdown";
 import { Dot, Empty, SplitPane } from "@/components/ui";
 import { MOD_KEY } from "@/constants";
 import { plural } from "@/helpers";
+import { INBOX_COLOR, INBOX_SLUG, TRASH_DIR } from "@shared/constants";
+import { projectColor, relativeTime } from "@shared/helpers";
 import { ReaderToolbar } from "../reader-toolbar/reader-toolbar.component";
 import type { DocumentReaderProps } from "./document-reader.types";
 
@@ -29,6 +29,7 @@ export function DocumentReader({
   onPurge,
 }: DocumentReaderProps) {
   const meta = doc?.meta ?? null;
+
   return (
     <main className="flex h-full min-w-0 flex-col">
       <ReaderToolbar

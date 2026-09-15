@@ -1,7 +1,7 @@
 import { ChevronDown } from "lucide-react";
-import type { Source } from "@shared/types";
 import { SOURCE_OPTIONS } from "@/data/editor.data";
 import { cx } from "@/helpers";
+import type { Source } from "@shared/types";
 import type { SourceSelectProps } from "./source-select.types";
 
 export function SourceSelect({ value, onChange, dark, hint }: SourceSelectProps) {

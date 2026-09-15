@@ -1,9 +1,9 @@
+import { act, renderHook, waitFor } from "@testing-library/react";
 // @vitest-environment jsdom
 import { describe, expect, it } from "vitest";
-import { act, renderHook, waitFor } from "@testing-library/react";
-import type { AssetRef, AssetResolution, VaultConfig } from "@shared/types";
 import { useAssetPlan } from "@/components/asset-panel";
 import { useApp } from "@/stores/app";
+import type { AssetRef, AssetResolution, VaultConfig } from "@shared/types";
 import { mockVaultApi } from "../helpers/mock-vault-api";
 
 const config: VaultConfig = {

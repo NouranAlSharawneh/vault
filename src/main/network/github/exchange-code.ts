@@ -1,5 +1,5 @@
-import { githubOAuth, NetworkError } from "../axios";
 import type { StoredCredentials } from "../../store/token.store.types";
+import { githubOAuth, NetworkError } from "../axios";
 import type { ExchangeParams, RawDeviceToken } from "./github.types";
 import { toCredentials } from "./token-grant";
 
@@ -18,5 +18,6 @@ export async function exchangeCode({
   });
   if (!data.access_token)
     throw new NetworkError(data.error ?? "GitHub did not return a token", 400);
+
   return toCredentials(data);
 }

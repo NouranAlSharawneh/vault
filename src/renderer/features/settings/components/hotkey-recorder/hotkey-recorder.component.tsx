@@ -6,6 +6,7 @@ import type { HotkeyRecorderProps } from "./hotkey-recorder.types";
 /** Click, press the combination you want, done. */
 export function HotkeyRecorder({ value, onChange, busy }: HotkeyRecorderProps) {
   const r = useHotkeyRecorder((a) => void onChange(a));
+
   return (
     <Button
       variant="outline"

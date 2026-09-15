@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useState } from "react";
-import { inferTitle } from "@shared/helpers";
-import type { ClipboardCapture } from "@shared/types";
-import { CAPTURE_SAVED_FLASH_MS } from "@/constants";
 import { useAssetPlan } from "@/components/asset-panel";
+import { CAPTURE_SAVED_FLASH_MS } from "@/constants";
 import { errorMessage, parentDir } from "@/helpers";
 import { api, on } from "@/lib/api";
 import { useApp } from "@/stores/app";
+import { inferTitle } from "@shared/helpers";
+import type { ClipboardCapture } from "@shared/types";
 import type { CaptureForm, CaptureState } from "../capture.types";
 
 const EMPTY: CaptureState = {
@@ -43,6 +43,7 @@ export function useCapture() {
     api("capture:readClipboard")
       .then(load)
       .catch(() => undefined);
+
     return on("capture:shown", load);
   }, [load]);
 
@@ -92,6 +93,7 @@ export function useCapture() {
   const openInEditor = useCallback(() => {
     if (!state.clip?.text.trim()) {
       void api("window:openEditor");
+
       return;
     }
     void api("capture:openEditor", {

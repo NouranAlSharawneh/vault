@@ -22,6 +22,7 @@ export function useEditorShortcuts({ onSave, onEscape }: EditorShortcutHandlers)
       onEscape();
     };
     window.addEventListener("keydown", onKey);
+
     return () => window.removeEventListener("keydown", onKey);
   }, [onEscape]);
 }

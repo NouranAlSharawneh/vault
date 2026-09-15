@@ -1,14 +1,15 @@
 import { parse as parseYaml } from "yaml";
 import { SOURCES } from "../constants";
-import type { ConflictMark, Frontmatter, Source } from "../types";
 import { inferTitle } from "../helpers/infer-title";
-import { splitFrontmatter } from "./split-frontmatter";
+import type { ConflictMark, Frontmatter, Source } from "../types";
 import type { ParsedDoc } from "./frontmatter.types";
+import { splitFrontmatter } from "./split-frontmatter";
 
 function asString(v: unknown): string | null {
   if (typeof v === "string") return v;
   if (typeof v === "number" || typeof v === "boolean") return String(v);
   if (v instanceof Date) return v.toISOString();
+
   return null;
 }
 
@@ -26,11 +27,13 @@ function asTags(v: unknown): string[] {
       .split(/[,\s]+/)
       .map(clean)
       .filter(Boolean);
+
   return [];
 }
 
 function asSource(v: unknown): Source {
   const s = asString(v)?.toLowerCase();
+
   return (SOURCES as readonly string[]).includes(s ?? "") ? (s as Source) : "other";
 }
 
@@ -61,6 +64,7 @@ export function parseDoc(raw: string): ParsedDoc {
   const extra: Record<string, unknown> = {};
   for (const k of Object.keys(d))
     if (!(k in fm) && k !== "starred" && k !== "conflict") extra[k] = d[k];
+
   return { frontmatter: fm, body, extra };
 }
 
@@ -70,5 +74,6 @@ function asConflict(v: unknown): ConflictMark | undefined {
   const d = v as Record<string, unknown>;
   const of = asString(d.of);
   const at = asString(d.at);
+
   return of && at && d.from === "github" ? { of, from: "github", at } : undefined;
 }

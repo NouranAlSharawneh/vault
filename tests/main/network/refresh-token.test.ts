@@ -1,5 +1,5 @@
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { createServer, type Server } from "node:http";
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { configureNetwork } from "@main/network/axios";
 import { refreshAccessToken } from "@main/network/github";
 

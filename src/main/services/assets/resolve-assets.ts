@@ -19,6 +19,7 @@ export async function resolveAssets(
 ): Promise<AssetResolution> {
   const detected = !baseDir && refs.length ? await findAssetRoot(refs, known) : null;
   const dir = baseDir ?? detected;
+
   return {
     baseDir: dir,
     detected: !!detected,
@@ -34,6 +35,7 @@ async function describe(ref: string, baseDir: string | null): Promise<AssetRef> 
   try {
     const abs = isAbsolute(ref) ? ref : resolve(baseDir, ref);
     const st = await fs.stat(abs);
+
     return st.isFile()
       ? { ref, name, status: "found", bytes: st.size }
       : { ref, name, status: "missing", bytes: 0 };
