@@ -1,7 +1,7 @@
 import { GitMerge, Star } from "lucide-react";
 import { relativeTime } from "@shared/helpers";
 import { plural } from "@/helpers";
-import { Button, Empty, ListRow } from "@/components/ui";
+import { Button, Dot, Empty, ListRow } from "@/components/ui";
 import { ListHeader } from "../list-header/list-header.component";
 import { TagFilter } from "../tag-filter/tag-filter.component";
 import type { DocumentListProps } from "./document-list.types";
@@ -63,9 +63,7 @@ export function DocumentList({
                 <span className="truncate text-base font-medium">{d.title}</span>
               </span>
               <span className="flex shrink-0 items-center gap-1.5 text-2xs text-ink-4">
-                {d.unpushed && (
-                  <span className="h-1.5 w-1.5 rounded-full bg-warn" title="Not pushed yet" />
-                )}
+                {d.unpushed && <Dot tone="bg-warn" size={6} aria-label="not pushed yet" />}
                 {relativeTime(d.created)}
               </span>
             </div>

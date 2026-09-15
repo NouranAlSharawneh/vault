@@ -30,9 +30,10 @@ export function Main() {
   const trash = useApp((s) => s.trash);
   const toast = useToast((s) => s.toast);
   const dismissToast = useToast((s) => s.dismiss);
+  const show = useToast((s) => s.show);
   const sidebar = useSidebarState();
   const list = useDocumentFilter(index, trash);
-  const { showAll } = list;
+  const { showAll, filtered } = list;
   const [selected, setSelected] = useState<string | null>(null);
   const [view, setView] = useState<ReaderView>("preview");
   const [paletteOpen, setPaletteOpen] = useState(false);
@@ -47,10 +48,13 @@ export function Main() {
   useEffect(
     () =>
       on("doc:reveal", (path) => {
+        // Dropping the filters is what makes the new document findable, but doing it in
+        // silence left you looking at a different list than the one you had set up.
+        if (filtered) show("Showing all documents, so the new one is in the list");
         showAll();
         setSelected(path);
       }),
-    [showAll],
+    [showAll, filtered, show],
   );
 
   const openPalette = useCallback(() => setPaletteOpen(true), []);

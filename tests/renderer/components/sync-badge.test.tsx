@@ -39,7 +39,7 @@ describe("SyncBadge", () => {
     ["pending", 3, "3 not pushed"],
     ["pushing", 1, "pushing…"],
     ["offline", 2, "offline · 2 waiting"],
-    ["error", 1, "push failed"],
+    ["error", 1, "couldn't push — retry"],
   ] as const)("%s → %s", (state, ahead, label) => {
     mockVaultApi();
     useApp.setState({ config, sync: status(state, ahead) });

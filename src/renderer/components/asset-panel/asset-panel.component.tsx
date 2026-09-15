@@ -39,7 +39,7 @@ export function AssetPanel({ plan, dark, className }: AssetPanelProps) {
               {plan.missing > 0 && ` · ${plan.missing} missing`}
             </>
           ) : (
-            "nowhere on this Mac holds these paths"
+            "couldn't find these images — pick the folder they live in, or save without them"
           )}
         </span>
         <Button
@@ -73,7 +73,11 @@ export function AssetPanel({ plan, dark, className }: AssetPanelProps) {
                   </Chip>
                 </>
               ) : (
-                <span className={r.status === "unsupported" ? muted : dark ? "text-cherry-3" : "text-cherry"}>
+                <span
+                  className={
+                    r.status === "unsupported" ? muted : dark ? "text-cherry-3" : "text-cherry"
+                  }
+                >
                   {r.status === "unsupported" ? "unsupported type" : "not found"}
                 </span>
               )}

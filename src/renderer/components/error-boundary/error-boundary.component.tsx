@@ -32,8 +32,8 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
       <div className="flex h-full flex-col items-center justify-center gap-3 rounded-lg bg-paper p-8 text-center">
         <h1 className="text-lg font-medium text-ink">This window hit an error</h1>
         <p className="max-w-100 text-sm text-ink-3">
-          Your documents are files on disk and nothing here has touched them. Reloading the
-          window is safe.
+          Your documents are files on disk and nothing here has touched them. Reloading the window
+          is safe.
         </p>
         <pre className="max-h-40 max-w-140 overflow-auto rounded-sm border border-line bg-paper-2 p-3 text-left font-mono text-2xs text-ink-2">
           {error.message || String(error)}
