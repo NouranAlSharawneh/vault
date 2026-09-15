@@ -8,6 +8,7 @@ import {
   FROM_REMOTE_SUFFIX,
   GIT_IDENTITY,
   INBOX_SLUG,
+  MTIME_SLACK_MS,
   PULL_INTERVAL_MS,
   PUSH_RETRY_MAX_MS,
   PUSH_RETRY_MIN_MS,
@@ -196,6 +197,12 @@ export class VaultService extends EventEmitter {
     const abs = join(this.root, target);
     await fs.mkdir(dirname(abs), { recursive: true });
 
+    // Something else wrote this file while it was open here — another editor, a pull, a
+    // second Vault window. Its version is committed before ours lands on top, so it is
+    // one entry back in the history drawer rather than gone. We do not refuse the save:
+    // the user is mid-thought, and their text is the one thing that must not be lost.
+    const preservedExternalEdit = await this.preserveExternalEdit(req, title);
+
     const isNew = !req.existingPath;
     const moved = !!req.existingPath && req.existingPath !== target;
     if (moved) await this.git.mv(req.existingPath!, target);
@@ -226,7 +233,25 @@ export class VaultService extends EventEmitter {
       this.schedulePush();
     }
     this.emit("index", this.index.snapshot());
-    return { path: target, meta, committed, assets };
+    return { path: target, meta, committed, assets, preservedExternalEdit };
+  }
+
+  /**
+   * Commit whatever is on disk before overwriting it, when the file has changed since the
+   * editor loaded it. Returns true only when there was a real change to keep — a touched
+   * file with identical contents stages nothing, and an empty commit is not worth making.
+   */
+  private async preserveExternalEdit(req: SaveRequest, title: string): Promise<boolean> {
+    if (!req.existingPath || !req.baseMtime) return false;
+    const abs = join(this.root, req.existingPath);
+    if (!existsSync(abs)) return false;
+    const { mtimeMs } = await fs.stat(abs);
+    // Filesystems round mtimes differently; only a clearly later write counts.
+    if (mtimeMs <= req.baseMtime + MTIME_SLACK_MS) return false;
+    const changed = (await this.git.git.status()).files.some((f) => f.path === req.existingPath);
+    if (!changed) return false;
+    await this.git.commitPaths([req.existingPath], `external: ${title}`);
+    return true;
   }
 
   async setStarred(relPath: string, starred: boolean): Promise<DocMeta> {

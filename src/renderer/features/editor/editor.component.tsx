@@ -118,6 +118,7 @@ export function Editor() {
         canSave={d.canSave}
         dirty={d.dirty}
         error={d.error}
+        keptOtherVersion={!!d.lastSaved?.preservedExternalEdit}
         onSave={saveAndClose}
       />
       <UnsavedGuard
