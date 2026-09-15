@@ -57,7 +57,7 @@ export function ConflictSheet({ onClose }: ConflictSheetProps) {
         {/* Loading, empty and failed all stand in the same room. Without a floor the
             sheet collapsed to a wide strip the moment the last pair was settled. */}
         {error ? (
-          <div className="flex min-h-56 items-center justify-center p-4 text-xs text-cherry-3">
+          <div className="flex min-h-56 items-center justify-center p-4 text-xs text-cherry">
             {error}
           </div>
         ) : !pairs ? (
@@ -173,7 +173,7 @@ function ConflictRow({ pair, onResolved }: ConflictRowProps) {
           Keep both
         </Button>
       </div>
-      {failed && <div className="mt-1.5 text-2xs text-cherry-3">{failed}</div>}
+      {failed && <div className="mt-1.5 text-2xs text-cherry">{failed}</div>}
     </section>
   );
 }
