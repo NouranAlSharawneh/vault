@@ -1,6 +1,7 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { App } from "./app/app.component";
+import { ErrorBoundary } from "./components/error-boundary/error-boundary.component";
 import { IS_MAC } from "@/constants";
 import "./styles/global.css";
 
@@ -19,6 +20,8 @@ document.documentElement.classList.toggle("is-mac", IS_MAC);
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
-    <App />
+    <ErrorBoundary bare={window.location.hash.startsWith("#capture")}>
+      <App />
+    </ErrorBoundary>
   </StrictMode>,
 );
