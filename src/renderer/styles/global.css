@@ -44,8 +44,11 @@
   --color-line-2: #d9d4ca;
   --color-ink: #1e1d1b;
   --color-ink-2: #4b4844;
-  --color-ink-3: #7a766f;
-  --color-ink-4: #a9a49b;
+  /* Contrast against paper: 5.6:1 and 4.8:1. ink-4 carries every section label, timestamp
+     and count in the app, mostly at 10.5px, and used to sit at 2.4:1 — quiet to the point
+     of not reliably existing. Both moved together so the two tiers stay distinct. */
+  --color-ink-3: #6b665e;
+  --color-ink-4: #767066;
 
   --color-cherry: #b4232f;
   --color-cherry-2: #8f1a25;
@@ -54,7 +57,13 @@
   --color-cherry-tint-2: #f6dede;
 
   --color-ok: #5fb07a;
+  /* `ok` is a 2.6:1 dot and a diff background — fine as a shape, unreadable as text.
+     This is the one to use when a word or a number has to be green. */
+  --color-ok-2: #33774e;
   --color-warn: #e4b04a;
+  /* `warn` is a dot, a star fill and a spinner — 1.9:1, fine as a shape and unreadable
+     as a word. This is the one to use when the warning is text on a light ground. */
+  --color-warn-2: #856a20;
 
   /* GitHub alert accents. Their own ramp, so ok/warn stay reserved for sync status. */
   --color-alert-note: #4a6fa5;

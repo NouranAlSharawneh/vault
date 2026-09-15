@@ -1,5 +1,5 @@
 import { promises as fs, existsSync } from "node:fs";
-import { basename, dirname, join, sep } from "node:path";
+import { basename, dirname, join, resolve, sep } from "node:path";
 import { EventEmitter } from "node:events";
 import { parse as parseYaml, stringify as stringifyYaml } from "yaml";
 import {
@@ -8,6 +8,7 @@ import {
   FROM_REMOTE_SUFFIX,
   GIT_IDENTITY,
   INBOX_SLUG,
+  MTIME_SLACK_MS,
   PULL_INTERVAL_MS,
   PUSH_RETRY_MAX_MS,
   PUSH_RETRY_MIN_MS,
@@ -66,6 +67,8 @@ export class VaultService extends EventEmitter {
   private pullTimer: NodeJS.Timeout | null = null;
   private pushing = false;
   private pullInFlight: Promise<{ conflicts: ConflictPair[] }> | null = null;
+  /** The tail of the queue every remote operation waits behind. See `queue()`. */
+  private remoteWork: Promise<unknown> = Promise.resolve();
   private retryDelay = PUSH_RETRY_MIN_MS;
 
   constructor(
@@ -100,7 +103,12 @@ export class VaultService extends EventEmitter {
     const snap = await this.index.load();
     if (!existsSync(join(this.root, README_FILE))) await this.writeReadme();
     this.index.watch();
-    void this.refreshSyncStatus();
+    // Anything committed but never pushed — quit inside the debounce, or written while
+    // offline — would otherwise sit here forever, because the only thing that ever pushes
+    // is another save. The badge said "not pushed" and nothing was ever going to act on it.
+    void this.refreshSyncStatus().then((s) => {
+      if (s.ahead > 0) this.schedulePush();
+    });
     this.startPulling();
     return snap;
   }
@@ -137,7 +145,7 @@ export class VaultService extends EventEmitter {
   // ---- docs ---------------------------------------------------------------------
 
   async read(relPath: string): Promise<DocContent> {
-    const raw = await fs.readFile(join(this.root, relPath), "utf8");
+    const raw = await fs.readFile(assertInside(this.root, relPath), "utf8");
     const { body } = parseDoc(raw);
     const meta = this.index.get(relPath) ?? (await this.index.refreshFile(relPath));
     if (!meta) throw new Error(`Not in index: ${relPath}`);
@@ -168,6 +176,7 @@ export class VaultService extends EventEmitter {
    * README into the same commit → update index → schedule push.
    */
   async save(req: SaveRequest): Promise<SaveResult> {
+    if (req.existingPath) assertInside(this.root, req.existingPath);
     const title = (req.frontmatter.title || inferTitle(req.body) || "Untitled").trim();
     let created = req.frontmatter.created;
     let extra: Record<string, unknown> = {};
@@ -190,6 +199,12 @@ export class VaultService extends EventEmitter {
     const target = await this.uniquePath(this.pathFor(fm.project, fm.title), req.existingPath);
     const abs = join(this.root, target);
     await fs.mkdir(dirname(abs), { recursive: true });
+
+    // Something else wrote this file while it was open here — another editor, a pull, a
+    // second Vault window. Its version is committed before ours lands on top, so it is
+    // one entry back in the history drawer rather than gone. We do not refuse the save:
+    // the user is mid-thought, and their text is the one thing that must not be lost.
+    const preservedExternalEdit = await this.preserveExternalEdit(req, title);
 
     const isNew = !req.existingPath;
     const moved = !!req.existingPath && req.existingPath !== target;
@@ -221,7 +236,25 @@ export class VaultService extends EventEmitter {
       this.schedulePush();
     }
     this.emit("index", this.index.snapshot());
-    return { path: target, meta, committed, assets };
+    return { path: target, meta, committed, assets, preservedExternalEdit };
+  }
+
+  /**
+   * Commit whatever is on disk before overwriting it, when the file has changed since the
+   * editor loaded it. Returns true only when there was a real change to keep — a touched
+   * file with identical contents stages nothing, and an empty commit is not worth making.
+   */
+  private async preserveExternalEdit(req: SaveRequest, title: string): Promise<boolean> {
+    if (!req.existingPath || !req.baseMtime) return false;
+    const abs = join(this.root, req.existingPath);
+    if (!existsSync(abs)) return false;
+    const { mtimeMs } = await fs.stat(abs);
+    // Filesystems round mtimes differently; only a clearly later write counts.
+    if (mtimeMs <= req.baseMtime + MTIME_SLACK_MS) return false;
+    const changed = (await this.git.git.status()).files.some((f) => f.path === req.existingPath);
+    if (!changed) return false;
+    await this.git.commitPaths([req.existingPath], `external: ${title}`);
+    return true;
   }
 
   async setStarred(relPath: string, starred: boolean): Promise<DocMeta> {
@@ -237,6 +270,7 @@ export class VaultService extends EventEmitter {
 
   /** PRD Q5: move to `.trash/` (scanner skips it) rather than `git rm`. */
   async trash(relPath: string): Promise<TrashedDoc> {
+    assertInside(this.root, relPath);
     const dest = await this.uniquePath(`${TRASH_DIR}/${relPath}`);
     await fs.mkdir(dirname(join(this.root, dest)), { recursive: true });
     const meta = this.index.get(relPath) ?? (await this.index.readMeta(relPath));
@@ -352,15 +386,18 @@ export class VaultService extends EventEmitter {
   }
 
   async history(relPath: string): Promise<CommitInfo[]> {
+    assertInside(this.root, relPath);
     return this.git.log(relPath);
   }
 
   async atCommit(relPath: string, sha: string): Promise<string> {
+    assertInside(this.root, relPath);
     return this.git.show(await this.pathAt(relPath, sha), sha);
   }
 
   /** What this commit changed, as a unified diff. */
   async diff(relPath: string, sha: string): Promise<string> {
+    assertInside(this.root, relPath);
     return this.git.diff(await this.pathAt(relPath, sha), sha);
   }
 
@@ -424,11 +461,11 @@ export class VaultService extends EventEmitter {
       touched.push(dest);
     }
     if (fromSlug !== toSlug) {
-      try {
-        await fs.rmdir(join(this.root, fromSlug));
-      } catch {
-        /* not empty (non-md files) — leave it */
-      }
+      // The documents have moved; everything else in the folder has not. `assets/` above
+      // all — leaving it behind broke every relative image in the project and left the
+      // old folder sitting on disk, because the rmdir here could never succeed.
+      await this.moveRemaining(join(this.root, fromSlug), join(this.root, toSlug));
+      await fs.rmdir(join(this.root, fromSlug)).catch(() => undefined);
     }
     for (const p of touched) await this.index.refreshFile(p);
     await this.writeReadme();
@@ -438,6 +475,31 @@ export class VaultService extends EventEmitter {
     this.schedulePush();
     this.emit("index", this.index.snapshot());
     return { moved: docs.length };
+  }
+
+  /**
+   * Move whatever a project folder still holds into its new home, merging directories
+   * rather than replacing them. A name already taken on the other side keeps both files:
+   * one of the two references will be wrong, but no bytes are thrown away.
+   */
+  private async moveRemaining(fromDir: string, toDir: string): Promise<void> {
+    const entries = await fs.readdir(fromDir, { withFileTypes: true }).catch(() => []);
+    for (const entry of entries) {
+      const src = join(fromDir, entry.name);
+      if (entry.isDirectory()) {
+        await fs.mkdir(join(toDir, entry.name), { recursive: true });
+        await this.moveRemaining(src, join(toDir, entry.name));
+        await fs.rmdir(src).catch(() => undefined);
+        continue;
+      }
+      let dest = join(toDir, entry.name);
+      for (let i = 2; existsSync(dest) && i < 1000; i++) {
+        const dot = entry.name.lastIndexOf(".");
+        const [stem, ext] = dot > 0 ? [entry.name.slice(0, dot), entry.name.slice(dot)] : [entry.name, ""];
+        dest = join(toDir, `${stem}-${i}${ext}`);
+      }
+      await fs.rename(src, dest);
+    }
   }
 
   // ---- README index ---------------------------------------------------------------
@@ -567,8 +629,32 @@ export class VaultService extends EventEmitter {
       await this.git.setRemote(`https://github.com/${this.config.remote}.git`);
   }
 
+  /**
+   * One queue for everything that touches the remote.
+   *
+   * A push and a pull both drive a rebase, and each was guarded only against a second of
+   * its own kind. Run together — which the interval timer and a save do without trying —
+   * one of them finished the other's rebase and the loser reported `fatal: No rebase in
+   * progress?`, leaving a red badge until the retry backoff quietly fixed it five seconds
+   * later. They cannot overlap now.
+   */
+  private queue<T>(work: () => Promise<T>): Promise<T> {
+    const next = this.remoteWork.then(work, work);
+    // The caller owns this rejection; the queue itself must stay resolvable.
+    this.remoteWork = next.then(
+      () => undefined,
+      () => undefined,
+    );
+    return next;
+  }
+
   async pushNow(): Promise<SyncStatus> {
-    if (!this.config.remote || this.pushing) return this.sync;
+    if (!this.config.remote) return this.sync;
+    return this.queue(() => this.runPush());
+  }
+
+  private async runPush(): Promise<SyncStatus> {
+    if (this.pushing) return this.sync;
     if (this.pushTimer) {
       clearTimeout(this.pushTimer);
       this.pushTimer = null;
@@ -626,7 +712,7 @@ export class VaultService extends EventEmitter {
     // Asking for a pull while one is already running joins it rather than being told
     // "nothing happened" — the timer and a button press land on the same answer.
     if (!this.pullInFlight) {
-      this.pullInFlight = this.runPull();
+      this.pullInFlight = this.queue(() => this.runPull());
       void this.pullInFlight.finally(() => {
         this.pullInFlight = null;
       });
@@ -810,6 +896,22 @@ function pickFrontmatter(m: Frontmatter): Frontmatter {
 
 function redact(msg: string, token: string | null): string {
   return token ? msg.split(token).join("•••") : msg;
+}
+
+/**
+ * Every path the renderer hands us is joined onto the vault root, so every one of them
+ * has to be proved to land inside it. `../x.md` was caught by accident — the indexer
+ * refuses a path starting with a dot — but `sub/../../../x.md` passed, and `read` would
+ * return the file, index it, and write its path into the README that gets pushed.
+ *
+ * The asset protocol has always done this. The document paths had not.
+ */
+function assertInside(root: string, relPath: string): string {
+  const abs = resolve(root, relPath);
+  if (abs !== root && !abs.startsWith(root + sep)) {
+    throw new Error(`Outside the vault: ${relPath}`);
+  }
+  return abs;
 }
 
 function assertInTrash(path: string): void {

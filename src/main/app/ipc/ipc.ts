@@ -16,6 +16,7 @@ import {
 } from "../../network/github";
 import { readClipboard } from "../../services/capture/capture.service";
 import { GitService } from "../../services/git/git.service";
+import { clearDraft, loadDraft, saveDraft } from "../../store/draft.store";
 import { getSettings, updateSettings } from "../../store/settings.store";
 import { loadCredentials, loadToken } from "../../store/token.store";
 import { getOAuthConfig } from "../../store/oauth-config";
@@ -32,6 +33,7 @@ import { registerHotkey } from "../hotkey/hotkey";
 import { buildAppMenu } from "../menu/menu";
 import { resetApp } from "../session/reset-app";
 import { resolveAssets } from "../../services/assets";
+import { confirmPurge } from "./confirm-purge";
 import { session } from "../session/session";
 
 /** Typed `ipcMain.handle` that normalises errors so the renderer sees a plain message. */
@@ -67,7 +69,6 @@ export function registerIpcHandlers(): void {
     const cfg = getOAuthConfig();
     return { oauth: !!cfg?.clientSecret, device: !!cfg };
   });
-  handle("auth:deviceAvailable", () => !!getOAuthConfig());
   handle("auth:webStart", () => {
     const cfg = getOAuthConfig();
     if (!cfg) throw new Error("No GitHub OAuth App configured. See .env.example.");
@@ -129,14 +130,19 @@ export function registerIpcHandlers(): void {
     if (!(await GitService.isAvailable())) {
       throw new Error("git is not installed. On macOS run `xcode-select --install` and try again.");
     }
+    // Connecting an existing local vault to a repo runs through here too, so anything
+    // that belongs to the vault rather than to the repo is carried over — otherwise
+    // attaching a remote silently reset the hotkey, the push cadence and the last project.
+    const previous = getSettings().vault;
+    const keep = previous?.root === localPath ? previous : null;
     const config: VaultConfig = {
       root: localPath,
       remote: repo?.fullName ?? null,
-      branch: repo?.defaultBranch ?? DEFAULT_BRANCH,
-      lastProject: null,
-      lastSource: "claude",
-      hotkey: DEFAULT_HOTKEY,
-      pushDebounceMs: DEFAULT_PUSH_DEBOUNCE_MS,
+      branch: repo?.defaultBranch ?? keep?.branch ?? DEFAULT_BRANCH,
+      lastProject: keep?.lastProject ?? null,
+      lastSource: keep?.lastSource ?? "claude",
+      hotkey: keep?.hotkey ?? DEFAULT_HOTKEY,
+      pushDebounceMs: keep?.pushDebounceMs ?? DEFAULT_PUSH_DEBOUNCE_MS,
     };
     if (repo && !existsSync(join(localPath, ".git"))) {
       try {
@@ -168,13 +174,12 @@ export function registerIpcHandlers(): void {
     if (patch.hotkey) buildAppMenu(next.hotkey);
     return next;
   });
+  handle("draft:save", (key, draft) => saveDraft(key, draft));
+  handle("draft:load", (key) => loadDraft(key));
+  handle("draft:clear", (key) => clearDraft(key));
   handle("app:reset", () => resetApp());
   handle("vault:index", () => session.requireVault().index.snapshot());
   handle("vault:rescan", () => session.requireVault().index.rescan());
-  handle("vault:disconnect", async () => {
-    await session.closeVault();
-    updateSettings({ vault: null, onboarded: false });
-  });
   handle("vault:revealInFinder", (p) =>
     shell.showItemInFolder(join(session.requireVault().root, p ?? "")),
   );
@@ -195,10 +200,14 @@ export function registerIpcHandlers(): void {
   handle("trash:list", () => session.requireVault().listTrash());
   handle("trash:read", (p) => session.requireVault().readTrashed(p));
   handle("trash:restore", (p) => session.requireVault().restoreFromTrash(p));
-  handle("trash:purge", (p) => session.requireVault().purgeTrash(p));
+  handle("trash:purge", async (p) => {
+    const vault = session.requireVault();
+    // Asked here so neither the reader nor Settings can skip it.
+    if (!(await confirmPurge(p, await vault.listTrash()))) return { removed: 0, assets: [] };
+    return vault.purgeTrash(p);
+  });
   handle("doc:setStarred", (p, starred) => session.requireVault().setStarred(p, starred));
   handle("doc:history", (p) => session.requireVault().history(p));
-  handle("doc:atCommit", (p, sha) => session.requireVault().atCommit(p, sha));
   handle("doc:restore", (p, sha) => session.requireVault().restore(p, sha));
   handle("doc:diff", (p, sha) => session.requireVault().diff(p, sha));
   handle("doc:pathPreview", (project, title) => session.requireVault().previewPath(project, title));

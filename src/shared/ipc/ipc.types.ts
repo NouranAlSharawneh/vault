@@ -19,6 +19,7 @@ import type {
   SavedView,
   ScanProgress,
   SearchHit,
+  StoredDraft,
   SyncStatus,
   TokenStatus,
   Template,
@@ -36,7 +37,6 @@ export interface IpcInvoke {
   "auth:signInWithToken": (token: string) => GitHubUser;
   "auth:deviceStart": () => DeviceCodeSession;
   "auth:deviceCancel": () => void;
-  "auth:deviceAvailable": () => boolean;
   "auth:methods": () => AuthMethods;
   "auth:webStart": () => void;
   "auth:webCancel": () => void;
@@ -55,7 +55,6 @@ export interface IpcInvoke {
   "vault:rescan": () => IndexSnapshot;
   "vault:index": () => IndexSnapshot;
   "vault:updateConfig": (patch: Partial<VaultConfig>) => VaultConfig;
-  "vault:disconnect": () => void;
   "vault:revealInFinder": (path?: string) => void;
 
   "doc:read": (path: string) => DocContent;
@@ -63,10 +62,14 @@ export interface IpcInvoke {
   "doc:trash": (path: string) => TrashedDoc;
   "doc:setStarred": (path: string, starred: boolean) => DocMeta;
   "doc:history": (path: string) => CommitInfo[];
-  "doc:atCommit": (path: string, sha: string) => string;
   "doc:restore": (path: string, sha: string) => SaveResult;
   "doc:diff": (path: string, sha: string) => string;
   "doc:pathPreview": (project: string, title: string) => string;
+
+  /** Unsaved editor text, parked outside the vault. `key` is a doc path, or "new". */
+  "draft:save": (key: string, draft: StoredDraft) => void;
+  "draft:load": (key: string) => StoredDraft | null;
+  "draft:clear": (key: string) => void;
 
   "trash:list": () => TrashedDoc[];
   "trash:read": (path: string) => DocContent;
@@ -114,6 +117,16 @@ export interface IpcInvoke {
 }
 
 /** Main → renderer push events. */
+/** Named so both the menu and the window keydown that raise it can agree on the list. */
+export type Shortcut =
+  | "search"
+  | "new"
+  | "toggleSidebar"
+  | "history"
+  | "save"
+  | "trash"
+  | "settings";
+
 export interface IpcEvents {
   "index:changed": IndexSnapshot;
   "index:progress": ScanProgress;
@@ -125,7 +138,7 @@ export interface IpcEvents {
   "editor:open": { path?: string; draft?: EditorDraft };
   /** Select this document in the main window, clearing filters so it is in the list. */
   "doc:reveal": string;
-  shortcut: "search" | "new" | "toggleSidebar" | "history" | "save" | "trash" | "settings";
+  shortcut: Shortcut;
   navigate: string;
 }
 

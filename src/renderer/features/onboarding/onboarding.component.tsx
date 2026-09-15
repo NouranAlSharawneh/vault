@@ -1,3 +1,4 @@
+import { Dot } from "@/components/ui";
 import { useOnboardingStep } from "./hooks/use-onboarding-step.hook";
 import { Welcome } from "./components/welcome/welcome.component";
 import { SignIn } from "./components/sign-in/sign-in.component";
@@ -5,7 +6,7 @@ import { RepoPicker } from "./components/repo-picker/repo-picker.component";
 import { FirstScan } from "./components/first-scan/first-scan.component";
 import { Done } from "./components/done/done.component";
 
-/** Six screens, target ninety seconds. Success = one document saved. */
+/** Five screens, target ninety seconds. Success = one document saved. */
 export function Onboarding() {
   const { step, setStep, signedIn, user } = useOnboardingStep();
 
@@ -14,7 +15,7 @@ export function Onboarding() {
       <div className="flex h-10 shrink-0 items-center justify-end px-4 drag">
         {user && (
           <div className="flex items-center gap-1.5 text-xs text-ink-3 no-drag">
-            <span className="h-1.5 w-1.5 rounded-full bg-ok" /> Signed in as {user.login}
+            <Dot tone="bg-ok" size={6} /> Signed in as {user.login}
           </div>
         )}
       </div>

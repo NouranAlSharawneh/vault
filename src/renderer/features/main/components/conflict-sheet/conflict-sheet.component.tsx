@@ -1,6 +1,6 @@
 import { useRef, useState } from "react";
 import { Laptop, X } from "lucide-react";
-import { Button, Empty, GitHubMark, SectionLabel, Spinner } from "@/components/ui";
+import { Button, DialogShell, Empty, GitHubMark, SectionLabel, Spinner } from "@/components/ui";
 import { cx, errorMessage, plural } from "@/helpers";
 import { api } from "@/lib/api";
 import { relativeTime } from "@shared/helpers";
@@ -23,18 +23,13 @@ import type {
 export function ConflictSheet({ onClose }: ConflictSheetProps) {
   const { pairs, error, reload } = useConflicts();
   return (
-    <div
-      className="absolute inset-0 z-30 flex items-start justify-center bg-ink/25 pt-16"
-      onClick={onClose}
-      role="presentation"
+    <DialogShell
+      label="review conflicting versions"
+      onClose={onClose}
+      backdropClassName="items-start bg-ink/25 pt-16"
+      className="flex max-h-[80vh] w-235 max-w-[92vw] animate-pop-in flex-col overflow-hidden rounded-lg border border-line bg-paper shadow-sheet"
     >
-      <div
-        data-testid="conflict-sheet"
-        role="dialog"
-        aria-label="review conflicting versions"
-        className="flex max-h-[80vh] w-235 max-w-[92vw] animate-pop-in flex-col overflow-hidden rounded-lg border border-line bg-paper shadow-sheet"
-        onClick={(e) => e.stopPropagation()}
-      >
+      <div data-testid="conflict-sheet" className="flex min-h-0 flex-col">
         <header className="flex h-11 shrink-0 items-center justify-between gap-2 border-b border-line px-4">
           <SectionLabel className="leading-none">
             {pairs?.length
@@ -57,7 +52,7 @@ export function ConflictSheet({ onClose }: ConflictSheetProps) {
         {/* Loading, empty and failed all stand in the same room. Without a floor the
             sheet collapsed to a wide strip the moment the last pair was settled. */}
         {error ? (
-          <div className="flex min-h-56 items-center justify-center p-4 text-xs text-cherry-3">
+          <div className="flex min-h-56 items-center justify-center p-4 text-xs text-cherry">
             {error}
           </div>
         ) : !pairs ? (
@@ -76,7 +71,7 @@ export function ConflictSheet({ onClose }: ConflictSheetProps) {
           </div>
         )}
       </div>
-    </div>
+    </DialogShell>
   );
 }
 
@@ -173,7 +168,7 @@ function ConflictRow({ pair, onResolved }: ConflictRowProps) {
           Keep both
         </Button>
       </div>
-      {failed && <div className="mt-1.5 text-2xs text-cherry-3">{failed}</div>}
+      {failed && <div className="mt-1.5 text-2xs text-cherry">{failed}</div>}
     </section>
   );
 }

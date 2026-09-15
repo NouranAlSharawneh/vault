@@ -7,5 +7,7 @@ export interface EditorFooterProps {
   canSave: boolean;
   dirty: boolean;
   error: string | null;
+  /** The last save found a newer file on disk and committed that version first. */
+  keptOtherVersion: boolean;
   onSave: (mode: SaveMode) => void;
 }
