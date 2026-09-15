@@ -1,6 +1,7 @@
 import { existsSync } from "node:fs";
 import { TOKEN_REFRESH_SKEW_MS } from "@shared/constants";
 import type { AuthMethod, AuthState, GitHubUser, VaultConfig } from "@shared/types";
+import { fire } from "../../lib/fire";
 import { NetworkError } from "../../network/axios";
 import { fetchUser, refreshAccessToken } from "../../network/github";
 import { VaultService } from "../../services/vault/vault.service";
@@ -175,8 +176,8 @@ class Session {
     vault.on("sync", (s) => broadcast("sync:status", s));
     // A push failed in a way that *might* mean the token died. Check before believing it,
     // and if renewing fixed things, finish the push the user already asked for.
-    vault.on("auth-suspect", () => void this.onAuthSuspect(vault));
-    vault.on("auth-ok", () => void this.markAuthOk());
+    vault.on("auth-suspect", () => fire(this.onAuthSuspect(vault), "checking the token"));
+    vault.on("auth-ok", () => fire(this.markAuthOk(), "confirming the token"));
     this.vaultService = vault;
     await vault.open();
 

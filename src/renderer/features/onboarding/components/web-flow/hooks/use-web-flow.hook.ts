@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { errorMessage } from "@/helpers";
-import { api, on } from "@/lib/api";
+import { api, fireQuietly, on } from "@/lib/api";
 import type { WebFlowStatus } from "@shared/types";
 import type { WebFlowState } from "../web-flow.types";
 
@@ -21,7 +21,7 @@ export function useWebFlow() {
     return () => {
       cancelled = true;
       off();
-      void api("auth:webCancel");
+      fireQuietly(api("auth:webCancel"), "cancelling the sign-in");
     };
   }, [attempt]);
 

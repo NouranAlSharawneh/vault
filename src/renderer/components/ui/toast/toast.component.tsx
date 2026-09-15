@@ -1,4 +1,5 @@
 import { X } from "lucide-react";
+import { fire } from "@/lib/api";
 import { Button } from "../button/button.component";
 import type { ToastProps } from "./toast.types";
 
@@ -19,7 +20,8 @@ export function Toast({ toast, onDismiss }: ToastProps) {
             size="sm"
             className="text-cherry-3 hover:bg-ink-2 hover:text-white"
             onClick={() => {
-              void toast.action?.run();
+              const undo = toast.action?.run();
+              if (undo) fire(undo, "Couldn't undo that");
               onDismiss();
             }}
           >

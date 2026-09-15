@@ -36,6 +36,7 @@ import type {
   TrashedDoc,
   VaultConfig,
 } from "@shared/types";
+import { fire } from "../../lib/fire";
 import { importAssets, orphanedAssets } from "../assets";
 import { GitService } from "../git/git.service";
 import { IndexerService } from "../indexer/indexer.service";
@@ -107,9 +108,12 @@ export class VaultService extends EventEmitter {
     // Anything committed but never pushed — quit inside the debounce, or written while
     // offline — would otherwise sit here forever, because the only thing that ever pushes
     // is another save. The badge said "not pushed" and nothing was ever going to act on it.
-    void this.refreshSyncStatus().then((s) => {
-      if (s.ahead > 0) this.schedulePush();
-    });
+    fire(
+      this.refreshSyncStatus().then((s) => {
+        if (s.ahead > 0) this.schedulePush();
+      }),
+      "checking what still needs pushing",
+    );
     this.startPulling();
 
     return snap;
@@ -129,10 +133,10 @@ export class VaultService extends EventEmitter {
    */
   private startPulling(): void {
     if (!this.config.remote || this.pullTimer) return;
-    this.pullTimer = setInterval(() => void this.pull(), PULL_INTERVAL_MS);
+    this.pullTimer = setInterval(() => fire(this.pull(), "the scheduled pull"), PULL_INTERVAL_MS);
     // Node keeps the process alive for a pending timer; a background fetch should not.
     this.pullTimer.unref?.();
-    void this.pull();
+    fire(this.pull(), "the first pull");
   }
 
   private async ensureScaffold(): Promise<void> {
@@ -627,7 +631,10 @@ export class VaultService extends EventEmitter {
     if (!this.config.remote) return;
     this.setSync({ state: "pending" });
     if (this.pushTimer) clearTimeout(this.pushTimer);
-    this.pushTimer = setTimeout(() => void this.pushNow(), this.config.pushDebounceMs);
+    this.pushTimer = setTimeout(
+      () => fire(this.pushNow(), "the debounced push"),
+      this.config.pushDebounceMs,
+    );
   }
 
   async refreshSyncStatus(): Promise<SyncStatus> {
@@ -719,7 +726,10 @@ export class VaultService extends EventEmitter {
         this.emit("auth-suspect");
       } else {
         // back off and retry; the commit is safe on disk
-        this.pushTimer = setTimeout(() => void this.pushNow(), this.retryDelay);
+        this.pushTimer = setTimeout(
+          () => fire(this.pushNow(), "the retried push"),
+          this.retryDelay,
+        );
         this.retryDelay = Math.min(this.retryDelay * 2, PUSH_RETRY_MAX_MS);
       }
     } finally {
@@ -740,9 +750,12 @@ export class VaultService extends EventEmitter {
     // "nothing happened" — the timer and a button press land on the same answer.
     if (!this.pullInFlight) {
       this.pullInFlight = this.queue(() => this.runPull());
-      void this.pullInFlight.finally(() => {
-        this.pullInFlight = null;
-      });
+      fire(
+        this.pullInFlight.finally(() => {
+          this.pullInFlight = null;
+        }),
+        "the pull that just finished",
+      );
     }
 
     return this.pullInFlight;

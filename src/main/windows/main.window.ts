@@ -1,5 +1,6 @@
 import { BrowserWindow, shell } from "electron";
 import { MAIN_WINDOW, PAPER_BG, TRAFFIC_LIGHTS } from "@shared/constants";
+import { fire } from "../lib/fire";
 import { COMMON_WINDOW_OPTIONS, IS_MAC, loadRoute } from "./load-route";
 
 let mainWin: BrowserWindow | null = null;
@@ -29,7 +30,7 @@ export function openMainWindow(route = "main"): BrowserWindow {
   });
   mainWin.once("ready-to-show", () => mainWin?.show());
   mainWin.webContents.setWindowOpenHandler(({ url }) => {
-    void shell.openExternal(url);
+    fire(shell.openExternal(url), "opening a link");
 
     return { action: "deny" };
   });

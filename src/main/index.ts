@@ -6,6 +6,7 @@ import { registerIpcHandlers } from "./app/ipc/ipc";
 import { buildAppMenu } from "./app/menu/menu";
 import { registerAssetProtocol, registerAssetScheme } from "./app/protocol/protocol";
 import { session } from "./app/session/session";
+import { fire } from "./lib/fire";
 import { configureNetwork } from "./network/axios";
 import { getSettings } from "./store/settings.store";
 import { loadToken } from "./store/token.store";
@@ -28,7 +29,10 @@ const boot = app.whenReady().then(async () => {
   nativeTheme.themeSource = "light";
   app.on("browser-window-created", (_, w) => optimizer.watchWindowShortcuts(w));
 
-  configureNetwork({ getToken: loadToken, onAuthExpired: () => void session.revalidate() });
+  configureNetwork({
+    getToken: loadToken,
+    onAuthExpired: () => fire(session.revalidate(), "revalidating the token"),
+  });
   registerIpcHandlers();
   registerAssetProtocol();
   await session.restore();
@@ -60,5 +64,5 @@ app.on("window-all-closed", () => {
 
 app.on("will-quit", () => {
   globalShortcut.unregisterAll();
-  void session.closeVault();
+  fire(session.closeVault(), "closing the vault");
 });

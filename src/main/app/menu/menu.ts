@@ -1,6 +1,7 @@
 import { BrowserWindow, Menu } from "electron";
 import { DEFAULT_HOTKEY } from "@shared/constants";
 import { appMenu, VAULT_REPO } from "../../data/menu.data";
+import { fire } from "../../lib/fire";
 import { openOnGitHub } from "../../network/github";
 import { IS_MAC, openEditorWindow, openMainWindow } from "../../windows";
 import { toggleCapture } from "../hotkey/hotkey";
@@ -21,7 +22,7 @@ function run(action: MenuAction): () => void {
     case "openOnGitHub":
       return () => openOnGitHub(VAULT_REPO);
     case "resetApp":
-      return () => void resetApp();
+      return () => fire(resetApp(), "resetting Vault");
   }
 }
 

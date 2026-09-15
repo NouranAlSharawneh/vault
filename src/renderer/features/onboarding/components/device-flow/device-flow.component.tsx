@@ -5,7 +5,7 @@ import { COPIED_FEEDBACK_MS } from "@/constants";
 import { DEVICE_FLOW_STATUS_TEXT } from "@/data/auth.data";
 import { DEVICE_LOGIN_PATH } from "@/data/onboarding.data";
 import { cx } from "@/helpers";
-import { api } from "@/lib/api";
+import { api, fire } from "@/lib/api";
 import type { DeviceFlowProps } from "./device-flow.types";
 import { useDeviceFlow } from "./hooks/use-device-flow.hook";
 
@@ -17,7 +17,7 @@ export function DeviceFlow({ onBack }: DeviceFlowProps) {
 
   const copy = () => {
     if (!session) return;
-    void navigator.clipboard.writeText(session.userCode);
+    fire(navigator.clipboard.writeText(session.userCode), "Couldn't copy the code");
     setCopied(true);
     setTimeout(() => setCopied(false), COPIED_FEEDBACK_MS);
   };

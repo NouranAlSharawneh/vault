@@ -6,7 +6,7 @@ import {
   SEARCH_DEBOUNCE_MS,
 } from "@/constants";
 import { PALETTE_ACTIONS, type PaletteActionKey } from "@/data/palette.data";
-import { api } from "@/lib/api";
+import { api, fire } from "@/lib/api";
 import { useApp } from "@/stores/app";
 import { matchesFilters, parseQuery } from "@shared/query";
 import type { DocMeta, SearchHit } from "@shared/types";
@@ -124,24 +124,29 @@ export function useCommandPalette(
           window.location.hash = "settings";
           break;
         case "newFromClipboard":
-          void api("capture:readClipboard").then((c) =>
-            api("capture:openEditor", { body: c.text, frontmatter: { source: c.detectedSource } }),
+          fire(
+            api("capture:readClipboard").then((c) =>
+              api("capture:openEditor", {
+                body: c.text,
+                frontmatter: { source: c.detectedSource },
+              }),
+            ),
           );
           break;
         case "newDocument":
-          void api("window:openEditor");
+          fire(api("window:openEditor"));
           break;
         case "pushPending":
-          void api("sync:pushNow");
+          fire(api("sync:pushNow"));
           break;
         case "pullNow":
-          void api("sync:pull");
+          fire(api("sync:pull"));
           break;
         case "reviewConflicts":
           onReviewConflicts?.();
           break;
         case "rescan":
-          void api("vault:rescan");
+          fire(api("vault:rescan"));
           break;
       }
     },

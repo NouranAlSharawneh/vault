@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef } from "react";
 import { isEditableTarget } from "@/helpers";
-import { api, on } from "@/lib/api";
+import { api, fire, on } from "@/lib/api";
 import type { Shortcut } from "@shared/ipc";
 
 interface Handlers {
@@ -27,13 +27,13 @@ const ECHO_MS = 300;
 export function useMainShortcuts({ onSearch, onTrash, onSettings, onHistory }: Handlers) {
   const lastFired = useRef<Partial<Record<Shortcut, number>>>({});
 
-  const fire = useCallback(
+  const dispatch = useCallback(
     (shortcut: Shortcut) => {
       const now = Date.now();
       if (now - (lastFired.current[shortcut] ?? 0) < ECHO_MS) return;
       lastFired.current[shortcut] = now;
       if (shortcut === "search") onSearch();
-      if (shortcut === "new") void api("window:openEditor");
+      if (shortcut === "new") fire(api("window:openEditor"));
       if (shortcut === "trash") onTrash();
       if (shortcut === "settings") onSettings();
       if (shortcut === "history") onHistory();
@@ -41,7 +41,7 @@ export function useMainShortcuts({ onSearch, onTrash, onSettings, onHistory }: H
     [onSearch, onTrash, onSettings, onHistory],
   );
 
-  useEffect(() => on("shortcut", fire), [fire]);
+  useEffect(() => on("shortcut", dispatch), [dispatch]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -60,10 +60,10 @@ export function useMainShortcuts({ onSearch, onTrash, onSettings, onHistory }: H
                 : null;
       if (!shortcut) return;
       e.preventDefault();
-      fire(shortcut);
+      dispatch(shortcut);
     };
     window.addEventListener("keydown", onKey);
 
     return () => window.removeEventListener("keydown", onKey);
-  }, [fire]);
+  }, [dispatch]);
 }

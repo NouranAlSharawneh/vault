@@ -7,6 +7,7 @@ import {
   OAUTH_TIMEOUT_MS,
   WEB_FLOW_CANCEL_GRACE_MS,
 } from "@shared/constants";
+import { fire } from "../../lib/fire";
 import { buildAuthorizeUrl, exchangeCode } from "../../network/github";
 import type { OAuthConfig } from "../../store/oauth-config.types";
 import type { StoredCredentials } from "../../store/token.store.types";
@@ -88,9 +89,12 @@ export async function runWebFlow(
   })();
 
   flow.promise.catch(() => undefined);
-  void flow.promise.finally(() => {
-    if (active === flow) active = null;
-  });
+  fire(
+    flow.promise.finally(() => {
+      if (active === flow) active = null;
+    }),
+    "finishing the sign-in",
+  );
 
   return flow.promise;
 }

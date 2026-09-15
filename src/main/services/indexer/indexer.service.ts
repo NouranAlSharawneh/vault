@@ -34,6 +34,7 @@ import type {
   SearchHit,
   TagSummary,
 } from "@shared/types";
+import { fire } from "../../lib/fire";
 import type { GitService } from "../git/git.service";
 import type { CacheEntry, CacheFile, SearchDoc } from "./indexer.types";
 
@@ -228,7 +229,10 @@ export class IndexerService extends EventEmitter {
       if (!this.isDocPath(rel)) return;
       this.pendingFs.add(rel);
       if (this.fsTimer) clearTimeout(this.fsTimer);
-      this.fsTimer = setTimeout(() => void this.flushFs(), FS_DEBOUNCE_MS);
+      this.fsTimer = setTimeout(
+        () => fire(this.flushFs(), "re-reading changed files"),
+        FS_DEBOUNCE_MS,
+      );
     };
     this.watcher.on("add", onFs).on("change", onFs).on("unlink", onFs);
   }
@@ -311,7 +315,7 @@ export class IndexerService extends EventEmitter {
     this.scannedAt = Date.now();
     this.emit("changed", this.snapshot());
     this.writeCache();
-    void this.bodyPass([...this.docs.keys()]);
+    fire(this.bodyPass([...this.docs.keys()]), "indexing document bodies");
   }
 
   private async walk(): Promise<string[]> {

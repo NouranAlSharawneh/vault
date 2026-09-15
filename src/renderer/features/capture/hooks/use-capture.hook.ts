@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useAssetPlan } from "@/components/asset-panel";
 import { CAPTURE_SAVED_FLASH_MS } from "@/constants";
 import { errorMessage, parentDir } from "@/helpers";
-import { api, on } from "@/lib/api";
+import { api, fire, fireQuietly, on } from "@/lib/api";
 import { useApp } from "@/stores/app";
 import { inferTitle } from "@shared/helpers";
 import type { ClipboardCapture } from "@shared/types";
@@ -65,7 +65,7 @@ export function useCapture() {
   const setForm = (patch: Partial<CaptureForm>) =>
     setState((s) => ({ ...s, form: { ...s.form, ...patch } }));
 
-  const hide = useCallback(() => void api("capture:hide"), []);
+  const hide = useCallback(() => fireQuietly(api("capture:hide"), "hiding the sheet"), []);
 
   const save = useCallback(async () => {
     if (!state.clip || state.phase !== "ready") return;
@@ -84,7 +84,10 @@ export function useCapture() {
       });
       setState((s) => ({ ...s, phase: "saved", savedPath: res.path }));
       // Flash the committed path, then hand the new doc to the main window.
-      setTimeout(() => void api("capture:reveal", res.path), CAPTURE_SAVED_FLASH_MS);
+      setTimeout(
+        () => fire(api("capture:reveal", res.path), "Saved, but couldn't open it"),
+        CAPTURE_SAVED_FLASH_MS,
+      );
     } catch (e) {
       setState((s) => ({ ...s, phase: "error", error: errorMessage(e) }));
     }
@@ -92,20 +95,22 @@ export function useCapture() {
 
   const openInEditor = useCallback(() => {
     if (!state.clip?.text.trim()) {
-      void api("window:openEditor");
+      fire(api("window:openEditor"));
 
       return;
     }
-    void api("capture:openEditor", {
-      body: state.clip.text,
-      sourcePath: state.clip.sourcePath,
-      frontmatter: {
-        title,
-        project: state.form.project,
-        tags: state.form.tags,
-        source: state.form.source,
-      },
-    });
+    fire(
+      api("capture:openEditor", {
+        body: state.clip.text,
+        sourcePath: state.clip.sourcePath,
+        frontmatter: {
+          title,
+          project: state.form.project,
+          tags: state.form.tags,
+          source: state.form.source,
+        },
+      }),
+    );
   }, [state.clip, state.form, title]);
 
   const retry = () => setState((s) => ({ ...s, phase: "ready", error: null }));
