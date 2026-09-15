@@ -68,12 +68,12 @@ export function DocumentReader({
               className="min-h-0 flex-1"
               storageKey="reader-split"
               left={
-                <div className="min-h-0 flex-1 overflow-y-auto px-8 py-4">
+                <div className="min-h-0 flex-1 overflow-y-auto px-12 py-4">
                   <Raw body={doc.body} />
                 </div>
               }
               right={
-                <div className="min-h-0 flex-1 overflow-y-auto px-8 py-4 pb-16">
+                <div className="min-h-0 flex-1 overflow-y-auto px-12 py-4 pb-16">
                   <Markdown source={doc.body} docPath={meta.path} />
                 </div>
               }
