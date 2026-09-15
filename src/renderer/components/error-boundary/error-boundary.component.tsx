@@ -1,7 +1,6 @@
 import { Component } from "react";
 import { RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui";
-import { cx } from "@/helpers";
 import type { ErrorBoundaryProps, ErrorBoundaryState } from "./error-boundary.types";
 
 /**
@@ -28,12 +27,9 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
     const { error } = this.state;
     if (!error) return this.props.children;
     return (
-      <div
-        className={cx(
-          "flex h-full flex-col items-center justify-center gap-3 p-8 text-center",
-          !this.props.bare && "bg-paper",
-        )}
-      >
+      // Painted, and rounded: the capture sheet is a transparent window, so an unpainted
+      // panel would leave this message sitting on the desktop.
+      <div className="flex h-full flex-col items-center justify-center gap-3 rounded-lg bg-paper p-8 text-center">
         <h1 className="text-lg font-medium text-ink">This window hit an error</h1>
         <p className="max-w-100 text-sm text-ink-3">
           Your documents are files on disk and nothing here has touched them. Reloading the

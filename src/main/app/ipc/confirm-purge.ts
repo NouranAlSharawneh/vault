@@ -16,18 +16,35 @@ export async function confirmPurge(
   path: string | undefined,
   trashed: TrashedDoc[],
 ): Promise<boolean> {
-  const one = path ? trashed.find((t) => t.path === path) : undefined;
-  const count = path ? 1 : trashed.length;
-  if (!count) return true;
+  const IRREVERSIBLE = "This is the one thing in Vault you cannot undo.";
+  if (path) {
+    // The title is only for the wording — a path the listing does not know about is
+    // still a delete, and must not be described as emptying the whole trash.
+    const title = trashed.find((t) => t.path === path)?.meta.title;
+    return ask({
+      button: "Delete forever",
+      message: title ? `Delete “${title}” forever?` : "Delete this document forever?",
+      detail: `The file and any images only it used are removed from the vault for good. ${IRREVERSIBLE}`,
+    });
+  }
+  if (!trashed.length) return true;
+  const n = trashed.length;
+  return ask({
+    button: "Empty trash",
+    message: "Empty the trash?",
+    detail: `${n} ${n === 1 ? "document" : "documents"} and any images only they used are removed from the vault for good. ${IRREVERSIBLE}`,
+  });
+}
+
+async function ask(opts: { button: string; message: string; detail: string }): Promise<boolean> {
   const { response } = await dialog.showMessageBox({
     type: "warning",
-    buttons: [path ? "Delete forever" : "Empty trash", "Cancel"],
+    buttons: [opts.button, "Cancel"],
+    // Cancel is both the default and what Escape does: the safe answer is the easy one.
     defaultId: 1,
     cancelId: 1,
-    message: one ? `Delete “${one.meta.title}” forever?` : `Empty the trash?`,
-    detail: one
-      ? "The file and any images only it used are removed from the vault for good. This is the one thing in Vault you cannot undo."
-      : `${count} ${count === 1 ? "document" : "documents"} and any images only they used are removed from the vault for good. This is the one thing in Vault you cannot undo.`,
+    message: opts.message,
+    detail: opts.detail,
   });
   return response === 0;
 }

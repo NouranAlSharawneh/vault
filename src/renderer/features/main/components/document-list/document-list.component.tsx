@@ -1,6 +1,7 @@
 import { GitMerge, Star } from "lucide-react";
 import { relativeTime } from "@shared/helpers";
-import { Empty, ListRow } from "@/components/ui";
+import { plural } from "@/helpers";
+import { Button, Empty, ListRow } from "@/components/ui";
 import { ListHeader } from "../list-header/list-header.component";
 import { TagFilter } from "../tag-filter/tag-filter.component";
 import type { DocumentListProps } from "./document-list.types";
@@ -16,7 +17,7 @@ export function DocumentList({
   onRemoveTag,
   onClearTags,
   sortable,
-  emptyHint = "No documents match this filter.",
+  emptyHint,
 }: DocumentListProps) {
   return (
     <section className="flex h-full flex-col">
@@ -29,7 +30,19 @@ export function DocumentList({
       />
       <TagFilter tags={activeTags} onRemove={onRemoveTag} onClear={onClearTags} />
       <div className="flex-1 overflow-y-auto">
-        {docs.length === 0 && <Empty title="Nothing here" hint={emptyHint} />}
+        {docs.length === 0 && (
+          <Empty
+            title={activeTags.length ? "Nothing matches" : "Nothing here yet"}
+            hint={emptyHint ?? defaultHint(title, activeTags)}
+            action={
+              activeTags.length ? (
+                <Button variant="outline" size="sm" onClick={onClearTags}>
+                  Clear {plural(activeTags.length, "tag")}
+                </Button>
+              ) : undefined
+            }
+          />
+        )}
         {docs.map((d) => (
           <ListRow
             key={d.path}
@@ -71,4 +84,17 @@ export function DocumentList({
       </div>
     </section>
   );
+}
+
+/**
+ * Say why the list is empty. It used to blame a filter in every case — including a
+ * brand-new vault with nothing in it, and Starred with nothing starred, where there is
+ * no filter to blame and the message is simply wrong.
+ */
+function defaultHint(title: string, tags: string[]): string {
+  if (tags.length) return `No documents in ${title} tagged ${tags.map((t) => `#${t}`).join(" ")}.`;
+  if (title === "Starred") return "Star a document from the reader to keep it here.";
+  if (title === "Recent") return "Documents you open or save show up here.";
+  if (title === "All documents") return "Capture something with the hotkey, or press New.";
+  return `Nothing in ${title} yet.`;
 }

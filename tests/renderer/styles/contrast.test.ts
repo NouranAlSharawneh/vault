@@ -47,6 +47,7 @@ describe("palette contrast", () => {
     ["cherry", "paper"],
     ["cherry-2", "paper"],
     ["ok-2", "paper"],
+    ["warn-2", "paper"],
     ["overlay-ink", "overlay"],
     ["overlay-ink-2", "overlay"],
     // The tint built for dark grounds: it is what error text uses on the capture sheet.
@@ -61,10 +62,13 @@ describe("palette contrast", () => {
     expect(luminance(token("ink-4"))).toBeGreaterThan(luminance(token("ink-3")));
   });
 
-  it("does not use the shapes-only colours for text", () => {
-    // `ok` and `warn` are a dot and a diff background; both are far under 4.5:1 and must
-    // stay out of anything wordy. `ok-2` exists for when a number has to be green.
-    expect(css).not.toMatch(/text-ok["\s]/);
-    expect(css).not.toMatch(/text-warn["\s]/);
+  it("keeps a readable pair beside each shapes-only colour", () => {
+    // `ok` and `warn` are a diff background, a status dot, a star fill and a spinner.
+    // They are supposed to fail as text — that is what makes them quiet — so the palette
+    // carries a readable sibling for the times a word or a number has to be that colour.
+    for (const shape of ["ok", "warn"]) {
+      expect(contrast(token(shape), token("paper"))).toBeLessThan(4.5);
+      expect(contrast(token(`${shape}-2`), token("paper"))).toBeGreaterThanOrEqual(4.5);
+    }
   });
 });

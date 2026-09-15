@@ -23,7 +23,7 @@ export function EditorFooter({
         {/* Someone else had written this file since it was opened here. Their version was
             committed before this one, so the only thing left to do is say where it went. */}
         {keptOtherVersion && !dirty && (
-          <span className="flex items-center gap-1.5 text-warn">
+          <span className="flex items-center gap-1.5 text-warn-2">
             <GitBranch size={11} /> This file had changed — the other version is in its history
           </span>
         )}

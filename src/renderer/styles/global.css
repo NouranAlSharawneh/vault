@@ -61,6 +61,9 @@
      This is the one to use when a word or a number has to be green. */
   --color-ok-2: #33774e;
   --color-warn: #e4b04a;
+  /* `warn` is a dot, a star fill and a spinner — 1.9:1, fine as a shape and unreadable
+     as a word. This is the one to use when the warning is text on a light ground. */
+  --color-warn-2: #856a20;
 
   /* GitHub alert accents. Their own ramp, so ok/warn stay reserved for sync status. */
   --color-alert-note: #4a6fa5;
