@@ -1,5 +1,5 @@
 import { GitMerge } from "lucide-react";
-import { Button, Spinner } from "@/components/ui";
+import { Button, Dot, Spinner } from "@/components/ui";
 import { SYNC_PRESENTATION } from "@/data/sync.data";
 import { cx } from "@/helpers";
 import { useSync } from "./hooks/use-sync.hook";
@@ -19,7 +19,7 @@ export function SyncBadge({ className, onReviewConflicts }: SyncBadgeProps) {
         className={cx("flex items-center gap-1.5 text-xs text-ink-4", className)}
         title="Local-only vault"
       >
-        <span className="h-1.5 w-1.5 rounded-full bg-line-2" /> local
+        <Dot tone="bg-line-2" size={6} /> local
       </span>
     );
   }
@@ -37,11 +37,7 @@ export function SyncBadge({ className, onReviewConflicts }: SyncBadgeProps) {
           tooltip={canPush ? "Push now" : undefined}
           aria-label={`sync: ${p.label(sync?.ahead ?? 0)}`}
         >
-          {p.busy ? (
-            <Spinner className="text-warn" />
-          ) : (
-            <span className={cx("h-1.5 w-1.5 rounded-full", p.dot)} />
-          )}
+          {p.busy ? <Spinner className="text-warn" /> : <Dot tone={p.dot} size={6} />}
           <span className="font-mono">{branch}</span>
           <span className="text-ink-4">·</span>
           <span>{p.label(sync?.ahead ?? 0)}</span>

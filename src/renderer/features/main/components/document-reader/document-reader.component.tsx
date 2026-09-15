@@ -45,17 +45,21 @@ export function DocumentReader({
       />
       {doc && meta ? (
         <>
-          <div className="flex items-center gap-2 px-12 pt-4 pb-6 text-xs text-ink-3">
+          {/* One row that wraps rather than compressing: eight tags used to squeeze the
+              project name onto two lines and the right-hand metadata into a narrow
+              column, without ever overflowing — so nothing looked broken, it just
+              stopped being readable. */}
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5 px-12 pt-4 pb-6 text-xs text-ink-3">
             <Dot
               color={meta.projectSlug === INBOX_SLUG ? INBOX_COLOR : projectColor(meta.projectSlug)}
             />
-            <span>{meta.project || "Inbox"}</span>
+            <span className="whitespace-nowrap">{meta.project || "Inbox"}</span>
             {meta.tags.map((t) => (
               <span key={t} className="chip chip-tag">
                 #{t}
               </span>
             ))}
-            <span className="ml-auto text-ink-4">
+            <span className="ml-auto whitespace-nowrap text-ink-4">
               from {meta.source} · saved {relativeTime(meta.created)} · {plural(meta.words, "word")}
             </span>
           </div>
@@ -64,12 +68,12 @@ export function DocumentReader({
               className="min-h-0 flex-1"
               storageKey="reader-split"
               left={
-                <div className="min-h-0 flex-1 overflow-y-auto px-8 py-4">
+                <div className="min-h-0 flex-1 overflow-y-auto px-12 py-4">
                   <Raw body={doc.body} />
                 </div>
               }
               right={
-                <div className="min-h-0 flex-1 overflow-y-auto px-8 py-4 pb-16">
+                <div className="min-h-0 flex-1 overflow-y-auto px-12 py-4 pb-16">
                   <Markdown source={doc.body} docPath={meta.path} />
                 </div>
               }
@@ -88,7 +92,7 @@ export function DocumentReader({
           <div className="flex h-7 shrink-0 items-center justify-between border-t border-line px-4 font-mono text-2xs text-ink-4">
             <span>{trashed ? meta.path.slice(TRASH_DIR.length + 1) : meta.path}</span>
             {trashed && <span className="text-ink-3">in trash</span>}
-            {meta.unpushed && <span className="text-warn">not pushed yet</span>}
+            {meta.unpushed && <span className="text-warn-2">not pushed yet</span>}
           </div>
         </>
       ) : (

@@ -72,7 +72,7 @@ export function MermaidBlock({ code }: MermaidBlockProps) {
       {view === "code" || error ? (
         <pre className="m-0 rounded-none border-0">
           <code>{code}</code>
-          {error && <div className="mt-2 text-xs text-cherry-3">{error}</div>}
+          {error && <div className="mt-2 text-xs text-cherry">{error}</div>}
         </pre>
       ) : svg ? (
         <div

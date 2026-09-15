@@ -14,3 +14,4 @@ export { SplitPane } from "./split-pane/split-pane.component";
 export { Chip } from "./chip/chip.component";
 export { Toast } from "./toast/toast.component";
 export { Tooltip } from "./tooltip/tooltip.component";
+export { DialogShell } from "./dialog-shell/dialog-shell.component";

@@ -39,7 +39,7 @@ export function AssetPanel({ plan, dark, className }: AssetPanelProps) {
               {plan.missing > 0 && ` · ${plan.missing} missing`}
             </>
           ) : (
-            "nowhere on this Mac holds these paths"
+            "couldn't find these images — pick the folder they live in, or save without them"
           )}
         </span>
         <Button
@@ -64,7 +64,7 @@ export function AssetPanel({ plan, dark, className }: AssetPanelProps) {
               </span>
               {r.status === "found" ? (
                 <>
-                  <span className={big ? "text-warn" : muted}>
+                  <span className={big ? (dark ? "text-warn" : "text-warn-2") : muted}>
                     {formatBytes(r.bytes)}
                     {big && " · large — this goes into git for good"}
                   </span>
@@ -73,7 +73,11 @@ export function AssetPanel({ plan, dark, className }: AssetPanelProps) {
                   </Chip>
                 </>
               ) : (
-                <span className={r.status === "unsupported" ? muted : "text-cherry-3"}>
+                <span
+                  className={
+                    r.status === "unsupported" ? muted : dark ? "text-cherry-3" : "text-cherry"
+                  }
+                >
                   {r.status === "unsupported" ? "unsupported type" : "not found"}
                 </span>
               )}
@@ -88,7 +92,7 @@ export function AssetPanel({ plan, dark, className }: AssetPanelProps) {
         </div>
       )}
       {plan.stranded > 0 && (
-        <div className="mt-1 flex items-center gap-1.5 text-warn">
+        <div className={cx("mt-1 flex items-center gap-1.5", dark ? "text-warn" : "text-warn-2")}>
           <TriangleAlert size={11} />
           {plan.stranded === plan.refs.length
             ? plan.refs.length === 1

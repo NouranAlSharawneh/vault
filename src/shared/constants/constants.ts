@@ -190,3 +190,13 @@ export const FROM_REMOTE_SUFFIX = "-from-github";
 
 /** A rebase stops once per conflicting commit; past this something is wrong. */
 export const REBASE_MAX_STOPS = 50;
+
+/**
+ * How much later than the editor's copy a file's mtime has to be before it counts as
+ * someone else's write. Filesystems round mtimes, and the app's own write lands within
+ * the same tick often enough that an exact comparison cries wolf.
+ */
+export const MTIME_SLACK_MS = 1_000;
+
+/** How long the editor waits after the last keystroke before parking the draft. */
+export const DRAFT_DEBOUNCE_MS = 500;

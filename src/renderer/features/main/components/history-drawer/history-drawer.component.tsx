@@ -44,7 +44,7 @@ export function HistoryDrawer({ path, onClose, onRestored }: HistoryDrawerProps)
       {h.loading ? (
         <div className="p-4 text-xs text-ink-4">Reading history…</div>
       ) : h.error ? (
-        <div className="p-4 text-xs text-cherry-3">{h.error}</div>
+        <div className="p-4 text-xs text-cherry">{h.error}</div>
       ) : !h.commits.length ? (
         <Empty title="No history yet" hint="This document hasn't been committed." />
       ) : (
@@ -70,8 +70,8 @@ export function HistoryDrawer({ path, onClose, onRestored }: HistoryDrawerProps)
               {hunks.length > 0 && (
                 <>
                   {" · "}
-                  <span className="text-ok">+{stat.added}</span>{" "}
-                  <span className="text-cherry-3">−{stat.removed}</span>
+                  <span className="text-ok-2">+{stat.added}</span>{" "}
+                  <span className="text-cherry">−{stat.removed}</span>
                 </>
               )}
             </span>

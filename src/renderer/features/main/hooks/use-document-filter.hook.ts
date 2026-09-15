@@ -79,8 +79,13 @@ export function useDocumentFilter(index: IndexSnapshot | null, trash: TrashedDoc
   const showAll = useCallback(() => setFilter((f) => ({ ...DEFAULT, sort: f.sort })), []);
   const setSort = (sort: ListFilter["sort"]) => setFilter((f) => ({ ...f, sort }));
 
+  /** True when the list is showing less than everything, so a reveal can say so. */
+  const filtered =
+    filter.collection !== DEFAULT.collection || !!filter.project || filter.tags.length > 0;
+
   return {
     filter,
+    filtered,
     ...result,
     selectProject,
     selectCollection,

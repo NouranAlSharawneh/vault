@@ -645,6 +645,31 @@ await win.click("text=Concorde >> nth=0");
 await win.waitForSelector('button:has-text("Restore")');
 await win.waitForTimeout(300);
 await win.screenshot({ path: join(out, "smoke-15-trash-view.png") });
+// Deleting forever is the one act in Vault that cannot be undone, so it asks first.
+// Stand in for the dialog: say no once, then yes, and check both answers are honoured.
+const stubDialog = (response) =>
+  app.evaluate(async ({ dialog }, r) => {
+    globalThis.__asked = [];
+    dialog.showMessageBox = async (opts) => {
+      globalThis.__asked.push(opts);
+      return { response: r };
+    };
+  }, response);
+
+await stubDialog(1); // Cancel
+await win.click('button:has-text("Delete forever")');
+await win.waitForTimeout(900);
+const declined = await app.evaluate(() => globalThis.__asked ?? []);
+if (declined.length !== 1) throw new Error("delete forever did not ask before deleting");
+if (!/Delete .Concorde. forever\?/.test(declined[0].message))
+  throw new Error("the confirmation did not name the document: " + declined[0].message);
+if (!/cannot undo/.test(declined[0].detail))
+  throw new Error("the confirmation did not say it is irreversible: " + declined[0].detail);
+if (!existsSync(join(root, "_inbox", "assets", "hero-flyin.gif")))
+  throw new Error("the document was purged even though the dialog was cancelled");
+console.log("delete forever asked, and cancelling left it alone");
+
+await stubDialog(0); // Delete forever
 await win.click('button:has-text("Delete forever")');
 // The doc's image is referenced by nothing else, so the purge takes it too.
 await win.waitForSelector("text=Deleted “Concorde” and 1 image forever", { timeout: 10000 });
@@ -653,6 +678,9 @@ if (existsSync(join(root, "_inbox", "assets", "hero-flyin.gif")))
   throw new Error("orphaned asset survived the purge");
 const purge = execSync("git log --oneline -1", { cwd: root }).toString().trim();
 if (!purge.includes("purge: Concorde")) throw new Error("purge commit not found: " + purge);
+console.log("delete forever asked first, and deleted only on yes");
+// The purge drops back to the vault, so Settings has to be reopened for the rest.
+await win.waitForSelector("text=All documents", { timeout: 10000 });
 await win.keyboard.press("Control+,");
 await win.waitForSelector("text=Back to vault");
 await win.waitForSelector('button[aria-label="capture shortcut"]');
@@ -665,5 +693,14 @@ const cfg = JSON.parse(readFileSync(join(home, ".config", "Vault", "config.json"
 if (cfg.vault.hotkey !== "Control+Alt+J") throw new Error("hotkey not saved: " + cfg.vault.hotkey);
 await win.click("text=Back to vault");
 await win.waitForSelector("text=All documents");
-console.log("errors:", errors.length ? errors : "none");
+// Every window's console errors and uncaught exceptions have been collected the whole way
+// down this file. Printing them meant a renderer that threw still finished green, which is
+// the one thing an end-to-end run exists to catch.
+if (errors.length) {
+  console.error(`${errors.length} console error(s) during the run:`);
+  for (const e of errors) console.error("  " + e);
+  await app.close();
+  throw new Error(`${errors.length} console error(s) — see above`);
+}
+console.log("errors: none");
 await app.close();

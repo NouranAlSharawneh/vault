@@ -25,7 +25,7 @@ export function Editor() {
   const index = useApp((s) => s.index);
   const config = useApp((s) => s.config);
 
-  useEditorOpen({ onDoc: d.loadDoc, onDraft: d.loadDraft });
+  useEditorOpen({ onDoc: d.loadDoc, onDraft: d.loadDraft, onRecover: d.recoverDraft });
   const plan = useAssetPlan({
     body: d.body,
     project: d.meta.project,
@@ -118,12 +118,18 @@ export function Editor() {
         canSave={d.canSave}
         dirty={d.dirty}
         error={d.error}
+        keptOtherVersion={!!d.lastSaved?.preservedExternalEdit}
         onSave={saveAndClose}
       />
       <UnsavedGuard
         open={guard.prompting}
         onKeepEditing={guard.dismiss}
-        onDiscard={guard.closeNow}
+        onDiscard={() => {
+          // Discard means discard: the parked copy goes too, or it would come straight
+          // back the next time this document was opened.
+          d.discardDraft();
+          guard.closeNow();
+        }}
         onSave={commit}
       />
     </div>

@@ -1,13 +1,8 @@
 import { ProjectCombobox } from "@/features/editor/components/project-combobox/project-combobox.component";
 import { SourceSelect } from "@/features/editor/components/source-select/source-select.component";
 import { TagInput } from "@/features/editor/components/tag-input/tag-input.component";
+import { SectionLabel } from "@/components/ui";
 import type { CaptureFieldsProps } from "./capture-fields.types";
-
-const Label = ({ children }: { children: string }) => (
-  <div className="mb-1 text-2xs font-semibold tracking-widest text-overlay-ink-3 uppercase">
-    {children}
-  </div>
-);
 
 /** Project · From · Tags — the same controls as the editor, on the dark surface. */
 export function CaptureFields({
@@ -21,7 +16,7 @@ export function CaptureFields({
   return (
     <div className="grid grid-cols-[1fr_0.8fr_1.4fr] gap-3">
       <div>
-        <Label>Project</Label>
+        <SectionLabel className="mb-1 text-overlay-ink-3">Project</SectionLabel>
         <ProjectCombobox
           dark
           value={form.project}
@@ -31,7 +26,7 @@ export function CaptureFields({
         />
       </div>
       <div>
-        <Label>From</Label>
+        <SectionLabel className="mb-1 text-overlay-ink-3">From</SectionLabel>
         <SourceSelect
           dark
           value={form.source}
@@ -40,7 +35,7 @@ export function CaptureFields({
         />
       </div>
       <div>
-        <Label>Tags</Label>
+        <SectionLabel className="mb-1 text-overlay-ink-3">Tags</SectionLabel>
         <TagInput
           dark
           value={form.tags}

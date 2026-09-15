@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { DRAFT_DEBOUNCE_MS } from "@shared/constants";
 import { inferTitle } from "@shared/helpers";
 import type { AssetImport, DocContent, EditorDraft, SaveResult, Source } from "@shared/types";
 import { errorMessage } from "@/helpers";
@@ -23,6 +24,7 @@ export function useEditorDraft() {
     created: null,
     dirty: false,
     sourcePath: null,
+    baseMtime: null,
   });
   const [saving, setSaving] = useState<SaveMode | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -54,6 +56,7 @@ export function useEditorDraft() {
       created: doc.meta.created,
       dirty: false,
       sourcePath: null,
+      baseMtime: doc.meta.mtime,
     });
     setLastSaved(null);
   }, []);
@@ -75,10 +78,40 @@ export function useEditorDraft() {
         created: null,
         dirty: draft.body.length > 0,
         sourcePath: draft.sourcePath ?? null,
+        // A seeded draft is not a file on disk yet, so there is nothing to be newer than.
+        baseMtime: null,
       });
     },
     [config?.lastProject, defaultSource],
   );
+
+  /**
+   * Park the text outside the vault while it is unsaved, and pick it up again next time
+   * this document is opened. Before this, closing the window, quitting or a crash lost it,
+   * and Discard in the unsaved prompt was instant and final.
+   */
+  const draftKey = state.existingPath ?? "new";
+  useEffect(() => {
+    if (!state.dirty) return;
+    const t = setTimeout(() => {
+      void api("draft:save", draftKey, {
+        body: state.body,
+        meta: state.meta,
+        at: new Date().toISOString(),
+      }).catch(() => undefined);
+    }, DRAFT_DEBOUNCE_MS);
+    return () => clearTimeout(t);
+  }, [draftKey, state.body, state.meta, state.dirty]);
+
+  /** Bring back whatever was left behind for this document, if it is still unsaved. */
+  const recoverDraft = useCallback(async (key: string) => {
+    const parked = await api("draft:load", key).catch(() => null);
+    if (!parked?.body.trim()) return;
+    setState((s) =>
+      // Only if nothing has been typed since the window opened — never overwrite live work.
+      s.dirty ? s : { ...s, body: parked.body, meta: { ...s.meta, ...parked.meta }, dirty: true },
+    );
+  }, []);
 
   const save = useCallback(
     async (mode: SaveMode, assets?: AssetImport) => {
@@ -94,6 +127,7 @@ export function useEditorDraft() {
             created: state.created ?? undefined,
           },
           existingPath: state.existingPath ?? undefined,
+          baseMtime: state.baseMtime ?? undefined,
           commit: mode === "commit",
           assets,
         });
@@ -103,8 +137,13 @@ export function useEditorDraft() {
           created: res.meta.created,
           meta: { ...s.meta, title: res.meta.title },
           dirty: false,
+          // The file on disk is ours again as of this write.
+          baseMtime: res.meta.mtime,
         }));
         setLastSaved(res);
+        // Saved text is not a draft any more, under either key it might have had.
+        void api("draft:clear", draftKey).catch(() => undefined);
+        if (res.path !== draftKey) void api("draft:clear", res.path).catch(() => undefined);
         return res;
       } catch (e) {
         setError(errorMessage(e));
@@ -113,7 +152,7 @@ export function useEditorDraft() {
         setSaving(null);
       }
     },
-    [state, effectiveTitle],
+    [state, effectiveTitle, draftKey],
   );
 
   return {
@@ -129,6 +168,11 @@ export function useEditorDraft() {
     setMeta,
     loadDoc,
     loadDraft,
+    recoverDraft,
+    discardDraft: useCallback(
+      () => void api("draft:clear", draftKey).catch(() => undefined),
+      [draftKey],
+    ),
     save,
   };
 }
