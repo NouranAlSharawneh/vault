@@ -199,6 +199,7 @@ export function Main() {
           onClose={() => setPaletteOpen(false)}
           onOpenDoc={setSelected}
           onTrashDoc={doc && !inTrash ? trashActions.trash : undefined}
+          onReviewConflicts={() => setConflictsOpen(true)}
         />
       )}
       <Toast toast={toast} onDismiss={dismissToast} />

@@ -36,7 +36,6 @@ export interface IpcInvoke {
   "auth:signInWithToken": (token: string) => GitHubUser;
   "auth:deviceStart": () => DeviceCodeSession;
   "auth:deviceCancel": () => void;
-  "auth:deviceAvailable": () => boolean;
   "auth:methods": () => AuthMethods;
   "auth:webStart": () => void;
   "auth:webCancel": () => void;
@@ -55,7 +54,6 @@ export interface IpcInvoke {
   "vault:rescan": () => IndexSnapshot;
   "vault:index": () => IndexSnapshot;
   "vault:updateConfig": (patch: Partial<VaultConfig>) => VaultConfig;
-  "vault:disconnect": () => void;
   "vault:revealInFinder": (path?: string) => void;
 
   "doc:read": (path: string) => DocContent;
@@ -63,7 +61,6 @@ export interface IpcInvoke {
   "doc:trash": (path: string) => TrashedDoc;
   "doc:setStarred": (path: string, starred: boolean) => DocMeta;
   "doc:history": (path: string) => CommitInfo[];
-  "doc:atCommit": (path: string, sha: string) => string;
   "doc:restore": (path: string, sha: string) => SaveResult;
   "doc:diff": (path: string, sha: string) => string;
   "doc:pathPreview": (project: string, title: string) => string;

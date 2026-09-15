@@ -68,7 +68,6 @@ export function registerIpcHandlers(): void {
     const cfg = getOAuthConfig();
     return { oauth: !!cfg?.clientSecret, device: !!cfg };
   });
-  handle("auth:deviceAvailable", () => !!getOAuthConfig());
   handle("auth:webStart", () => {
     const cfg = getOAuthConfig();
     if (!cfg) throw new Error("No GitHub OAuth App configured. See .env.example.");
@@ -177,10 +176,6 @@ export function registerIpcHandlers(): void {
   handle("app:reset", () => resetApp());
   handle("vault:index", () => session.requireVault().index.snapshot());
   handle("vault:rescan", () => session.requireVault().index.rescan());
-  handle("vault:disconnect", async () => {
-    await session.closeVault();
-    updateSettings({ vault: null, onboarded: false });
-  });
   handle("vault:revealInFinder", (p) =>
     shell.showItemInFolder(join(session.requireVault().root, p ?? "")),
   );
@@ -209,7 +204,6 @@ export function registerIpcHandlers(): void {
   });
   handle("doc:setStarred", (p, starred) => session.requireVault().setStarred(p, starred));
   handle("doc:history", (p) => session.requireVault().history(p));
-  handle("doc:atCommit", (p, sha) => session.requireVault().atCommit(p, sha));
   handle("doc:restore", (p, sha) => session.requireVault().restore(p, sha));
   handle("doc:diff", (p, sha) => session.requireVault().diff(p, sha));
   handle("doc:pathPreview", (project, title) => session.requireVault().previewPath(project, title));

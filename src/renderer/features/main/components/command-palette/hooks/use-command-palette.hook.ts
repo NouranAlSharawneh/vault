@@ -8,7 +8,6 @@ import {
   SEARCH_DEBOUNCE_MS,
 } from "@/constants";
 import { PALETTE_ACTIONS, type PaletteActionKey } from "@/data/palette.data";
-import { acceleratorLabel } from "@/helpers";
 import { api } from "@/lib/api";
 import { useApp } from "@/stores/app";
 import type { PaletteGroup, PaletteItem } from "../command-palette.types";
@@ -18,10 +17,10 @@ export function useCommandPalette(
   onOpenDoc: (path: string) => void,
   onClose: () => void,
   onTrashDoc?: () => void,
+  onReviewConflicts?: () => void,
 ) {
   const index = useApp((s) => s.index);
   const sync = useApp((s) => s.sync);
-  const hotkey = useApp((s) => s.config?.hotkey);
   const [query, setQuery] = useState("");
   const [hits, setHits] = useState<SearchHit[]>([]);
   const [cursor, setCursor] = useState(0);
@@ -82,8 +81,12 @@ export function useCommandPalette(
     }
 
     const pending = sync?.ahead ?? 0;
+    const conflicts = sync?.conflicts ?? 0;
     const actions: PaletteItem[] = PALETTE_ACTIONS.filter(
-      (a) => (!a.needsPending || pending > 0) && (!a.needsDoc || !!onTrashDoc),
+      (a) =>
+        (!a.needsPending || pending > 0) &&
+        (!a.needsDoc || !!onTrashDoc) &&
+        (!a.needsConflicts || conflicts > 0),
     ).map((a) => ({
       kind: "action",
       key: a.key,
@@ -91,7 +94,7 @@ export function useCommandPalette(
         a.key === "pushPending"
           ? `Push ${pending} pending doc${pending === 1 ? "" : "s"}`
           : a.label,
-      shortcut: a.key === "newFromClipboard" && hotkey ? acceleratorLabel(hotkey) : a.shortcut,
+      shortcut: a.shortcut,
     }));
     const q = parsed.text.toLowerCase();
     const visibleActions = q
@@ -99,7 +102,7 @@ export function useCommandPalette(
       : actions;
     if (visibleActions.length) out.push({ title: "Actions", items: visibleActions });
     return out;
-  }, [index, liveHits, query, sync?.ahead, onTrashDoc, hotkey]);
+  }, [index, liveHits, query, sync?.ahead, sync?.conflicts, onTrashDoc]);
 
   const flat = useMemo(() => groups.flatMap((g) => g.items), [groups]);
   const active = flat[Math.min(cursor, Math.max(0, flat.length - 1))] ?? null;
@@ -129,12 +132,18 @@ export function useCommandPalette(
         case "pushPending":
           void api("sync:pushNow");
           break;
+        case "pullNow":
+          void api("sync:pull");
+          break;
+        case "reviewConflicts":
+          onReviewConflicts?.();
+          break;
         case "rescan":
           void api("vault:rescan");
           break;
       }
     },
-    [onTrashDoc],
+    [onTrashDoc, onReviewConflicts],
   );
 
   const choose = useCallback(

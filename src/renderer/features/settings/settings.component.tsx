@@ -207,6 +207,9 @@ export function Settings() {
             </SettingRow>
           </section>
         </Card>
+        {s.version && (
+          <p className="pb-2 text-center font-mono text-2xs text-ink-4">Vault {s.version}</p>
+        )}
       </div>
     </div>
   );
