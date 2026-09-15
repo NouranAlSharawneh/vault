@@ -100,7 +100,12 @@ export class VaultService extends EventEmitter {
     const snap = await this.index.load();
     if (!existsSync(join(this.root, README_FILE))) await this.writeReadme();
     this.index.watch();
-    void this.refreshSyncStatus();
+    // Anything committed but never pushed — quit inside the debounce, or written while
+    // offline — would otherwise sit here forever, because the only thing that ever pushes
+    // is another save. The badge said "not pushed" and nothing was ever going to act on it.
+    void this.refreshSyncStatus().then((s) => {
+      if (s.ahead > 0) this.schedulePush();
+    });
     this.startPulling();
     return snap;
   }
