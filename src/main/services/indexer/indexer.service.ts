@@ -1,22 +1,11 @@
-import { createHash } from "node:crypto";
 import { EventEmitter } from "node:events";
-import {
-  promises as fs,
-  existsSync,
-  mkdirSync,
-  readFileSync,
-  writeFileSync,
-  type Dirent,
-  type Stats,
-} from "node:fs";
-import type { FileHandle } from "node:fs/promises";
+import { promises as fs, existsSync, type Dirent } from "node:fs";
 import { join, relative, sep } from "node:path";
 import chokidar, { type FSWatcher } from "chokidar";
 import MiniSearch from "minisearch";
 import {
   BODY_BATCH,
   FS_DEBOUNCE_MS,
-  HEAD_BYTES,
   INBOX_SLUG,
   PARSE_BATCH,
   README_FILE,
@@ -24,8 +13,8 @@ import {
   SKIP_DIRS,
   SMALL_FILE_BYTES,
 } from "@shared/constants";
-import { excerptOf, parseDoc, type ParsedDoc } from "@shared/frontmatter";
-import { countWords, projectSlug, unslug } from "@shared/helpers";
+import { parseDoc } from "@shared/frontmatter";
+import { countWords } from "@shared/helpers";
 import type {
   DocMeta,
   IndexSnapshot,
@@ -36,7 +25,9 @@ import type {
 } from "@shared/types";
 import { fire } from "../../lib/fire";
 import type { GitService } from "../git/git.service";
-import type { CacheEntry, CacheFile, SearchDoc } from "./indexer.types";
+import { IndexCache } from "./index-cache";
+import type { CacheFile, SearchDoc } from "./indexer.types";
+import { readDocMeta } from "./read-doc-meta";
 
 /**
  * In-memory index of the vault. The repo is the only source of truth; this is a
@@ -52,14 +43,16 @@ export class IndexerService extends EventEmitter {
   private bodyPassToken = 0;
   private pendingFs = new Set<string>();
   private fsTimer: NodeJS.Timeout | null = null;
+  private readonly cache: IndexCache;
 
   constructor(
     readonly root: string,
-    private readonly cacheDir: string,
+    cacheDir: string,
     private readonly git: GitService | null,
   ) {
     super();
     this.search = IndexerService.newSearch();
+    this.cache = new IndexCache(root, cacheDir);
   }
 
   private static newSearch(): MiniSearch<SearchDoc> {
@@ -158,7 +151,7 @@ export class IndexerService extends EventEmitter {
 
   /** Warm start from the cache + git diff when possible, else a full scan. */
   async load(): Promise<IndexSnapshot> {
-    const cache = this.readCache();
+    const cache = this.cache.read();
     const currentHead = this.git ? await this.git.headSha() : null;
     if (cache?.headSha && currentHead && this.git) {
       try {
@@ -258,7 +251,7 @@ export class IndexerService extends EventEmitter {
     this.pendingFs.clear();
     for (const p of paths) await this.refreshFile(p);
     this.headSha = this.git ? await this.git.headSha() : null;
-    this.writeCache();
+    this.cache.write(this.docs, this.headSha);
     this.emit("changed", this.snapshot());
   }
 
@@ -314,7 +307,7 @@ export class IndexerService extends EventEmitter {
     this.headSha = head ?? (this.git ? await this.git.headSha() : null);
     this.scannedAt = Date.now();
     this.emit("changed", this.snapshot());
-    this.writeCache();
+    this.cache.write(this.docs, this.headSha);
     fire(this.bodyPass([...this.docs.keys()]), "indexing document bodies");
   }
 
@@ -360,50 +353,7 @@ export class IndexerService extends EventEmitter {
    * used for `.trash/` listings, which the scanner deliberately skips.
    */
   async readMeta(relPath: string): Promise<DocMeta | null> {
-    const abs = join(this.root, relPath);
-    let st: Stats;
-    try {
-      st = await fs.stat(abs);
-    } catch {
-      return null;
-    }
-    const small = st.size <= SMALL_FILE_BYTES;
-    const { frontmatter, body } = small
-      ? parseDoc(await fs.readFile(abs, "utf8"))
-      : await parseEnds(abs, st.size);
-    const segments = relPath.split("/");
-    const folderSlug = segments.length > 1 ? segments[0] : INBOX_SLUG;
-    const base = {
-      path: relPath,
-      excerpt: excerptOf(body),
-      mtime: st.mtimeMs,
-      size: st.size,
-      words: small ? countWords(body) : Math.round(st.size / 6),
-    };
-    let meta: DocMeta;
-    if (frontmatter) {
-      const slug = projectSlug(frontmatter.project);
-      meta = {
-        ...frontmatter,
-        ...base,
-        projectSlug: slug === INBOX_SLUG ? folderSlug : slug,
-        orphan: false,
-      };
-      if (!meta.project && folderSlug !== INBOX_SLUG) meta.project = unslug(folderSlug);
-    } else {
-      meta = {
-        ...base,
-        title: titleFromPath(relPath, body),
-        project: "",
-        projectSlug: folderSlug,
-        tags: [],
-        created: new Date(st.birthtimeMs || st.mtimeMs).toISOString(),
-        source: "other",
-        orphan: true,
-      };
-    }
-
-    return meta;
+    return readDocMeta(this.root, relPath);
   }
 
   private upsertSearch(meta: DocMeta, body: string): void {
@@ -451,68 +401,4 @@ export class IndexerService extends EventEmitter {
   private progress(p: ScanProgress): void {
     this.emit("progress", p);
   }
-
-  // ---- cache ------------------------------------------------------------------
-
-  private cachePath(): string {
-    const id = createHash("sha1").update(this.root).digest("hex").slice(0, 12);
-
-    return join(this.cacheDir, `index-${id}.json`);
-  }
-
-  private readCache(): CacheFile | null {
-    try {
-      const c = JSON.parse(readFileSync(this.cachePath(), "utf8")) as CacheFile;
-
-      return c.version === 1 ? c : null;
-    } catch {
-      return null;
-    }
-  }
-
-  private writeCache(): void {
-    try {
-      mkdirSync(this.cacheDir, { recursive: true });
-      const files: Record<string, CacheEntry> = {};
-      for (const [p, m] of this.docs)
-        files[p] = { mtime: m.mtime, size: m.size, meta: { ...m, unpushed: undefined } };
-      const cache: CacheFile = { version: 1, headSha: this.headSha, files };
-      writeFileSync(this.cachePath(), JSON.stringify(cache));
-    } catch {
-      /* cache is best-effort */
-    }
-  }
-}
-
-/**
- * Big file: read the head (excerpt, or a classic top block) and the tail (Vault's
- * trailing metadata block) without touching the middle.
- */
-async function parseEnds(abs: string, size: number): Promise<ParsedDoc> {
-  const fh = await fs.open(abs, "r");
-  try {
-    const head = await readChunk(fh, 0, SMALL_FILE_BYTES);
-    const fromHead = parseDoc(head);
-    if (fromHead.frontmatter) return fromHead;
-    const tail = await readChunk(fh, Math.max(0, size - HEAD_BYTES), HEAD_BYTES);
-    const fromTail = parseDoc(tail);
-
-    return { ...fromTail, body: head };
-  } finally {
-    await fh.close();
-  }
-}
-
-async function readChunk(fh: FileHandle, offset: number, bytes: number): Promise<string> {
-  const buf = Buffer.alloc(bytes);
-  const { bytesRead } = await fh.read(buf, 0, bytes, offset);
-
-  return buf.subarray(0, bytesRead).toString("utf8");
-}
-
-function titleFromPath(relPath: string, body: string): string {
-  const h = /^\s{0,3}#\s+(.+)$/m.exec(body);
-  if (h) return h[1].trim();
-
-  return unslug(relPath.split("/").pop()!.replace(/\.md$/, ""));
 }
