@@ -73,7 +73,7 @@ export function AssetPanel({ plan, dark, className }: AssetPanelProps) {
                   </Chip>
                 </>
               ) : (
-                <span className={r.status === "unsupported" ? muted : "text-cherry-3"}>
+                <span className={r.status === "unsupported" ? muted : dark ? "text-cherry-3" : "text-cherry"}>
                   {r.status === "unsupported" ? "unsupported type" : "not found"}
                 </span>
               )}
