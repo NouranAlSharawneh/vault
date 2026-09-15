@@ -147,7 +147,8 @@ export function useCommandPalette(
     [onOpenDoc, onClose, runAction],
   );
 
-  const onKeyDown = (e: KeyboardEvent) => {
+  /** Takes a DOM event or React's wrapper: it only ever reads `key` and prevents default. */
+  const onKeyDown = (e: Pick<KeyboardEvent, "key" | "preventDefault">) => {
     if (e.key === "ArrowDown") {
       e.preventDefault();
       setCursor((c) => (flat.length ? (c + 1) % flat.length : 0));
