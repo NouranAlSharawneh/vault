@@ -32,6 +32,7 @@ import { registerHotkey } from "../hotkey/hotkey";
 import { buildAppMenu } from "../menu/menu";
 import { resetApp } from "../session/reset-app";
 import { resolveAssets } from "../../services/assets";
+import { confirmPurge } from "./confirm-purge";
 import { session } from "../session/session";
 
 /** Typed `ipcMain.handle` that normalises errors so the renderer sees a plain message. */
@@ -195,7 +196,12 @@ export function registerIpcHandlers(): void {
   handle("trash:list", () => session.requireVault().listTrash());
   handle("trash:read", (p) => session.requireVault().readTrashed(p));
   handle("trash:restore", (p) => session.requireVault().restoreFromTrash(p));
-  handle("trash:purge", (p) => session.requireVault().purgeTrash(p));
+  handle("trash:purge", async (p) => {
+    const vault = session.requireVault();
+    // Asked here so neither the reader nor Settings can skip it.
+    if (!(await confirmPurge(p, await vault.listTrash()))) return { removed: 0, assets: [] };
+    return vault.purgeTrash(p);
+  });
   handle("doc:setStarred", (p, starred) => session.requireVault().setStarred(p, starred));
   handle("doc:history", (p) => session.requireVault().history(p));
   handle("doc:atCommit", (p, sha) => session.requireVault().atCommit(p, sha));

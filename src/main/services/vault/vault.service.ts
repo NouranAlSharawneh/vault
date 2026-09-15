@@ -1,5 +1,5 @@
 import { promises as fs, existsSync } from "node:fs";
-import { basename, dirname, join, sep } from "node:path";
+import { basename, dirname, join, resolve, sep } from "node:path";
 import { EventEmitter } from "node:events";
 import { parse as parseYaml, stringify as stringifyYaml } from "yaml";
 import {
@@ -145,7 +145,7 @@ export class VaultService extends EventEmitter {
   // ---- docs ---------------------------------------------------------------------
 
   async read(relPath: string): Promise<DocContent> {
-    const raw = await fs.readFile(join(this.root, relPath), "utf8");
+    const raw = await fs.readFile(assertInside(this.root, relPath), "utf8");
     const { body } = parseDoc(raw);
     const meta = this.index.get(relPath) ?? (await this.index.refreshFile(relPath));
     if (!meta) throw new Error(`Not in index: ${relPath}`);
@@ -176,6 +176,7 @@ export class VaultService extends EventEmitter {
    * README into the same commit → update index → schedule push.
    */
   async save(req: SaveRequest): Promise<SaveResult> {
+    if (req.existingPath) assertInside(this.root, req.existingPath);
     const title = (req.frontmatter.title || inferTitle(req.body) || "Untitled").trim();
     let created = req.frontmatter.created;
     let extra: Record<string, unknown> = {};
@@ -269,6 +270,7 @@ export class VaultService extends EventEmitter {
 
   /** PRD Q5: move to `.trash/` (scanner skips it) rather than `git rm`. */
   async trash(relPath: string): Promise<TrashedDoc> {
+    assertInside(this.root, relPath);
     const dest = await this.uniquePath(`${TRASH_DIR}/${relPath}`);
     await fs.mkdir(dirname(join(this.root, dest)), { recursive: true });
     const meta = this.index.get(relPath) ?? (await this.index.readMeta(relPath));
@@ -384,15 +386,18 @@ export class VaultService extends EventEmitter {
   }
 
   async history(relPath: string): Promise<CommitInfo[]> {
+    assertInside(this.root, relPath);
     return this.git.log(relPath);
   }
 
   async atCommit(relPath: string, sha: string): Promise<string> {
+    assertInside(this.root, relPath);
     return this.git.show(await this.pathAt(relPath, sha), sha);
   }
 
   /** What this commit changed, as a unified diff. */
   async diff(relPath: string, sha: string): Promise<string> {
+    assertInside(this.root, relPath);
     return this.git.diff(await this.pathAt(relPath, sha), sha);
   }
 
@@ -891,6 +896,22 @@ function pickFrontmatter(m: Frontmatter): Frontmatter {
 
 function redact(msg: string, token: string | null): string {
   return token ? msg.split(token).join("•••") : msg;
+}
+
+/**
+ * Every path the renderer hands us is joined onto the vault root, so every one of them
+ * has to be proved to land inside it. `../x.md` was caught by accident — the indexer
+ * refuses a path starting with a dot — but `sub/../../../x.md` passed, and `read` would
+ * return the file, index it, and write its path into the README that gets pushed.
+ *
+ * The asset protocol has always done this. The document paths had not.
+ */
+function assertInside(root: string, relPath: string): string {
+  const abs = resolve(root, relPath);
+  if (abs !== root && !abs.startsWith(root + sep)) {
+    throw new Error(`Outside the vault: ${relPath}`);
+  }
+  return abs;
 }
 
 function assertInTrash(path: string): void {
