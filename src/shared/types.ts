@@ -92,6 +92,18 @@ export interface SaveRequest {
   assets?: AssetImport;
 }
 
+/**
+ * Text typed in the editor and not yet saved, parked in app data so a closed window, a
+ * quit or a crash does not take it. `key` is the document's path, or "new" for one that
+ * has never been saved.
+ */
+export interface StoredDraft {
+  body: string;
+  meta: Omit<Frontmatter, "created">;
+  /** ISO time of the last keystroke, so a stale draft can be recognised. */
+  at: string;
+}
+
 export interface SaveResult {
   path: string;
   /**

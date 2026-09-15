@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { act, renderHook, waitFor } from "@testing-library/react";
 import { useEditorDraft } from "@/features/editor/hooks/use-editor-draft.hook";
 import { useApp } from "@/stores/app";
@@ -97,5 +97,44 @@ describe("useEditorDraft", () => {
     expect(result.current.meta.project).toBe("Atlas API");
     expect(result.current.meta.source).toBe("chatgpt");
     expect(result.current.dirty).toBe(true);
+  });
+});
+
+describe("an unsaved draft", () => {
+  it("is parked outside the vault while you type, and cleared once it is saved", async () => {
+    vi.useFakeTimers();
+    const { invoke } = mockVaultApi({
+      "doc:save": { path: "p/note.md", meta: { path: "p/note.md", created: "x", mtime: 1, title: "Note" }, committed: true },
+    });
+    const { result } = renderHook(() => useEditorDraft());
+    act(() => result.current.setBody("half a thought"));
+    await act(async () => {
+      vi.advanceTimersByTime(600);
+      await Promise.resolve();
+    });
+    expect(invoke).toHaveBeenCalledWith(
+      "draft:save",
+      "new",
+      expect.objectContaining({ body: "half a thought" }),
+    );
+    vi.useRealTimers();
+    await act(() => result.current.save("commit"));
+    expect(invoke).toHaveBeenCalledWith("draft:clear", "new");
+  });
+
+  it("comes back when the document is opened again", async () => {
+    mockVaultApi({ "draft:load": { body: "what I was writing", meta: {}, at: "2026-01-01" } });
+    const { result } = renderHook(() => useEditorDraft());
+    await act(() => result.current.recoverDraft("new"));
+    expect(result.current.body).toBe("what I was writing");
+    expect(result.current.dirty).toBe(true);
+  });
+
+  it("never overwrites text already typed in this window", async () => {
+    mockVaultApi({ "draft:load": { body: "the old one", meta: {}, at: "2026-01-01" } });
+    const { result } = renderHook(() => useEditorDraft());
+    act(() => result.current.setBody("what I am writing now"));
+    await act(() => result.current.recoverDraft("new"));
+    expect(result.current.body).toBe("what I am writing now");
   });
 });
