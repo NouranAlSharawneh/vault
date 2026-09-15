@@ -1,8 +1,9 @@
 import { existsSync } from "node:fs";
-import { join, resolve, sep } from "node:path";
+import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 import { net, protocol } from "electron";
 import { ASSET_HOST, ASSET_MIME, ASSET_SCHEME, TRASH_DIR } from "@shared/constants";
+import { insideVault } from "../../services/fs/paths";
 import { session } from "../session/session";
 
 /** Must run before `app.whenReady()` — the scheme needs to look like https to the renderer. */
@@ -22,10 +23,10 @@ export function registerAssetProtocol(): void {
     const root = session.vault?.root;
     if (url.host !== ASSET_HOST || !root) return new Response(null, { status: 404 });
     const rel = decodeURIComponent(url.pathname).replace(/^\/+/, "");
-    const abs = resolve(join(root, rel));
-    const inside = abs === root || abs.startsWith(root.endsWith(sep) ? root : root + sep);
-    const mime = ASSET_MIME[abs.split(".").pop()?.toLowerCase() ?? ""];
-    if (!inside || !mime || rel.split("/").includes(".git")) {
+    const abs = insideVault(root, rel);
+    const mime = abs ? ASSET_MIME[abs.split(".").pop()?.toLowerCase() ?? ""] : undefined;
+
+    if (!abs || !mime || rel.split("/").includes(".git")) {
       return new Response(null, { status: 403 });
     }
     // A trashed doc still points at `assets/…` next to where it used to live.
