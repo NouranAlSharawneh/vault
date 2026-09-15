@@ -64,7 +64,7 @@ export function AssetPanel({ plan, dark, className }: AssetPanelProps) {
               </span>
               {r.status === "found" ? (
                 <>
-                  <span className={big ? "text-warn" : muted}>
+                  <span className={big ? (dark ? "text-warn" : "text-warn-2") : muted}>
                     {formatBytes(r.bytes)}
                     {big && " · large — this goes into git for good"}
                   </span>
@@ -88,7 +88,7 @@ export function AssetPanel({ plan, dark, className }: AssetPanelProps) {
         </div>
       )}
       {plan.stranded > 0 && (
-        <div className="mt-1 flex items-center gap-1.5 text-warn">
+        <div className={cx("mt-1 flex items-center gap-1.5", dark ? "text-warn" : "text-warn-2")}>
           <TriangleAlert size={11} />
           {plan.stranded === plan.refs.length
             ? plan.refs.length === 1

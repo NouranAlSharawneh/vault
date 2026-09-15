@@ -20,7 +20,7 @@ document.documentElement.classList.toggle("is-mac", IS_MAC);
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
-    <ErrorBoundary bare={window.location.hash.startsWith("#capture")}>
+    <ErrorBoundary>
       <App />
     </ErrorBoundary>
   </StrictMode>,
