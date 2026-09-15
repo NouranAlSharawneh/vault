@@ -2,7 +2,7 @@ import { ArrowLeft, FolderOpen, RefreshCw, Trash2 } from "lucide-react";
 import { Button, Card, Empty, SectionLabel } from "@/components/ui";
 import { PUSH_DEBOUNCE_LABELS } from "@/data/settings.data";
 import { describeToken, plural, shortPath } from "@/helpers";
-import { api } from "@/lib/api";
+import { api, fire } from "@/lib/api";
 import { HotkeyRecorder } from "./components/hotkey-recorder/hotkey-recorder.component";
 import { SettingRow } from "./components/setting-row/setting-row.component";
 import { useSettings } from "./hooks/use-settings.hook";
@@ -73,7 +73,7 @@ export function Settings() {
                 className="input input-sm w-44 cursor-pointer"
                 value={config.pushDebounceMs}
                 disabled={!config.remote || s.busy === "pushDebounceMs"}
-                onChange={(e) => void s.update({ pushDebounceMs: Number(e.target.value) })}
+                onChange={(e) => fire(s.update({ pushDebounceMs: Number(e.target.value) }))}
                 aria-label="push delay"
               >
                 {PUSH_DEBOUNCE_LABELS.map((o) => (
@@ -119,7 +119,7 @@ export function Settings() {
                 size="sm"
                 disabled={!s.trashCount}
                 loading={s.busy === "trash"}
-                onClick={() => void s.emptyTrash()}
+                onClick={() => fire(s.emptyTrash())}
               >
                 <Trash2 size={11} /> Empty trash
               </Button>
@@ -139,7 +139,7 @@ export function Settings() {
                     <span className="truncate font-mono text-ink-4" title={dir}>
                       {shortPath(dir)}
                     </span>
-                    <Button variant="subtle" onClick={() => void s.forgetAssetDir(slug)}>
+                    <Button variant="subtle" onClick={() => fire(s.forgetAssetDir(slug))}>
                       forget
                     </Button>
                   </div>
@@ -170,7 +170,7 @@ export function Settings() {
                   variant="outline"
                   size="sm"
                   loading={s.busy === "signOut"}
-                  onClick={() => void s.signOut()}
+                  onClick={() => fire(s.signOut())}
                 >
                   Sign out
                 </Button>

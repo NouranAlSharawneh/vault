@@ -6,7 +6,7 @@ import { SyncBadge } from "@/components/sync-badge/sync-badge.component";
 import { SectionLabel, SplitPane } from "@/components/ui";
 import { EDITOR_PLACEHOLDER } from "@/data/editor.data";
 import { parentDir, plural } from "@/helpers";
-import { api } from "@/lib/api";
+import { api, fire } from "@/lib/api";
 import { useApp } from "@/stores/app";
 import { countWords } from "@shared/helpers";
 import { EditorFooter } from "./components/editor-footer/editor-footer.component";
@@ -28,7 +28,7 @@ export function Editor() {
   useEditorOpen({
     onDoc: d.loadDoc,
     onDraft: d.loadDraft,
-    onRecover: (key) => void d.recoverDraft(key),
+    onRecover: (key) => fire(d.recoverDraft(key), "Couldn't recover the draft"),
   });
   const plan = useAssetPlan({
     body: d.body,
@@ -42,12 +42,14 @@ export function Editor() {
    */
   const saveAndClose = useCallback(
     (mode: SaveMode) =>
-      void d.save(mode, plan.request).then((r) => {
-        if (!r) return;
-        // Same as the capture sheet: hand the new doc to the main window on the way out.
-        void api("window:revealDoc", r.path);
-        guard.closeNow();
-      }),
+      fire(
+        d.save(mode, plan.request).then((r) => {
+          if (!r) return;
+          // Same as the capture sheet: hand the new doc to the main window on the way out.
+          fire(api("window:revealDoc", r.path), "Saved, but couldn't reveal it");
+          guard.closeNow();
+        }),
+      ),
     [d, plan.request, guard],
   );
   const commit = useCallback(() => saveAndClose("commit"), [saveAndClose]);

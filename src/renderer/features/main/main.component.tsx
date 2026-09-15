@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { AuthExpiredBanner } from "@/components/auth-expired-banner/auth-expired-banner.component";
 import { Button, Empty, SplitPane, Toast } from "@/components/ui";
 import { cx } from "@/helpers";
-import { api, on } from "@/lib/api";
+import { api, fire, on } from "@/lib/api";
 import { useApp } from "@/stores/app";
 import { useToast } from "@/stores/toast";
 import { CommandPalette } from "./components/command-palette/command-palette.component";
@@ -63,7 +63,7 @@ export function Main() {
   const openSettings = useCallback(() => (window.location.hash = "settings"), []);
   useMainShortcuts({
     onSearch: openPalette,
-    onTrash: () => void trashActions.trash(),
+    onTrash: () => fire(trashActions.trash()),
     onSettings: openSettings,
     onHistory: toggleHistory,
   });
@@ -96,7 +96,7 @@ export function Main() {
   }, [conflictsOpen]);
 
   const star = useCallback(() => {
-    if (doc) void api("doc:setStarred", doc.meta.path, !doc.meta.starred);
+    if (doc) fire(api("doc:setStarred", doc.meta.path, !doc.meta.starred));
   }, [doc]);
 
   if (!config) {

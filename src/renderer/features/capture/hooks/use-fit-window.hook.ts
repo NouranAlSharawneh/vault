@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import { api } from "@/lib/api";
+import { api, fireQuietly } from "@/lib/api";
 
 /**
  * Keep the sheet's window the height of the sheet itself. It used to be a fixed size
@@ -16,7 +16,7 @@ export function useFitWindow<T extends HTMLElement>() {
       const height = Math.ceil(el.getBoundingClientRect().height + outerPadding(el));
       if (height && height !== last) {
         last = height;
-        void api("capture:resize", height);
+        fireQuietly(api("capture:resize", height), "resizing the sheet");
       }
     };
     fit();

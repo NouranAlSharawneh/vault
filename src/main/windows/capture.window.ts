@@ -5,6 +5,7 @@ import {
   CAPTURE_WINDOW,
   OVERLAY_BG,
 } from "@shared/constants";
+import { fire } from "../lib/fire";
 import { editorWindowCount } from "./editor.window";
 import { COMMON_WINDOW_OPTIONS, IS_MAC, loadRoute } from "./load-route";
 import { getMainWindow } from "./main.window";
@@ -47,7 +48,7 @@ export function showCaptureWindow(): BrowserWindow {
   const { x, y, width, height } = display.workArea;
   const [w] = win.getSize();
   win.setPosition(Math.round(x + (width - w) / 2), Math.round(y + height * 0.18), false);
-  if (IS_MAC) void app.dock?.show();
+  if (IS_MAC && app.dock) fire(app.dock.show(), "showing the dock icon");
   win.show();
   win.focus();
 

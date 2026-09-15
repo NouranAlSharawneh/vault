@@ -1,4 +1,5 @@
 import { globalShortcut } from "electron";
+import { fire } from "../../lib/fire";
 import { readClipboard } from "../../services/capture/capture.service";
 import {
   hideCaptureWindow,
@@ -17,11 +18,14 @@ export function toggleCapture(): void {
     return;
   }
   const win = showCaptureWindow();
-  void readClipboard().then((payload) => {
-    const send = () => win.webContents.send("capture:shown", payload);
-    if (win.webContents.isLoading()) win.webContents.once("did-finish-load", send);
-    else send();
-  });
+  fire(
+    readClipboard().then((payload) => {
+      const send = () => win.webContents.send("capture:shown", payload);
+      if (win.webContents.isLoading()) win.webContents.once("did-finish-load", send);
+      else send();
+    }),
+    "reading the clipboard",
+  );
 }
 
 /** Bind the capture shortcut. False when the OS refused it (taken by another app, or invalid). */

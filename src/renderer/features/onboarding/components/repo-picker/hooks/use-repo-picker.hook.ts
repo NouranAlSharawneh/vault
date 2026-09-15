@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { REPO_LIST_LIMIT, REPO_NAME_PATTERN } from "@/constants";
 import { errorMessage } from "@/helpers";
-import { api } from "@/lib/api";
+import { api, fire } from "@/lib/api";
 import { useApp } from "@/stores/app";
 import { DEFAULT_VAULT_NAME } from "@shared/constants";
 import type { GitHubRepo } from "@shared/types";
@@ -36,7 +36,7 @@ export function useRepoPicker(onDone: () => void) {
     if (existingRoot) return;
     const name =
       choice === "new" ? newName : choice === "local" ? DEFAULT_VAULT_NAME : choice.split("/")[1];
-    void api("vault:defaultPath", name || DEFAULT_VAULT_NAME).then(setLocalPath);
+    fire(api("vault:defaultPath", name || DEFAULT_VAULT_NAME).then(setLocalPath));
   }, [choice, newName, existingRoot]);
 
   const filtered = useMemo(() => {

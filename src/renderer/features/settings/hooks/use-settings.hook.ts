@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { errorMessage, plural } from "@/helpers";
-import { api } from "@/lib/api";
+import { api, fire } from "@/lib/api";
 import { useApp } from "@/stores/app";
 import { useToast } from "@/stores/toast";
 import type { TokenStatus, VaultConfig } from "@shared/types";
@@ -103,6 +103,6 @@ export function useSettings() {
     emptyTrash,
     signOut,
     back: () => (window.location.hash = "main"),
-    reset: () => void api("app:reset"),
+    reset: () => fire(api("app:reset")),
   };
 }

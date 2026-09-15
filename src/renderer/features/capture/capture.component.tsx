@@ -2,6 +2,7 @@ import { ArrowDownToLine } from "lucide-react";
 import { AssetPanel } from "@/components/asset-panel";
 import { Kbd } from "@/components/ui";
 import { plural } from "@/helpers";
+import { fire } from "@/lib/api";
 import { CaptureEmpty } from "./components/capture-empty/capture-empty.component";
 import { CaptureFields } from "./components/capture-fields/capture-fields.component";
 import { CaptureFooter } from "./components/capture-footer/capture-footer.component";
@@ -14,7 +15,11 @@ import { useFitWindow } from "./hooks/use-fit-window.hook";
 export function Capture() {
   const c = useCapture();
   const fit = useFitWindow<HTMLDivElement>();
-  useCaptureKeys({ onSave: () => void c.save(), onOpenEditor: c.openInEditor, onHide: c.hide });
+  useCaptureKeys({
+    onSave: () => fire(c.save()),
+    onOpenEditor: c.openInEditor,
+    onHide: c.hide,
+  });
 
   return (
     <div
@@ -57,7 +62,7 @@ export function Capture() {
               hasRemote={c.hasRemote}
               stranded={c.assets.stranded}
               onOpenEditor={c.openInEditor}
-              onSave={() => void c.save()}
+              onSave={() => fire(c.save())}
               onRetry={c.retry}
             />
           </div>

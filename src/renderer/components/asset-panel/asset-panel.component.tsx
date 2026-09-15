@@ -1,6 +1,7 @@
 import { FolderOpen, Image, TriangleAlert } from "lucide-react";
 import { Button, Chip } from "@/components/ui";
 import { cx, formatBytes, plural, shortPath } from "@/helpers";
+import { fire } from "@/lib/api";
 import { ASSET_WARN_BYTES } from "@shared/constants";
 import type { AssetPanelProps } from "./asset-panel.types";
 
@@ -47,7 +48,7 @@ export function AssetPanel({ plan, dark, className }: AssetPanelProps) {
           variant={dark ? "ghost" : "outline"}
           size="sm"
           className={cx("ml-auto", dark && "text-overlay-ink-2 hover:bg-overlay-3")}
-          onClick={() => void plan.chooseFolder()}
+          onClick={() => fire(plan.chooseFolder())}
         >
           <FolderOpen size={11} /> {plan.baseDir ? "Change folder" : "Choose folder…"}
         </Button>

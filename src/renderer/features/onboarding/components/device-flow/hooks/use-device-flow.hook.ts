@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { errorMessage } from "@/helpers";
-import { api, on } from "@/lib/api";
+import { api, fireQuietly, on } from "@/lib/api";
 import type { DeviceCodeSession, DevicePollStatus } from "@shared/types";
 
 /** Starts the OAuth device flow on mount, tracks poll status and the expiry countdown. */
@@ -26,7 +26,7 @@ export function useDeviceFlow() {
     return () => {
       cancelled = true;
       off();
-      void api("auth:deviceCancel");
+      fireQuietly(api("auth:deviceCancel"), "cancelling the device flow");
     };
   }, [attempt]);
 

@@ -5,6 +5,7 @@ import { app, dialog, ipcMain, shell } from "electron";
 import { DEFAULT_BRANCH, DEFAULT_HOTKEY, DEFAULT_PUSH_DEBOUNCE_MS } from "@shared/constants";
 import type { InvokeChannel, IpcInvoke } from "@shared/ipc";
 import type { VaultConfig } from "@shared/types";
+import { fire } from "../../lib/fire";
 import { NetworkError } from "../../network/axios";
 import {
   createRepo,
@@ -54,7 +55,7 @@ export function registerIpcHandlers(): void {
   handle("app:version", () => app.getVersion());
   handle("app:platform", () => process.platform);
   handle("app:openExternal", (url) => {
-    if (/^https?:\/\//.test(url)) void shell.openExternal(url);
+    if (/^https?:\/\//.test(url)) fire(shell.openExternal(url), "opening a link");
   });
 
   // ---- auth
@@ -88,7 +89,7 @@ export function registerIpcHandlers(): void {
     deviceAbort?.abort();
     deviceAbort = new AbortController();
     const { deviceCode, ...publicSession } = await startDeviceFlow(clientId);
-    void shell.openExternal(publicSession.verificationUri);
+    fire(shell.openExternal(publicSession.verificationUri), "opening GitHub");
     const { signal } = deviceAbort;
     void pollDeviceFlow(clientId, deviceCode, publicSession.interval, signal, (status) =>
       broadcast("auth:deviceStatus", { status }),

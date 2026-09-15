@@ -51,7 +51,11 @@ export default tseslint.config(
       "@typescript-eslint/explicit-module-boundary-types": "off",
       "no-console": ["warn", { allow: ["warn", "error"] }],
 
-      "@typescript-eslint/no-floating-promises": ["error", { ignoreVoid: true }],
+      // A promise nobody waits for and nobody catches is how a control ends up doing
+      // nothing at all, in silence. `void` is NOT accepted as handling it: `void doThing()`
+      // says "I know this is async", not "I know what happens when it fails". Each one has
+      // to be awaited inside a try/catch, or end in a .catch that does something visible.
+      "@typescript-eslint/no-floating-promises": ["error", { ignoreVoid: false }],
       // An async function where a void one is expected: an onClick whose rejection
       // reaches no one, a setTimeout that swallows a throw.
       "@typescript-eslint/no-misused-promises": [
