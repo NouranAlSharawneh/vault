@@ -10,14 +10,18 @@ import type { RepoChoice } from "../repo-picker.types";
 /** Repo list, selection, new-repo name, local path and the setup call. */
 export function useRepoPicker(onDone: () => void) {
   const auth = useApp((s) => s.auth);
+  const config = useApp((s) => s.config);
   const setConfig = useApp((s) => s.setConfig);
   const signedIn = auth.status === "signed-in";
+  // Attaching a repo to a vault that already exists: the folder is settled, and
+  // suggesting a fresh one would quietly set up a second, empty vault instead.
+  const existingRoot = config?.root ?? null;
 
   const [repos, setRepos] = useState<GitHubRepo[] | null>(null);
   const [filter, setFilter] = useState("");
   const [choice, setChoice] = useState<RepoChoice>(signedIn ? "new" : "local");
   const [newName, setNewName] = useState(DEFAULT_VAULT_NAME);
-  const [localPath, setLocalPath] = useState("");
+  const [localPath, setLocalPath] = useState(existingRoot ?? "");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -29,10 +33,11 @@ export function useRepoPicker(onDone: () => void) {
   }, [signedIn]);
 
   useEffect(() => {
+    if (existingRoot) return;
     const name =
       choice === "new" ? newName : choice === "local" ? DEFAULT_VAULT_NAME : choice.split("/")[1];
     void api("vault:defaultPath", name || DEFAULT_VAULT_NAME).then(setLocalPath);
-  }, [choice, newName]);
+  }, [choice, newName, existingRoot]);
 
   const filtered = useMemo(() => {
     const f = filter.trim().toLowerCase();

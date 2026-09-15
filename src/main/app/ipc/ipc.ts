@@ -130,14 +130,19 @@ export function registerIpcHandlers(): void {
     if (!(await GitService.isAvailable())) {
       throw new Error("git is not installed. On macOS run `xcode-select --install` and try again.");
     }
+    // Connecting an existing local vault to a repo runs through here too, so anything
+    // that belongs to the vault rather than to the repo is carried over — otherwise
+    // attaching a remote silently reset the hotkey, the push cadence and the last project.
+    const previous = getSettings().vault;
+    const keep = previous?.root === localPath ? previous : null;
     const config: VaultConfig = {
       root: localPath,
       remote: repo?.fullName ?? null,
-      branch: repo?.defaultBranch ?? DEFAULT_BRANCH,
-      lastProject: null,
-      lastSource: "claude",
-      hotkey: DEFAULT_HOTKEY,
-      pushDebounceMs: DEFAULT_PUSH_DEBOUNCE_MS,
+      branch: repo?.defaultBranch ?? keep?.branch ?? DEFAULT_BRANCH,
+      lastProject: keep?.lastProject ?? null,
+      lastSource: keep?.lastSource ?? "claude",
+      hotkey: keep?.hotkey ?? DEFAULT_HOTKEY,
+      pushDebounceMs: keep?.pushDebounceMs ?? DEFAULT_PUSH_DEBOUNCE_MS,
     };
     if (repo && !existsSync(join(localPath, ".git"))) {
       try {

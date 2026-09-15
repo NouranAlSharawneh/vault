@@ -177,12 +177,26 @@ export function Settings() {
                 <Button
                   variant="primary"
                   size="sm"
-                  onClick={() => (window.location.hash = "onboarding")}
+                  onClick={() => (window.location.hash = "onboarding?signin")}
                 >
                   Sign in
                 </Button>
               )}
             </SettingRow>
+            {s.auth.status === "signed-in" && !s.config?.remote && (
+              <SettingRow
+                label="GitHub repo"
+                description="This vault is local only. Pick a repo to push it to, or create a new private one."
+              >
+                <Button
+                  variant="primary"
+                  size="sm"
+                  onClick={() => (window.location.hash = "onboarding?connect")}
+                >
+                  Connect a repo
+                </Button>
+              </SettingRow>
+            )}
             <SettingRow
               label="Reset Vault"
               description="Forget this vault and sign out. The files and git history stay on disk."
