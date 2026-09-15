@@ -454,11 +454,11 @@ export class VaultService extends EventEmitter {
       touched.push(dest);
     }
     if (fromSlug !== toSlug) {
-      try {
-        await fs.rmdir(join(this.root, fromSlug));
-      } catch {
-        /* not empty (non-md files) — leave it */
-      }
+      // The documents have moved; everything else in the folder has not. `assets/` above
+      // all — leaving it behind broke every relative image in the project and left the
+      // old folder sitting on disk, because the rmdir here could never succeed.
+      await this.moveRemaining(join(this.root, fromSlug), join(this.root, toSlug));
+      await fs.rmdir(join(this.root, fromSlug)).catch(() => undefined);
     }
     for (const p of touched) await this.index.refreshFile(p);
     await this.writeReadme();
@@ -468,6 +468,31 @@ export class VaultService extends EventEmitter {
     this.schedulePush();
     this.emit("index", this.index.snapshot());
     return { moved: docs.length };
+  }
+
+  /**
+   * Move whatever a project folder still holds into its new home, merging directories
+   * rather than replacing them. A name already taken on the other side keeps both files:
+   * one of the two references will be wrong, but no bytes are thrown away.
+   */
+  private async moveRemaining(fromDir: string, toDir: string): Promise<void> {
+    const entries = await fs.readdir(fromDir, { withFileTypes: true }).catch(() => []);
+    for (const entry of entries) {
+      const src = join(fromDir, entry.name);
+      if (entry.isDirectory()) {
+        await fs.mkdir(join(toDir, entry.name), { recursive: true });
+        await this.moveRemaining(src, join(toDir, entry.name));
+        await fs.rmdir(src).catch(() => undefined);
+        continue;
+      }
+      let dest = join(toDir, entry.name);
+      for (let i = 2; existsSync(dest) && i < 1000; i++) {
+        const dot = entry.name.lastIndexOf(".");
+        const [stem, ext] = dot > 0 ? [entry.name.slice(0, dot), entry.name.slice(dot)] : [entry.name, ""];
+        dest = join(toDir, `${stem}-${i}${ext}`);
+      }
+      await fs.rename(src, dest);
+    }
   }
 
   // ---- README index ---------------------------------------------------------------

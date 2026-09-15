@@ -336,6 +336,20 @@ describe("VaultService (800-doc fixture)", () => {
     );
   });
 
+  it("takes the project's images with it, and leaves nothing behind", async () => {
+    // Renaming used to move only the `.md` files. Every relative image in the project
+    // then pointed at a folder that no longer held any, and the old folder stayed on disk
+    // because the rmdir that should have removed it could never succeed.
+    mkdirSync(join(root, "research-log", "assets"), { recursive: true });
+    writeFileSync(join(root, "research-log", "assets", "hero.png"), "png-bytes");
+    writeFileSync(join(root, "research-log", "notes.txt"), "not a document");
+    await vault.renameProject("Research log", "Field log");
+
+    expect(readFileSync(join(root, "field-log", "assets", "hero.png"), "utf8")).toBe("png-bytes");
+    expect(readFileSync(join(root, "field-log", "notes.txt"), "utf8")).toBe("not a document");
+    expect(existsSync(join(root, "research-log"))).toBe(false);
+  });
+
   it("follows a document through a project move for history, diff and restore", async () => {
     // Changing a doc's project is a `git mv`. Every one of these used to ask git for
     // the doc's *current* path at an older commit, which is a file that did not exist
