@@ -124,7 +124,10 @@ describe("sync conflicts", () => {
   it("finds the pair again from the documents alone, with no state on the side", async () => {
     await raceOnTheSameDoc(doc("Rate limiting", "Mine."), doc("Rate limiting", "Theirs."));
     await vault.pull();
-    // A second service over the same folder — as if the app had been restarted.
+    // As if the app had been restarted: the first service is stopped first, so its
+    // watcher and its quiet pull loop are not still working the same folder while the
+    // second one indexes it.
+    await vault.close();
     const fresh = new VaultService(config(mine), cache, () => null);
     await fresh.open();
     const pairs = await fresh.conflicts();
