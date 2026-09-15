@@ -665,5 +665,14 @@ const cfg = JSON.parse(readFileSync(join(home, ".config", "Vault", "config.json"
 if (cfg.vault.hotkey !== "Control+Alt+J") throw new Error("hotkey not saved: " + cfg.vault.hotkey);
 await win.click("text=Back to vault");
 await win.waitForSelector("text=All documents");
-console.log("errors:", errors.length ? errors : "none");
+// Every window's console errors and uncaught exceptions have been collected the whole way
+// down this file. Printing them meant a renderer that threw still finished green, which is
+// the one thing an end-to-end run exists to catch.
+if (errors.length) {
+  console.error(`${errors.length} console error(s) during the run:`);
+  for (const e of errors) console.error("  " + e);
+  await app.close();
+  throw new Error(`${errors.length} console error(s) — see above`);
+}
+console.log("errors: none");
 await app.close();
