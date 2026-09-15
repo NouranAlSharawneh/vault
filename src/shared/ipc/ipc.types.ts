@@ -114,6 +114,16 @@ export interface IpcInvoke {
 }
 
 /** Main → renderer push events. */
+/** Named so both the menu and the window keydown that raise it can agree on the list. */
+export type Shortcut =
+  | "search"
+  | "new"
+  | "toggleSidebar"
+  | "history"
+  | "save"
+  | "trash"
+  | "settings";
+
 export interface IpcEvents {
   "index:changed": IndexSnapshot;
   "index:progress": ScanProgress;
@@ -125,7 +135,7 @@ export interface IpcEvents {
   "editor:open": { path?: string; draft?: EditorDraft };
   /** Select this document in the main window, clearing filters so it is in the list. */
   "doc:reveal": string;
-  shortcut: "search" | "new" | "toggleSidebar" | "history" | "save" | "trash" | "settings";
+  shortcut: Shortcut;
   navigate: string;
 }
 
