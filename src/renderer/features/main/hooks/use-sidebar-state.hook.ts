@@ -8,6 +8,7 @@ const ORDER: SidebarState[] = ["full", "rail", "hidden"];
 function read(): SidebarState {
   try {
     const v = localStorage.getItem(SIDEBAR_STORAGE_KEY);
+
     return ORDER.includes(v as SidebarState) ? (v as SidebarState) : "full";
   } catch {
     return "full";

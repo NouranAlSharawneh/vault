@@ -3,9 +3,9 @@ import { Button, Card, Empty, SectionLabel } from "@/components/ui";
 import { PUSH_DEBOUNCE_LABELS } from "@/data/settings.data";
 import { describeToken, plural, shortPath } from "@/helpers";
 import { api } from "@/lib/api";
-import { useSettings } from "./hooks/use-settings.hook";
 import { HotkeyRecorder } from "./components/hotkey-recorder/hotkey-recorder.component";
 import { SettingRow } from "./components/setting-row/setting-row.component";
+import { useSettings } from "./hooks/use-settings.hook";
 
 /** ⌘, — capture shortcut, sync cadence, vault folders, trash, account. */
 export function Settings() {
@@ -24,6 +24,7 @@ export function Settings() {
     );
   }
   const assetDirs = Object.entries(config.assetDirs ?? {});
+
   return (
     <div className="flex h-full flex-col bg-paper-2">
       <header className="flex h-12 shrink-0 items-center pr-3 pl-titlebar drag">

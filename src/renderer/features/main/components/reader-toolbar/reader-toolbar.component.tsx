@@ -22,6 +22,7 @@ export function ReaderToolbar({
   const remote = useApp((s) => s.config?.remote);
   const branch = useApp((s) => s.config?.branch ?? "main");
   if (!doc) return <div className="h-11 shrink-0" />;
+
   return (
     <div className="flex h-11 shrink-0 items-center justify-between gap-3 px-4">
       <div className="flex items-center gap-3">

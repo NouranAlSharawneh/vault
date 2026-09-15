@@ -15,6 +15,7 @@ export function openMainWindow(route = "main"): BrowserWindow {
     existing.show();
     existing.focus();
     existing.webContents.send("navigate", route);
+
     return existing;
   }
   mainWin = new BrowserWindow({
@@ -29,10 +30,12 @@ export function openMainWindow(route = "main"): BrowserWindow {
   mainWin.once("ready-to-show", () => mainWin?.show());
   mainWin.webContents.setWindowOpenHandler(({ url }) => {
     void shell.openExternal(url);
+
     return { action: "deny" };
   });
   mainWin.on("closed", () => (mainWin = null));
   loadRoute(mainWin, route);
+
   return mainWin;
 }
 

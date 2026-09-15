@@ -1,8 +1,8 @@
-import { app, globalShortcut, nativeTheme } from "electron";
 import { electronApp, optimizer } from "@electron-toolkit/utils";
+import { app, dialog, globalShortcut, nativeTheme } from "electron";
 import { APP_ID } from "@shared/constants";
-import { registerIpcHandlers } from "./app/ipc/ipc";
 import { registerHotkey } from "./app/hotkey/hotkey";
+import { registerIpcHandlers } from "./app/ipc/ipc";
 import { buildAppMenu } from "./app/menu/menu";
 import { registerAssetProtocol, registerAssetScheme } from "./app/protocol/protocol";
 import { session } from "./app/session/session";
@@ -23,7 +23,7 @@ registerAssetScheme();
 
 app.on("second-instance", () => openMainWindow());
 
-app.whenReady().then(async () => {
+const boot = app.whenReady().then(async () => {
   electronApp.setAppUserModelId(APP_ID);
   nativeTheme.themeSource = "light";
   app.on("browser-window-created", (_, w) => optimizer.watchWindowShortcuts(w));
@@ -42,6 +42,14 @@ app.whenReady().then(async () => {
   app.on("activate", () => {
     if (!getMainWindow() && editorWindowCount() === 0) openMainWindow();
   });
+});
+
+// Nothing else is watching this. Without the catch, anything that throws before the
+// window opens leaves the app running with no window and no clue why.
+boot.catch((e: unknown) => {
+  console.error("Vault failed to start:", e);
+  dialog.showErrorBox("Vault couldn't start", e instanceof Error ? e.message : String(e));
+  app.exit(1);
 });
 
 app.on("window-all-closed", () => {

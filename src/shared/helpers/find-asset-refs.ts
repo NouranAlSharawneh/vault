@@ -27,6 +27,7 @@ export function findAssetRefs(markdown: string): string[] {
     })),
   ].sort((a, b) => a.at - b.at);
   for (const f of found) add(f.raw, f.mediaOnly);
+
   return out;
 }
 

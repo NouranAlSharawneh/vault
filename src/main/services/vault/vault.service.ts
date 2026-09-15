@@ -1,6 +1,6 @@
+import { EventEmitter } from "node:events";
 import { promises as fs, existsSync } from "node:fs";
 import { basename, dirname, join, resolve, sep } from "node:path";
-import { EventEmitter } from "node:events";
 import { parse as parseYaml, stringify as stringifyYaml } from "yaml";
 import {
   ASSETS_DIR,
@@ -37,9 +37,9 @@ import type {
   VaultConfig,
 } from "@shared/types";
 import { importAssets, orphanedAssets } from "../assets";
-import { classifyPushError } from "./classify-push-error";
 import { GitService } from "../git/git.service";
 import { IndexerService } from "../indexer/indexer.service";
+import { classifyPushError } from "./classify-push-error";
 import type { TokenProvider } from "./vault.types";
 
 const ADR_TEMPLATE =
@@ -63,6 +63,7 @@ export class VaultService extends EventEmitter {
     remote: null,
     conflicts: 0,
   };
+
   private pushTimer: NodeJS.Timeout | null = null;
   private pullTimer: NodeJS.Timeout | null = null;
   private pushing = false;
@@ -110,6 +111,7 @@ export class VaultService extends EventEmitter {
       if (s.ahead > 0) this.schedulePush();
     });
     this.startPulling();
+
     return snap;
   }
 
@@ -149,6 +151,7 @@ export class VaultService extends EventEmitter {
     const { body } = parseDoc(raw);
     const meta = this.index.get(relPath) ?? (await this.index.refreshFile(relPath));
     if (!meta) throw new Error(`Not in index: ${relPath}`);
+
     return { meta, body, raw };
   }
 
@@ -236,6 +239,7 @@ export class VaultService extends EventEmitter {
       this.schedulePush();
     }
     this.emit("index", this.index.snapshot());
+
     return { path: target, meta, committed, assets, preservedExternalEdit };
   }
 
@@ -254,6 +258,7 @@ export class VaultService extends EventEmitter {
     const changed = (await this.git.git.status()).files.some((f) => f.path === req.existingPath);
     if (!changed) return false;
     await this.git.commitPaths([req.existingPath], `external: ${title}`);
+
     return true;
   }
 
@@ -265,6 +270,7 @@ export class VaultService extends EventEmitter {
       existingPath: relPath,
       commit: true,
     });
+
     return res.meta;
   }
 
@@ -282,6 +288,7 @@ export class VaultService extends EventEmitter {
     await this.git.commitPaths([README_FILE], "", { amend: true });
     this.schedulePush();
     this.emit("index", this.index.snapshot());
+
     return {
       meta: { ...meta, path: dest },
       path: dest,
@@ -318,6 +325,7 @@ export class VaultService extends EventEmitter {
         trashedAt: last?.date ?? new Date(meta.mtime).toISOString(),
       });
     }
+
     return out.sort((a, b) => b.trashedAt.localeCompare(a.trashedAt));
   }
 
@@ -326,6 +334,7 @@ export class VaultService extends EventEmitter {
     const raw = await fs.readFile(join(this.root, path), "utf8");
     const meta = await this.index.readMeta(path);
     if (!meta) throw new Error(`Not a document: ${path}`);
+
     return { meta, body: parseDoc(raw).body, raw };
   }
 
@@ -342,6 +351,7 @@ export class VaultService extends EventEmitter {
     await this.git.commitPaths([README_FILE], "", { amend: true });
     this.schedulePush();
     this.emit("index", this.index.snapshot());
+
     return { path: target, meta, committed: true };
   }
 
@@ -359,6 +369,7 @@ export class VaultService extends EventEmitter {
       await this.removeAll([path, ...assets]);
       await this.git.commitPaths([], `purge: ${meta.title}`);
       this.schedulePush();
+
       return { removed: 1, assets };
     }
     const trashed = await this.listTrash();
@@ -371,6 +382,7 @@ export class VaultService extends EventEmitter {
     await this.removeAll([TRASH_DIR, ...assets]);
     await this.git.commitPaths([], `purge: trash (${removed} ${removed === 1 ? "doc" : "docs"})`);
     this.schedulePush();
+
     return { removed, assets };
   }
 
@@ -387,17 +399,20 @@ export class VaultService extends EventEmitter {
 
   async history(relPath: string): Promise<CommitInfo[]> {
     assertInside(this.root, relPath);
+
     return this.git.log(relPath);
   }
 
   async atCommit(relPath: string, sha: string): Promise<string> {
     assertInside(this.root, relPath);
+
     return this.git.show(await this.pathAt(relPath, sha), sha);
   }
 
   /** What this commit changed, as a unified diff. */
   async diff(relPath: string, sha: string): Promise<string> {
     assertInside(this.root, relPath);
+
     return this.git.diff(await this.pathAt(relPath, sha), sha);
   }
 
@@ -407,6 +422,7 @@ export class VaultService extends EventEmitter {
    */
   private async pathAt(relPath: string, sha: string): Promise<string> {
     const found = (await this.git.log(relPath)).find((c) => c.sha === sha);
+
     return found?.path ?? relPath;
   }
 
@@ -415,6 +431,7 @@ export class VaultService extends EventEmitter {
     const { frontmatter, body } = parseDoc(await this.atCommit(relPath, sha));
     const fm = frontmatter ?? this.index.get(relPath);
     if (!fm) throw new Error("Nothing to restore");
+
     return this.save({
       body,
       frontmatter: pickFrontmatter(fm),
@@ -474,6 +491,7 @@ export class VaultService extends EventEmitter {
     await this.git.git.commit(`rename project: ${from} → ${to}`);
     this.schedulePush();
     this.emit("index", this.index.snapshot());
+
     return { moved: docs.length };
   }
 
@@ -495,7 +513,8 @@ export class VaultService extends EventEmitter {
       let dest = join(toDir, entry.name);
       for (let i = 2; existsSync(dest) && i < 1000; i++) {
         const dot = entry.name.lastIndexOf(".");
-        const [stem, ext] = dot > 0 ? [entry.name.slice(0, dot), entry.name.slice(dot)] : [entry.name, ""];
+        const [stem, ext] =
+          dot > 0 ? [entry.name.slice(0, dot), entry.name.slice(dot)] : [entry.name, ""];
         dest = join(toDir, `${stem}-${i}${ext}`);
       }
       await fs.rename(src, dest);
@@ -534,6 +553,7 @@ export class VaultService extends EventEmitter {
       const data = parseYaml(await fs.readFile(this.viewsPath(), "utf8")) as
         { views?: SavedView[] } | SavedView[] | null;
       const arr = Array.isArray(data) ? data : (data?.views ?? []);
+
       return arr.filter((v) => v && typeof v.name === "string" && typeof v.query === "string");
     } catch {
       return [];
@@ -544,12 +564,14 @@ export class VaultService extends EventEmitter {
     const views = (await this.listViews()).filter((v) => v.name !== view.name);
     views.push(view);
     await this.writeViews(views, `view: ${view.name}`);
+
     return views;
   }
 
   async deleteView(name: string): Promise<SavedView[]> {
     const views = (await this.listViews()).filter((v) => v.name !== name);
     await this.writeViews(views, `remove view: ${name}`);
+
     return views;
   }
 
@@ -576,6 +598,7 @@ export class VaultService extends EventEmitter {
         }
         out.push({ name: unslug(f.replace(/\.md$/, "")), frontmatter, body });
       }
+
       return out;
     } catch {
       return [];
@@ -621,6 +644,7 @@ export class VaultService extends EventEmitter {
         ? "pending"
         : "synced";
     this.setSync({ ...ab, state, conflicts });
+
     return this.sync;
   }
 
@@ -645,11 +669,13 @@ export class VaultService extends EventEmitter {
       () => undefined,
       () => undefined,
     );
+
     return next;
   }
 
   async pushNow(): Promise<SyncStatus> {
     if (!this.config.remote) return this.sync;
+
     return this.queue(() => this.runPush());
   }
 
@@ -699,6 +725,7 @@ export class VaultService extends EventEmitter {
     } finally {
       this.pushing = false;
     }
+
     return this.sync;
   }
 
@@ -717,6 +744,7 @@ export class VaultService extends EventEmitter {
         this.pullInFlight = null;
       });
     }
+
     return this.pullInFlight;
   }
 
@@ -733,6 +761,7 @@ export class VaultService extends EventEmitter {
       await this.index.rescan();
       this.emit("index", this.index.snapshot());
       await this.refreshSyncStatus();
+
       return { conflicts: await this.conflicts() };
     } catch (e) {
       // Whatever went wrong, do not leave the vault half-rebased: the next save would
@@ -742,6 +771,7 @@ export class VaultService extends EventEmitter {
       const failure = classifyPushError(msg);
       if (failure === "bad-credentials" || failure === "no-permission") this.emit("auth-suspect");
       this.setSync({ state: failure === "offline" ? "offline" : "error", lastError: msg });
+
       return { conflicts: [] };
     }
   }
@@ -817,6 +847,7 @@ export class VaultService extends EventEmitter {
         "--",
         path,
       ]);
+
       return out.trim() || new Date().toISOString();
     } catch {
       return new Date().toISOString();
@@ -844,6 +875,7 @@ export class VaultService extends EventEmitter {
       const mine = mark && byPath.get(mark.of);
       if (mark && mine) pairs.push({ mine, theirs, mark });
     }
+
     return pairs.sort((a, b) => b.mark.at.localeCompare(a.mark.at));
   }
 
@@ -911,6 +943,7 @@ function assertInside(root: string, relPath: string): string {
   if (abs !== root && !abs.startsWith(root + sep)) {
     throw new Error(`Outside the vault: ${relPath}`);
   }
+
   return abs;
 }
 
@@ -927,5 +960,6 @@ async function walkMarkdown(dir: string): Promise<string[]> {
     if (e.isDirectory()) out.push(...(await walkMarkdown(abs)));
     else if (e.isFile() && e.name.endsWith(".md")) out.push(abs);
   }
+
   return out;
 }

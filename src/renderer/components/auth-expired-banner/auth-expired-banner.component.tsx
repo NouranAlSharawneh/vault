@@ -10,6 +10,7 @@ export function AuthExpiredBanner({ className }: AuthExpiredBannerProps) {
   const auth = useApp((s) => s.auth);
   const config = useApp((s) => s.config);
   if (auth.status !== "expired" || !config?.remote) return null;
+
   return (
     <div
       className={cx("flex items-center gap-2 bg-warn/15 px-4 py-1.5 text-xs text-ink-2", className)}

@@ -21,6 +21,7 @@ export function useFirstScan(onDone: () => void) {
   useEffect(() => {
     if (!finished) return;
     const t = setTimeout(onDone, DONE_SCREEN_DELAY_MS);
+
     return () => clearTimeout(t);
   }, [finished, onDone]);
 
@@ -29,5 +30,6 @@ export function useFirstScan(onDone: () => void) {
     : finished
       ? 100
       : 10;
+
   return { index, percent };
 }

@@ -1,7 +1,7 @@
+import { SectionLabel } from "@/components/ui";
 import { ProjectCombobox } from "@/features/editor/components/project-combobox/project-combobox.component";
 import { SourceSelect } from "@/features/editor/components/source-select/source-select.component";
 import { TagInput } from "@/features/editor/components/tag-input/tag-input.component";
-import { SectionLabel } from "@/components/ui";
 import type { CaptureFieldsProps } from "./capture-fields.types";
 
 /** Project · From · Tags — the same controls as the editor, on the dark surface. */

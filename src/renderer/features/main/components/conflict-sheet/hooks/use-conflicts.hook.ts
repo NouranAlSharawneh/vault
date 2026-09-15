@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
-import { api } from "@/lib/api";
 import { errorMessage } from "@/helpers";
+import { api } from "@/lib/api";
 import type { ConflictPair } from "@shared/types";
 
 /** The pairs still waiting on a decision, reloaded whenever one is settled. */
@@ -18,6 +18,7 @@ export function useConflicts(): {
     void api("conflicts:list")
       .then((p) => live && setPairs(p))
       .catch((e: unknown) => live && setError(errorMessage(e)));
+
     return () => {
       live = false;
     };

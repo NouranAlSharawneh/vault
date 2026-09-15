@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useState } from "react";
-import type { TokenStatus, VaultConfig } from "@shared/types";
 import { errorMessage, plural } from "@/helpers";
 import { api } from "@/lib/api";
 import { useApp } from "@/stores/app";
 import { useToast } from "@/stores/toast";
+import type { TokenStatus, VaultConfig } from "@shared/types";
 import type { SettingsState } from "../settings.types";
 
 /** Read config from the store, write patches through main, surface refusals (bad hotkey). */
@@ -17,6 +17,7 @@ export function useSettings() {
     void api("app:version")
       .then((v) => live && setVersion(v))
       .catch(() => undefined);
+
     return () => {
       live = false;
     };
@@ -43,9 +44,11 @@ export function useSettings() {
       try {
         setConfig(await api("vault:updateConfig", patch));
         setState({ error: null, busy: null });
+
         return true;
       } catch (e) {
         setState({ error: errorMessage(e), busy: null });
+
         return false;
       }
     },
@@ -56,6 +59,7 @@ export function useSettings() {
     (slug: string) => {
       const assetDirs = { ...(config?.assetDirs ?? {}) };
       delete assetDirs[slug];
+
       return update({ assetDirs });
     },
     [config?.assetDirs, update],

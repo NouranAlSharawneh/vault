@@ -1,6 +1,6 @@
+import { renderHook } from "@testing-library/react";
 // @vitest-environment jsdom
 import { describe, expect, it, vi } from "vitest";
-import { renderHook } from "@testing-library/react";
 import { useMainShortcuts } from "@/features/main/hooks/use-main-shortcuts.hook";
 import { mockVaultApi } from "../../helpers/mock-vault-api";
 

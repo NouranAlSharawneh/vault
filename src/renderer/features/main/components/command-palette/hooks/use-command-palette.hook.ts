@@ -1,6 +1,4 @@
 import { useCallback, useEffect, useMemo, useState, type KeyboardEvent } from "react";
-import { matchesFilters, parseQuery } from "@shared/query";
-import type { DocMeta, SearchHit } from "@shared/types";
 import {
   PALETTE_MAX_DOCS,
   PALETTE_MAX_RECENT,
@@ -10,6 +8,8 @@ import {
 import { PALETTE_ACTIONS, type PaletteActionKey } from "@/data/palette.data";
 import { api } from "@/lib/api";
 import { useApp } from "@/stores/app";
+import { matchesFilters, parseQuery } from "@shared/query";
+import type { DocMeta, SearchHit } from "@shared/types";
 import type { PaletteGroup, PaletteItem } from "../command-palette.types";
 
 /** Query → grouped results (documents · in text · actions) with keyboard navigation. */
@@ -35,6 +35,7 @@ export function useCommandPalette(
         .then((h) => !cancelled && setHits(h))
         .catch(() => !cancelled && setHits([]));
     }, SEARCH_DEBOUNCE_MS);
+
     return () => {
       cancelled = true;
       clearTimeout(t);
@@ -101,6 +102,7 @@ export function useCommandPalette(
       ? actions.filter((a) => a.kind === "action" && a.label.toLowerCase().includes(q))
       : actions;
     if (visibleActions.length) out.push({ title: "Actions", items: visibleActions });
+
     return out;
   }, [index, liveHits, query, sync?.ahead, sync?.conflicts, onTrashDoc]);
 

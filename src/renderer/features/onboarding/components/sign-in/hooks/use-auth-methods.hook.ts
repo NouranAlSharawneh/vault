@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import type { AuthMethods } from "@shared/types";
 import { api } from "@/lib/api";
+import type { AuthMethods } from "@shared/types";
 
 const NONE: AuthMethods = { oauth: false, device: false };
 
@@ -12,5 +12,6 @@ export function useAuthMethods(): AuthMethods {
       .then(setMethods)
       .catch(() => setMethods(NONE));
   }, []);
+
   return methods;
 }

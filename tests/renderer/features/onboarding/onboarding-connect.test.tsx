@@ -1,6 +1,6 @@
+import { renderHook } from "@testing-library/react";
 // @vitest-environment jsdom
 import { beforeEach, describe, expect, it } from "vitest";
-import { renderHook } from "@testing-library/react";
 import { useOnboardingStep } from "@/features/onboarding/hooks/use-onboarding-step.hook";
 import { useApp } from "@/stores/app";
 import type { VaultConfig } from "@shared/types";

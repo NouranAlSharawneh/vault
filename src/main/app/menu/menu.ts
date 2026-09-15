@@ -1,11 +1,11 @@
 import { BrowserWindow, Menu } from "electron";
 import { DEFAULT_HOTKEY } from "@shared/constants";
 import { appMenu, VAULT_REPO } from "../../data/menu.data";
-import type { MenuAction, MenuItemData, MenuSectionData } from "./menu.types";
 import { openOnGitHub } from "../../network/github";
 import { IS_MAC, openEditorWindow, openMainWindow } from "../../windows";
 import { toggleCapture } from "../hotkey/hotkey";
 import { resetApp } from "../session/reset-app";
+import type { MenuAction, MenuItemData, MenuSectionData } from "./menu.types";
 
 function run(action: MenuAction): () => void {
   if (typeof action === "object") {
@@ -28,11 +28,13 @@ function run(action: MenuAction): () => void {
 function toItem(item: MenuItemData): Electron.MenuItemConstructorOptions {
   if ("type" in item) return { type: "separator" };
   if ("role" in item) return { role: item.role };
+
   return { label: item.label, accelerator: item.accelerator, click: run(item.action) };
 }
 
 function toSection(section: MenuSectionData): Electron.MenuItemConstructorOptions {
   if (section.role) return { role: section.role };
+
   return { label: section.label, submenu: section.items?.map(toItem) };
 }
 

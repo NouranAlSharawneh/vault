@@ -23,5 +23,6 @@ export function matchesFilters(doc: DocMeta, q: ParsedQuery): boolean {
     if (q.createdAfter !== undefined && !(t >= q.createdAfter)) return false;
     if (q.createdBefore !== undefined && !(t <= q.createdBefore)) return false;
   }
+
   return true;
 }

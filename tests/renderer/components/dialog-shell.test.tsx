@@ -1,6 +1,6 @@
+import { fireEvent, render, screen } from "@testing-library/react";
 // @vitest-environment jsdom
 import { describe, expect, it, vi } from "vitest";
-import { fireEvent, render, screen } from "@testing-library/react";
 import { DialogShell } from "@/components/ui";
 
 const panel = (onClose = vi.fn()) => {
@@ -14,6 +14,7 @@ const panel = (onClose = vi.fn()) => {
       <button>last</button>
     </DialogShell>,
   );
+
   return { view, onClose, opener };
 };
 

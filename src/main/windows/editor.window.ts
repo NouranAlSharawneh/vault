@@ -21,5 +21,6 @@ export function openEditorWindow(query = ""): BrowserWindow {
   win.on("closed", () => editorWins.delete(win));
   editorWins.add(win);
   loadRoute(win, `editor${query}`);
+
   return win;
 }

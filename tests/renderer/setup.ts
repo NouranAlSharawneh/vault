@@ -1,5 +1,5 @@
-import { afterEach } from "vitest";
 import { cleanup } from "@testing-library/react";
+import { afterEach } from "vitest";
 
 // Unmount rendered trees between tests so `screen` queries never see stale DOM.
 afterEach(cleanup);

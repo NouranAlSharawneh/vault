@@ -45,6 +45,7 @@ export function Button({
       {children}
     </button>
   );
+
   return tooltip ? (
     <Tooltip label={tooltip} keys={tooltipKeys} side={tooltipSide}>
       {el}

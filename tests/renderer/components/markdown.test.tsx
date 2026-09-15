@@ -1,11 +1,12 @@
+import { render } from "@testing-library/react";
 // @vitest-environment jsdom
 import { describe, expect, it } from "vitest";
-import { render } from "@testing-library/react";
 import { Markdown } from "@/components/markdown";
 import { mockVaultApi } from "../helpers/mock-vault-api";
 
 const html = (source: string, docPath = "notes/doc.md") => {
   mockVaultApi();
+
   return render(<Markdown source={source} docPath={docPath} />).container;
 };
 

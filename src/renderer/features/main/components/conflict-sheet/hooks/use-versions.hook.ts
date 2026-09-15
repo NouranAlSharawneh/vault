@@ -40,6 +40,7 @@ export function useVersions(pair: ConflictPair): Versions | null {
         });
       })
       .catch(() => live && setV(null));
+
     return () => {
       live = false;
     };

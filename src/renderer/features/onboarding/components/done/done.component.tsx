@@ -8,6 +8,7 @@ import { useApp } from "@/stores/app";
 export function Done() {
   const config = useApp((s) => s.config);
   const index = useApp((s) => s.index);
+
   return (
     <Card className="p-8 text-center">
       <div className="mx-auto flex h-11 w-11 items-center justify-center rounded-full bg-cherry-tint text-cherry">

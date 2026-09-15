@@ -1,8 +1,8 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
+import { IS_MAC } from "@/constants";
 import { App } from "./app/app.component";
 import { ErrorBoundary } from "./components/error-boundary/error-boundary.component";
-import { IS_MAC } from "@/constants";
 import "./styles/global.css";
 
 // The capture sheet is a transparent macOS window. Painting the body here — before

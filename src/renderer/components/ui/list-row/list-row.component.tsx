@@ -34,6 +34,7 @@ export function ListRow({
 }: ListRowProps) {
   const [on, off] = SELECTED_CLASS[kind];
   const full = kind !== "rail";
+
   return (
     <button
       type={type}

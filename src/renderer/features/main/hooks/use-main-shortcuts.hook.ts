@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef } from "react";
-import { api, on } from "@/lib/api";
 import { isEditableTarget } from "@/helpers";
+import { api, on } from "@/lib/api";
 import type { Shortcut } from "@shared/ipc";
 
 interface Handlers {
@@ -63,6 +63,7 @@ export function useMainShortcuts({ onSearch, onTrash, onSettings, onHistory }: H
       fire(shortcut);
     };
     window.addEventListener("keydown", onKey);
+
     return () => window.removeEventListener("keydown", onKey);
   }, [fire]);
 }

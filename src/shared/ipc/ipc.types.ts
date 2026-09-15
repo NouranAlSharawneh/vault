@@ -119,13 +119,7 @@ export interface IpcInvoke {
 /** Main → renderer push events. */
 /** Named so both the menu and the window keydown that raise it can agree on the list. */
 export type Shortcut =
-  | "search"
-  | "new"
-  | "toggleSidebar"
-  | "history"
-  | "save"
-  | "trash"
-  | "settings";
+  "search" | "new" | "toggleSidebar" | "history" | "save" | "trash" | "settings";
 
 export interface IpcEvents {
   "index:changed": IndexSnapshot;

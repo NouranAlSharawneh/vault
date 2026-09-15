@@ -10,5 +10,6 @@ export async function createRepo(name: string, isPrivate: boolean): Promise<GitH
     auto_init: false,
     description: "Markdown vault — captured with Vault",
   });
+
   return mapRepo(data);
 }

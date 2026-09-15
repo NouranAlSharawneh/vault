@@ -1,10 +1,10 @@
-import { useState } from "react";
 import { ArrowRight, KeyRound, Smartphone } from "lucide-react";
+import { useState } from "react";
 import { Button, Card, GitHubMark } from "@/components/ui";
 import { GITHUB_SCOPES } from "@/data/onboarding.data";
+import { DeviceFlow } from "../device-flow/device-flow.component";
 import { ScopeItem } from "../scope-item/scope-item.component";
 import { TokenForm } from "../token-form/token-form.component";
-import { DeviceFlow } from "../device-flow/device-flow.component";
 import { WebFlow } from "../web-flow/web-flow.component";
 import { useAuthMethods } from "./hooks/use-auth-methods.hook";
 import type { SignInMode, SignInProps } from "./sign-in.types";

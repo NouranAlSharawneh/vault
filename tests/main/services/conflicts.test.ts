@@ -6,8 +6,8 @@ import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "no
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { simpleGit } from "simple-git";
-import { VaultService } from "@main/services/vault/vault.service";
 import { GitService } from "@main/services/git/git.service";
+import { VaultService } from "@main/services/vault/vault.service";
 import type { VaultConfig } from "@shared/types";
 
 const DOC = "atlas-api/rate-limiting.md";

@@ -1,5 +1,5 @@
-import { app, dialog } from "electron";
 import { rmSync } from "node:fs";
+import { app, dialog } from "electron";
 import { userDataDir } from "../../store/user-data-dir";
 import { session } from "./session";
 

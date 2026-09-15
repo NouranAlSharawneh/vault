@@ -1,14 +1,14 @@
 import { existsSync } from "node:fs";
 import { TOKEN_REFRESH_SKEW_MS } from "@shared/constants";
 import type { AuthMethod, AuthState, GitHubUser, VaultConfig } from "@shared/types";
+import { NetworkError } from "../../network/axios";
+import { fetchUser, refreshAccessToken } from "../../network/github";
+import { VaultService } from "../../services/vault/vault.service";
+import { getOAuthConfig } from "../../store/oauth-config";
 import { getSettings, updateSettings } from "../../store/settings.store";
 import { clearToken, loadCredentials, loadToken, saveCredentials } from "../../store/token.store";
 import type { StoredCredentials } from "../../store/token.store.types";
-import { getOAuthConfig } from "../../store/oauth-config";
 import { userDataDir } from "../../store/user-data-dir";
-import { fetchUser, refreshAccessToken } from "../../network/github";
-import { NetworkError } from "../../network/axios";
-import { VaultService } from "../../services/vault/vault.service";
 import { broadcast } from "../../windows";
 import type { AuthListener } from "./session.types";
 
@@ -31,11 +31,13 @@ class Session {
 
   requireVault(): VaultService {
     if (!this.vaultService) throw new Error("No vault is open");
+
     return this.vaultService;
   }
 
   onAuthChange(fn: AuthListener): () => void {
     this.listeners.add(fn);
+
     return () => this.listeners.delete(fn);
   }
 
@@ -66,16 +68,19 @@ class Session {
   private async doRevalidate(): Promise<boolean> {
     if (await this.refreshIfPossible()) {
       await this.markAuthOk();
+
       return true;
     }
     try {
       const user = await fetchUser();
       // The token still works, so whatever failed was not an auth problem.
       this.setAuth({ status: "signed-in", user, method: this.authState.method });
+
       return true;
     } catch (e) {
       if (e instanceof NetworkError && !e.isAuth) return true; // offline, not signed out
       this.markAuthExpired();
+
       return false;
     }
   }
@@ -94,6 +99,7 @@ class Session {
           refreshToken: creds.refreshToken,
         }),
       );
+
       return true;
     } catch {
       return false;
@@ -143,6 +149,7 @@ class Session {
       const user = await fetchUser();
       updateSettings({ authMethod: method });
       this.setAuth({ status: "signed-in", user, method });
+
       return user;
     } catch (e) {
       clearToken();
@@ -172,6 +179,7 @@ class Session {
     vault.on("auth-ok", () => void this.markAuthOk());
     this.vaultService = vault;
     await vault.open();
+
     return vault;
   }
 

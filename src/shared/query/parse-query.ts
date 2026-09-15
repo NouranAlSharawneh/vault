@@ -13,6 +13,7 @@ export function parseQuery(input: string, now = Date.now()): ParsedQuery {
     else words.push(quotedWord ?? word ?? "");
   }
   q.text = [q.text, ...words].join(" ").trim();
+
   return q;
 }
 

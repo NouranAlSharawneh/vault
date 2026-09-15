@@ -1,6 +1,6 @@
-import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
+import { describe, expect, it } from "vitest";
 
 /**
  * The palette is the one place a readability problem can hide in plain sight: every
@@ -14,25 +14,27 @@ const css = readFileSync(join(process.cwd(), "src/renderer/styles/global.css"), 
 const token = (name: string): string => {
   const m = new RegExp(`--color-${name}:\\s*(#[0-9a-f]{6})`, "i").exec(css);
   if (!m) throw new Error(`no --color-${name} in global.css`);
+
   return m[1];
 };
 
 const channel = (c: number): number => {
   const s = c / 255;
+
   return s <= 0.04045 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4;
 };
 
 const luminance = (hex: string): number => {
   const n = parseInt(hex.slice(1), 16);
+
   return (
-    0.2126 * channel((n >> 16) & 255) +
-    0.7152 * channel((n >> 8) & 255) +
-    0.0722 * channel(n & 255)
+    0.2126 * channel((n >> 16) & 255) + 0.7152 * channel((n >> 8) & 255) + 0.0722 * channel(n & 255)
   );
 };
 
 const contrast = (a: string, b: string): number => {
   const [x, y] = [luminance(a), luminance(b)].sort((p, q) => q - p);
+
   return (x + 0.05) / (y + 0.05);
 };
 

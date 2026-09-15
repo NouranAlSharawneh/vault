@@ -21,6 +21,7 @@ export async function confirmPurge(
     // The title is only for the wording — a path the listing does not know about is
     // still a delete, and must not be described as emptying the whole trash.
     const title = trashed.find((t) => t.path === path)?.meta.title;
+
     return ask({
       button: "Delete forever",
       message: title ? `Delete “${title}” forever?` : "Delete this document forever?",
@@ -29,6 +30,7 @@ export async function confirmPurge(
   }
   if (!trashed.length) return true;
   const n = trashed.length;
+
   return ask({
     button: "Empty trash",
     message: "Empty the trash?",
@@ -46,5 +48,6 @@ async function ask(opts: { button: string; message: string; detail: string }): P
     message: opts.message,
     detail: opts.detail,
   });
+
   return response === 0;
 }

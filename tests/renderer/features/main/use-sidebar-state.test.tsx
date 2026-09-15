@@ -1,6 +1,6 @@
+import { act, renderHook } from "@testing-library/react";
 // @vitest-environment jsdom
 import { describe, expect, it } from "vitest";
-import { act, renderHook } from "@testing-library/react";
 import { useSidebarState } from "@/features/main/hooks/use-sidebar-state.hook";
 import { mockVaultApi } from "../../helpers/mock-vault-api";
 

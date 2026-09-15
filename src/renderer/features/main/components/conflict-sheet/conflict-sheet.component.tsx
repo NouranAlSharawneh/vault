@@ -1,17 +1,17 @@
-import { useRef, useState } from "react";
 import { Laptop, X } from "lucide-react";
+import { useRef, useState } from "react";
 import { Button, DialogShell, Empty, GitHubMark, SectionLabel, Spinner } from "@/components/ui";
 import { cx, errorMessage, plural } from "@/helpers";
 import { api } from "@/lib/api";
 import { relativeTime } from "@shared/helpers";
 import type { ConflictChoice } from "@shared/types";
-import { useConflicts } from "./hooks/use-conflicts.hook";
-import { useVersions } from "./hooks/use-versions.hook";
 import type {
   ConflictRowProps,
   ConflictSheetProps,
   VersionCardProps,
 } from "./conflict-sheet.types";
+import { useConflicts } from "./hooks/use-conflicts.hook";
+import { useVersions } from "./hooks/use-versions.hook";
 
 /**
  * Two versions of the same document, side by side, with a way to say which one wins.
@@ -22,6 +22,7 @@ import type {
  */
 export function ConflictSheet({ onClose }: ConflictSheetProps) {
   const { pairs, error, reload } = useConflicts();
+
   return (
     <DialogShell
       label="review conflicting versions"

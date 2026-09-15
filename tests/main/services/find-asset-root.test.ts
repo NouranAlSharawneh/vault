@@ -1,7 +1,7 @@
-import { describe, expect, it, beforeAll, afterAll, vi } from "vitest";
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { describe, expect, it, beforeAll, afterAll, vi } from "vitest";
 import { findAssetRoot } from "@main/services/assets";
 
 // Spotlight answers from the real disk, which would make these non-hermetic on any Mac that

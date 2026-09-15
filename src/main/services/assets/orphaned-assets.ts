@@ -29,6 +29,7 @@ export async function orphanedAssets(root: string, purged: string[]): Promise<st
     for (const asset of await assetsOf(root, path)) doomed.delete(asset);
     if (!doomed.size) return [];
   }
+
   return [...doomed];
 }
 
@@ -52,6 +53,7 @@ async function assetsOf(root: string, docPath: string): Promise<string[]> {
       if (existsSync(join(root, candidate))) out.push(candidate);
     }
   }
+
   return out;
 }
 
@@ -81,5 +83,6 @@ async function markdownFiles(root: string, dir = root): Promise<string[]> {
       );
     }
   }
+
   return out;
 }
