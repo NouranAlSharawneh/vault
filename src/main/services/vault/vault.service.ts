@@ -67,6 +67,8 @@ export class VaultService extends EventEmitter {
   private pullTimer: NodeJS.Timeout | null = null;
   private pushing = false;
   private pullInFlight: Promise<{ conflicts: ConflictPair[] }> | null = null;
+  /** The tail of the queue every remote operation waits behind. See `queue()`. */
+  private remoteWork: Promise<unknown> = Promise.resolve();
   private retryDelay = PUSH_RETRY_MIN_MS;
 
   constructor(
@@ -622,8 +624,32 @@ export class VaultService extends EventEmitter {
       await this.git.setRemote(`https://github.com/${this.config.remote}.git`);
   }
 
+  /**
+   * One queue for everything that touches the remote.
+   *
+   * A push and a pull both drive a rebase, and each was guarded only against a second of
+   * its own kind. Run together — which the interval timer and a save do without trying —
+   * one of them finished the other's rebase and the loser reported `fatal: No rebase in
+   * progress?`, leaving a red badge until the retry backoff quietly fixed it five seconds
+   * later. They cannot overlap now.
+   */
+  private queue<T>(work: () => Promise<T>): Promise<T> {
+    const next = this.remoteWork.then(work, work);
+    // The caller owns this rejection; the queue itself must stay resolvable.
+    this.remoteWork = next.then(
+      () => undefined,
+      () => undefined,
+    );
+    return next;
+  }
+
   async pushNow(): Promise<SyncStatus> {
-    if (!this.config.remote || this.pushing) return this.sync;
+    if (!this.config.remote) return this.sync;
+    return this.queue(() => this.runPush());
+  }
+
+  private async runPush(): Promise<SyncStatus> {
+    if (this.pushing) return this.sync;
     if (this.pushTimer) {
       clearTimeout(this.pushTimer);
       this.pushTimer = null;
@@ -681,7 +707,7 @@ export class VaultService extends EventEmitter {
     // Asking for a pull while one is already running joins it rather than being told
     // "nothing happened" — the timer and a button press land on the same answer.
     if (!this.pullInFlight) {
-      this.pullInFlight = this.runPull();
+      this.pullInFlight = this.queue(() => this.runPull());
       void this.pullInFlight.finally(() => {
         this.pullInFlight = null;
       });
