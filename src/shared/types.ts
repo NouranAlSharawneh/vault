@@ -82,6 +82,11 @@ export interface SaveRequest {
   frontmatter: Omit<Frontmatter, "created"> & { created?: string };
   /** When editing an existing doc, its current path. */
   existingPath?: string;
+  /**
+   * The file's mtime when the editor loaded it. If it has moved since, something else
+   * wrote the file and that version is committed before this one lands on top of it.
+   */
+  baseMtime?: number;
   /** Commit + push, or just write to disk. */
   commit: boolean;
   assets?: AssetImport;
@@ -89,6 +94,11 @@ export interface SaveRequest {
 
 export interface SaveResult {
   path: string;
+  /**
+   * Set when the file had been changed outside Vault since the editor loaded it. That
+   * version was committed first, so it is one entry back in the document's history.
+   */
+  preservedExternalEdit?: boolean;
   /** Repo-relative paths of assets copied in with this save. */
   assets?: string[];
   meta: DocMeta;

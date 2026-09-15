@@ -19,6 +19,8 @@ export interface DraftState {
   dirty: boolean;
   /** Where the draft text came from on disk, if anywhere (relative images resolve there). */
   sourcePath: string | null;
+  /** The file's mtime when it was loaded, so a save can tell if anything else wrote it. */
+  baseMtime: number | null;
 }
 
 export type SaveMode = "local" | "commit";

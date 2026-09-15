@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 // Off the real Spotlight index: the temp workspaces below are the only folders in play.
 vi.mock("@main/services/assets/spotlight", () => ({ spotlightRoots: async () => [] }));
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { simpleGit } from "simple-git";
@@ -63,6 +63,59 @@ beforeEach(async () => {
 
 afterEach(() => {
   for (const d of temps.splice(0)) rmSync(d, { recursive: true, force: true });
+});
+
+describe("an edit made outside Vault", () => {
+  it("is committed before this window's version lands on top of it", async () => {
+    const v = await openVault(mine);
+    const first = await v.save({
+      body: "Written here.",
+      frontmatter: { title: "Shared", project: "Atlas API", tags: [], source: "manual" },
+      commit: true,
+    });
+    const loaded = await v.read(first.path);
+
+    // Another editor writes the same file while it is open here.
+    await new Promise((r) => setTimeout(r, 1200));
+    writeFileSync(join(mine, first.path), doc("Shared", "WRITTEN SOMEWHERE ELSE"));
+
+    const res = await v.save({
+      body: "Written here, and then some more.",
+      frontmatter: { title: "Shared", project: "Atlas API", tags: [], source: "manual" },
+      existingPath: first.path,
+      baseMtime: loaded.meta.mtime,
+      commit: true,
+    });
+
+    // This window's text wins the file — the user is mid-thought and must not lose it —
+    // but the other version is one commit back rather than gone.
+    expect(res.preservedExternalEdit).toBe(true);
+    expect(readFileSync(join(mine, first.path), "utf8")).toContain("and then some more");
+    const history = await v.history(first.path);
+    expect(history[1].message).toBe("external: Shared");
+    expect(await v.atCommit(first.path, history[1].sha)).toContain("WRITTEN SOMEWHERE ELSE");
+    await v.close();
+  }, 60_000);
+
+  it("is not claimed when nothing else touched the file", async () => {
+    const v = await openVault(mine);
+    const first = await v.save({
+      body: "Only ever written here.",
+      frontmatter: { title: "Alone", project: "Atlas API", tags: [], source: "manual" },
+      commit: true,
+    });
+    const loaded = await v.read(first.path);
+    const res = await v.save({
+      body: "Only ever written here, twice.",
+      frontmatter: { title: "Alone", project: "Atlas API", tags: [], source: "manual" },
+      existingPath: first.path,
+      baseMtime: loaded.meta.mtime,
+      commit: true,
+    });
+    expect(res.preservedExternalEdit).toBeFalsy();
+    expect((await v.history(first.path)).some((c) => c.message.startsWith("external:"))).toBe(false);
+    await v.close();
+  }, 60_000);
 });
 
 describe("sync", () => {

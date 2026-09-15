@@ -23,6 +23,7 @@ export function useEditorDraft() {
     created: null,
     dirty: false,
     sourcePath: null,
+    baseMtime: null,
   });
   const [saving, setSaving] = useState<SaveMode | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -54,6 +55,7 @@ export function useEditorDraft() {
       created: doc.meta.created,
       dirty: false,
       sourcePath: null,
+      baseMtime: doc.meta.mtime,
     });
     setLastSaved(null);
   }, []);
@@ -75,6 +77,8 @@ export function useEditorDraft() {
         created: null,
         dirty: draft.body.length > 0,
         sourcePath: draft.sourcePath ?? null,
+        // A seeded draft is not a file on disk yet, so there is nothing to be newer than.
+        baseMtime: null,
       });
     },
     [config?.lastProject, defaultSource],
@@ -94,6 +98,7 @@ export function useEditorDraft() {
             created: state.created ?? undefined,
           },
           existingPath: state.existingPath ?? undefined,
+          baseMtime: state.baseMtime ?? undefined,
           commit: mode === "commit",
           assets,
         });
@@ -103,6 +108,8 @@ export function useEditorDraft() {
           created: res.meta.created,
           meta: { ...s.meta, title: res.meta.title },
           dirty: false,
+          // The file on disk is ours again as of this write.
+          baseMtime: res.meta.mtime,
         }));
         setLastSaved(res);
         return res;
