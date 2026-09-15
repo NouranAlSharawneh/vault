@@ -71,6 +71,18 @@ describe("useTrashActions", () => {
     expect(useToast.getState().toast?.message).toBe("Deleted “Spec” and 2 images forever");
   });
 
+  it("changes nothing when the confirmation is declined", async () => {
+    // Main asks before deleting forever; answering no comes back as removed: 0. That has
+    // to leave the selection and the toast exactly where they were.
+    mockVaultApi({ "trash:purge": { removed: 0, assets: [] } });
+    useToast.setState({ toast: null });
+    const select = vi.fn();
+    const { result } = renderHook(() => useTrashActions(trashed.meta, select));
+    await act(() => result.current.purge());
+    expect(select).not.toHaveBeenCalled();
+    expect(useToast.getState().toast).toBeNull();
+  });
+
   it("shows the error when main refuses", async () => {
     mockVaultApi({ "doc:trash": new Error("git is busy") });
     const { result } = renderHook(() => useTrashActions(meta, vi.fn()));

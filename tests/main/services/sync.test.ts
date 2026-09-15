@@ -178,3 +178,32 @@ describe("sync", () => {
     await v.close();
   }, 60_000);
 });
+
+describe("paths from the renderer", () => {
+  it("cannot reach outside the vault", async () => {
+    const outside = mkdtempSync(join(tmpdir(), "sync-outside-"));
+    temps.push(outside);
+    writeFileSync(join(outside, "secret.md"), "NOT IN THE VAULT");
+    const v = await openVault(mine);
+
+    // `../x.md` was already refused by accident — the indexer rejects a leading dot —
+    // but a path that descends first used to sail through, and `read` returned the file,
+    // indexed it, and wrote its path into the README that gets pushed to GitHub.
+    const escape = `atlas-api/${"../".repeat(12)}${outside.slice(1)}/secret.md`;
+    await expect(v.read(escape)).rejects.toThrow(/Outside the vault/);
+    await expect(v.trash(escape)).rejects.toThrow(/Outside the vault/);
+    await expect(v.history(escape)).rejects.toThrow(/Outside the vault/);
+    await expect(
+      v.save({
+        body: "x",
+        frontmatter: { title: "x", project: "P", tags: [], source: "manual" },
+        existingPath: escape,
+        commit: false,
+      }),
+    ).rejects.toThrow(/Outside the vault/);
+
+    // And an ordinary path still works.
+    expect((await v.read("atlas-api/spec.md")).body).toContain("Original.");
+    await v.close();
+  }, 60_000);
+});

@@ -48,7 +48,10 @@ export function useTrashActions(doc: DocMeta | null, select: (path: string | nul
   const purge = useCallback(async () => {
     if (!doc || !isTrashed(doc.path)) return;
     try {
-      const { assets } = await api("trash:purge", doc.path);
+      const { removed, assets } = await api("trash:purge", doc.path);
+      // Main asks for confirmation first. Saying no has to leave everything as it was —
+      // including the selection, which used to be cleared either way.
+      if (!removed) return;
       select(null);
       await refreshTrash();
       const images = assets.length ? ` and ${plural(assets.length, "image")}` : "";

@@ -645,6 +645,31 @@ await win.click("text=Concorde >> nth=0");
 await win.waitForSelector('button:has-text("Restore")');
 await win.waitForTimeout(300);
 await win.screenshot({ path: join(out, "smoke-15-trash-view.png") });
+// Deleting forever is the one act in Vault that cannot be undone, so it asks first.
+// Stand in for the dialog: say no once, then yes, and check both answers are honoured.
+const stubDialog = (response) =>
+  app.evaluate(async ({ dialog }, r) => {
+    globalThis.__asked = [];
+    dialog.showMessageBox = async (opts) => {
+      globalThis.__asked.push(opts);
+      return { response: r };
+    };
+  }, response);
+
+await stubDialog(1); // Cancel
+await win.click('button:has-text("Delete forever")');
+await win.waitForTimeout(900);
+const declined = await app.evaluate(() => globalThis.__asked ?? []);
+if (declined.length !== 1) throw new Error("delete forever did not ask before deleting");
+if (!/Delete .Concorde. forever\?/.test(declined[0].message))
+  throw new Error("the confirmation did not name the document: " + declined[0].message);
+if (!/cannot undo/.test(declined[0].detail))
+  throw new Error("the confirmation did not say it is irreversible: " + declined[0].detail);
+if (!existsSync(join(root, "_inbox", "assets", "hero-flyin.gif")))
+  throw new Error("the document was purged even though the dialog was cancelled");
+console.log("delete forever asked, and cancelling left it alone");
+
+await stubDialog(0); // Delete forever
 await win.click('button:has-text("Delete forever")');
 // The doc's image is referenced by nothing else, so the purge takes it too.
 await win.waitForSelector("text=Deleted “Concorde” and 1 image forever", { timeout: 10000 });
@@ -653,6 +678,9 @@ if (existsSync(join(root, "_inbox", "assets", "hero-flyin.gif")))
   throw new Error("orphaned asset survived the purge");
 const purge = execSync("git log --oneline -1", { cwd: root }).toString().trim();
 if (!purge.includes("purge: Concorde")) throw new Error("purge commit not found: " + purge);
+console.log("delete forever asked first, and deleted only on yes");
+// The purge drops back to the vault, so Settings has to be reopened for the rest.
+await win.waitForSelector("text=All documents", { timeout: 10000 });
 await win.keyboard.press("Control+,");
 await win.waitForSelector("text=Back to vault");
 await win.waitForSelector('button[aria-label="capture shortcut"]');
