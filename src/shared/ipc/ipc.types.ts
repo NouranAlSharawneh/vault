@@ -19,6 +19,7 @@ import type {
   SavedView,
   ScanProgress,
   SearchHit,
+  StoredDraft,
   SyncStatus,
   TokenStatus,
   Template,
@@ -64,6 +65,11 @@ export interface IpcInvoke {
   "doc:restore": (path: string, sha: string) => SaveResult;
   "doc:diff": (path: string, sha: string) => string;
   "doc:pathPreview": (project: string, title: string) => string;
+
+  /** Unsaved editor text, parked outside the vault. `key` is a doc path, or "new". */
+  "draft:save": (key: string, draft: StoredDraft) => void;
+  "draft:load": (key: string) => StoredDraft | null;
+  "draft:clear": (key: string) => void;
 
   "trash:list": () => TrashedDoc[];
   "trash:read": (path: string) => DocContent;

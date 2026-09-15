@@ -5,10 +5,12 @@ import { api, on } from "@/lib/api";
 interface Handlers {
   onDoc: (doc: DocContent) => void;
   onDraft: (draft: EditorDraft) => void;
+  /** Bring back text left unsaved the last time this document was open. */
+  onRecover: (key: string) => void;
 }
 
 /** Opens whatever main asked for: `?path=` in the hash, or an `editor:open` event. */
-export function useEditorOpen({ onDoc, onDraft }: Handlers) {
+export function useEditorOpen({ onDoc, onDraft, onRecover }: Handlers) {
   /**
    * Kept in a ref so neither effect below depends on a callback's identity.
    *
@@ -17,9 +19,9 @@ export function useEditorOpen({ onDoc, onDraft }: Handlers) {
    * depend on them, so that click re-read the file from disk and replaced everything the
    * user had typed, with no prompt and the unsaved guard disarmed.
    */
-  const handlers = useRef<Handlers>({ onDoc, onDraft });
+  const handlers = useRef<Handlers>({ onDoc, onDraft, onRecover });
   useEffect(() => {
-    handlers.current = { onDoc, onDraft };
+    handlers.current = { onDoc, onDraft, onRecover };
   });
 
   const read = (path: string): void => {
@@ -33,6 +35,8 @@ export function useEditorOpen({ onDoc, onDraft }: Handlers) {
     const query = new URLSearchParams(window.location.hash.split("?")[1] ?? "");
     const path = query.get("path");
     if (path) read(path);
+    // A new document has no file to read, but it may still have unsaved text parked.
+    handlers.current.onRecover(path ?? "new");
   }, []);
 
   useEffect(
@@ -40,6 +44,7 @@ export function useEditorOpen({ onDoc, onDraft }: Handlers) {
       on("editor:open", (payload) => {
         if (payload.path) read(payload.path);
         else if (payload.draft) handlers.current.onDraft(payload.draft);
+        handlers.current.onRecover(payload.path ?? "new");
       }),
     [],
   );

@@ -16,6 +16,7 @@ import {
 } from "../../network/github";
 import { readClipboard } from "../../services/capture/capture.service";
 import { GitService } from "../../services/git/git.service";
+import { clearDraft, loadDraft, saveDraft } from "../../store/draft.store";
 import { getSettings, updateSettings } from "../../store/settings.store";
 import { loadCredentials, loadToken } from "../../store/token.store";
 import { getOAuthConfig } from "../../store/oauth-config";
@@ -173,6 +174,9 @@ export function registerIpcHandlers(): void {
     if (patch.hotkey) buildAppMenu(next.hotkey);
     return next;
   });
+  handle("draft:save", (key, draft) => saveDraft(key, draft));
+  handle("draft:load", (key) => loadDraft(key));
+  handle("draft:clear", (key) => clearDraft(key));
   handle("app:reset", () => resetApp());
   handle("vault:index", () => session.requireVault().index.snapshot());
   handle("vault:rescan", () => session.requireVault().index.rescan());

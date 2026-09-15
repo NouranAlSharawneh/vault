@@ -197,3 +197,6 @@ export const REBASE_MAX_STOPS = 50;
  * the same tick often enough that an exact comparison cries wolf.
  */
 export const MTIME_SLACK_MS = 1_000;
+
+/** How long the editor waits after the last keystroke before parking the draft. */
+export const DRAFT_DEBOUNCE_MS = 500;

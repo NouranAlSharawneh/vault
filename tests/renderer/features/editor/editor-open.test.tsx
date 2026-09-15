@@ -14,7 +14,7 @@ describe("useEditorOpen", () => {
     // and the config changes from inside this window when the image panel picks a folder.
     // Re-reading would replace whatever the user had typed.
     const { rerender } = renderHook(() =>
-      useEditorOpen({ onDoc: () => undefined, onDraft: () => undefined }),
+      useEditorOpen({ onDoc: () => undefined, onDraft: () => undefined, onRecover: () => undefined }),
     );
     rerender();
     rerender();
@@ -26,7 +26,7 @@ describe("useEditorOpen", () => {
   it("reads nothing when the hash names no document", () => {
     window.location.hash = "#editor";
     const { invoke } = mockVaultApi();
-    renderHook(() => useEditorOpen({ onDoc: vi.fn(), onDraft: vi.fn() }));
+    renderHook(() => useEditorOpen({ onDoc: vi.fn(), onDraft: vi.fn(), onRecover: vi.fn() }));
     expect(invoke).not.toHaveBeenCalledWith("doc:read", expect.anything());
   });
 });
