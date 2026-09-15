@@ -118,6 +118,40 @@ describe("an edit made outside Vault", () => {
   }, 60_000);
 });
 
+describe("a push and a pull at the same time", () => {
+  it("do not finish each other's rebase", async () => {
+    // Someone else has already pushed a change to the same document.
+    const other = mkdtempSync(join(tmpdir(), "sync-other-"));
+    rmSync(other, { recursive: true, force: true });
+    await simpleGit().clone(origin, other);
+    await simpleGit({ baseDir: other }).addConfig("user.name", "Other");
+    await simpleGit({ baseDir: other }).addConfig("user.email", "other@example.com");
+    temps.push(other);
+    writeFileSync(join(other, "atlas-api", "spec.md"), doc("Spec", "Written elsewhere."));
+    await simpleGit({ baseDir: other }).add(["-A"]);
+    await simpleGit({ baseDir: other }).commit("theirs");
+    await simpleGit({ baseDir: other }).push("origin", "main");
+
+    writeFileSync(join(mine, "atlas-api", "spec.md"), doc("Spec", "Written here."));
+    await simpleGit({ baseDir: mine }).add(["-A"]);
+    await simpleGit({ baseDir: mine }).commit("mine");
+
+    // open() starts a pull; saving within the next second starts a push. Before they
+    // were queued, this raced and the badge went red with "fatal: No rebase in progress?".
+    const v = await openVault(mine);
+    const status = await v.pushNow();
+
+    expect(status.lastError).toBeNull();
+    expect(status.state).toBe("synced");
+    expect(v.git.rebaseInProgress()).toBe(false);
+    const onRemote = await simpleGit({ baseDir: origin }).raw(["log", "--oneline", "main"]);
+    expect(onRemote).toContain("mine");
+    // Both versions were kept, exactly as a pull would have done on its own.
+    expect(status.conflicts).toBe(1);
+    await v.close();
+  }, 90_000);
+});
+
 describe("sync", () => {
   it("pushes work that was committed but never sent, next time the vault opens", async () => {
     const first = await openVault(mine);
