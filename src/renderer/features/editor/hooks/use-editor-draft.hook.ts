@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { errorMessage } from "@/helpers";
 import { api } from "@/lib/api";
 import { useApp } from "@/stores/app";
@@ -114,9 +114,16 @@ export function useEditorDraft() {
     );
   }, []);
 
+  /**
+   * One save at a time. ⌘↵ reaches the editor twice for one press — CodeMirror's own
+   * Mod-Enter and the menu accelerator — and both calls saw no path yet, so a new
+   * document was written out as two files. `saving` is state and lags a render behind.
+   */
+  const inFlight = useRef(false);
   const save = useCallback(
     async (mode: SaveMode, assets?: AssetImport) => {
-      if (!state.body.trim()) return null;
+      if (!state.body.trim() || inFlight.current) return null;
+      inFlight.current = true;
       setSaving(mode);
       setError(null);
       try {
@@ -152,6 +159,7 @@ export function useEditorDraft() {
 
         return null;
       } finally {
+        inFlight.current = false;
         setSaving(null);
       }
     },
