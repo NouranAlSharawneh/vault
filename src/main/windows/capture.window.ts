@@ -11,6 +11,8 @@ import { COMMON_WINDOW_OPTIONS, IS_MAC, loadRoute } from "./load-route";
 import { getMainWindow } from "./main.window";
 
 let captureWin: BrowserWindow | null = null;
+/** Dialogs opened from the sheet that are still up. While any is, losing focus is expected. */
+let dialogsOpen = 0;
 
 /** Frameless sheet that floats over whatever app is in front. Hidden, never destroyed. */
 export function getCaptureWindow(): BrowserWindow {
@@ -34,6 +36,7 @@ export function getCaptureWindow(): BrowserWindow {
   captureWin.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
   captureWin.setAlwaysOnTop(true, "floating");
   captureWin.on("blur", () => {
+    if (dialogsOpen > 0) return;
     if (captureWin?.isVisible() && !captureWin.webContents.isDevToolsOpened()) hideCaptureWindow();
   });
   captureWin.on("closed", () => (captureWin = null));
@@ -61,6 +64,23 @@ export function hideCaptureWindow(): void {
     win.webContents.send("capture:hidden", null);
     win.hide();
     if (IS_MAC && !getMainWindow() && editorWindowCount() === 0) app.hide();
+  }
+}
+
+/**
+ * Run a native dialog without the sheet hiding under it. The dialog takes focus, and the
+ * sheet hides on blur — so choosing an image folder used to throw the whole capture away.
+ * Focus goes back to the sheet afterwards if it was the one that asked.
+ */
+export async function whileCaptureDialogOpen<T>(open: () => Promise<T>): Promise<T> {
+  const win = captureWin && !captureWin.isDestroyed() ? captureWin : null;
+  const fromSheet = !!win?.isVisible() && win.isFocused();
+  dialogsOpen += 1;
+  try {
+    return await open();
+  } finally {
+    dialogsOpen -= 1;
+    if (fromSheet && win && !win.isDestroyed() && win.isVisible()) win.focus();
   }
 }
 

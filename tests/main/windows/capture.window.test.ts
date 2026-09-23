@@ -15,7 +15,9 @@ class FakeWindow extends EventEmitter {
   isVisible = () => this.visible;
   show = () => void (this.visible = true);
   hide = () => void (this.visible = false);
-  focus = vi.fn();
+  focused = false;
+  isFocused = () => this.focused;
+  focus = vi.fn(() => void (this.focused = true));
   setVisibleOnAllWorkspaces = vi.fn();
   setAlwaysOnTop = vi.fn();
   getSize = () => [720, 430];
@@ -69,6 +71,35 @@ describe("capture window", () => {
 
   it("hides when it loses focus", async () => {
     const { win } = await sheet();
+    win.emit("blur");
+    expect(win.visible).toBe(false);
+  });
+
+  it("stays up while a folder picker it opened has focus, then takes focus back", async () => {
+    const { mod, win } = await sheet();
+    win.focused = true;
+    let close: (folder: string) => void = () => undefined;
+    const picked = mod.whileCaptureDialogOpen(
+      () => new Promise<string>((resolve) => (close = resolve)),
+    );
+    // The dialog takes focus, which is exactly what used to hide the sheet under it.
+    win.focused = false;
+    win.focus.mockClear();
+    win.emit("blur");
+    expect(win.visible).toBe(true);
+    close("/Users/me/concorde");
+    await expect(picked).resolves.toBe("/Users/me/concorde");
+    expect(win.focus).toHaveBeenCalled();
+    // Once the dialog is gone, clicking away hides the sheet again as usual.
+    win.emit("blur");
+    expect(win.visible).toBe(false);
+  });
+
+  it("still lets go of the hold when the dialog fails", async () => {
+    const { mod, win } = await sheet();
+    await expect(
+      mod.whileCaptureDialogOpen(() => Promise.reject(new Error("no dialog"))),
+    ).rejects.toThrow("no dialog");
     win.emit("blur");
     expect(win.visible).toBe(false);
   });
