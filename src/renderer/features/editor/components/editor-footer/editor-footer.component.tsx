@@ -14,12 +14,13 @@ export function EditorFooter({
   onSave,
 }: EditorFooterProps) {
   return (
-    <div className="flex h-11 items-center gap-3 border-t border-line bg-paper-2 px-5 text-xs text-ink-3">
+    <div className="flex min-h-11 items-center gap-3 border-t border-line bg-paper-2 px-5 py-2 text-xs text-ink-3">
       <span className="shrink-0">saves to</span>
       <span className="truncate font-mono text-ink-2">{pathPreview}</span>
 
-      {error && <span className="ml-2 truncate text-cherry">{error}</span>}
-      <div className="ml-auto flex items-center gap-2">
+      {/* Wraps rather than truncates: why the save failed is the part you need to read. */}
+      {error && <span className="ml-2 min-w-0 wrap-break-word text-cherry">{error}</span>}
+      <div className="ml-auto flex shrink-0 items-center gap-2">
         {/* Someone else had written this file since it was opened here. Their version was
             committed before this one, so the only thing left to do is say where it went. */}
         {keptOtherVersion && !dirty && (
