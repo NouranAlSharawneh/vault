@@ -13,7 +13,7 @@ import { HistoryDrawer } from "./components/history-drawer/history-drawer.compon
 import { SidebarRail } from "./components/sidebar-rail/sidebar-rail.component";
 import { Sidebar } from "./components/sidebar/sidebar.component";
 import { TopBar } from "./components/top-bar/top-bar.component";
-import { useDocumentFilter } from "./hooks/use-document-filter.hook";
+import { reconcileSelection, useDocumentFilter } from "./hooks/use-document-filter.hook";
 import { isTrashed, useDocument } from "./hooks/use-document.hook";
 import { useMainShortcuts } from "./hooks/use-main-shortcuts.hook";
 import { useSidebarState } from "./hooks/use-sidebar-state.hook";
@@ -32,9 +32,11 @@ export function Main() {
   const dismissToast = useToast((s) => s.dismiss);
   const show = useToast((s) => s.show);
   const sidebar = useSidebarState();
-  const list = useDocumentFilter(index, trash);
-  const { showAll, filtered } = list;
   const [selected, setSelected] = useState<string | null>(null);
+  const list = useDocumentFilter(index, trash, (docs) =>
+    setSelected((s) => reconcileSelection(s, docs)),
+  );
+  const { showAll, filtered } = list;
   const [view, setView] = useState<ReaderView>("preview");
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
