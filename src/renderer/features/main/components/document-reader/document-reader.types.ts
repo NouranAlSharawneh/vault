@@ -12,4 +12,6 @@ export interface DocumentReaderProps {
   trashed?: boolean;
   onRestore: () => void;
   onPurge: () => void;
+  /** A relative link to another `.md` file in the vault was clicked. */
+  onOpenDoc?: (path: string) => void;
 }
