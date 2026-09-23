@@ -73,6 +73,24 @@ describe("useEditorOpen", () => {
     expect(invoke).not.toHaveBeenCalledWith("doc:read", expect.anything());
   });
 
+  it("fails loudly when the document can't be read, and recovers nothing over it", async () => {
+    window.location.hash = "#editor?path=atlas-api/spec.md";
+    mockVaultApi({ "doc:read": new Error("Error invoking remote method 'doc:read': ENOENT") });
+    const handlers = noop();
+    const { result } = renderHook(() => useEditorOpen(readEditorTarget(), handlers));
+    expect(result.current.status.kind).toBe("opening");
+    await waitFor(() =>
+      expect(result.current.status).toEqual({
+        kind: "failed",
+        path: "atlas-api/spec.md",
+        reason: "ENOENT",
+        retrying: false,
+      }),
+    );
+    expect(handlers.onDoc).not.toHaveBeenCalled();
+    expect(handlers.onRecover).not.toHaveBeenCalled();
+  });
+
   it.each([
     ["the file answers first", ["doc", "draft"]],
     ["the parked draft answers first", ["draft", "doc"]],
