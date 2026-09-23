@@ -16,7 +16,7 @@ export function RepoPicker({ onDone }: RepoPickerProps) {
       </p>
 
       {p.signedIn ? (
-        <>
+        <div role="radiogroup" aria-label="Vault repository">
           <Option
             selected={p.choice === "new"}
             onClick={() => p.setChoice("new")}
@@ -62,6 +62,8 @@ export function RepoPicker({ onDone }: RepoPickerProps) {
               <ListRow
                 key={r.fullName}
                 kind="option"
+                role="radio"
+                aria-checked={p.choice === r.fullName}
                 selected={p.choice === r.fullName}
                 onClick={() => p.setChoice(r.fullName)}
               >
@@ -80,7 +82,7 @@ export function RepoPicker({ onDone }: RepoPickerProps) {
               </ListRow>
             ))}
           </div>
-        </>
+        </div>
       ) : (
         <div className="mt-4 rounded-md border border-line bg-paper-2 p-3 text-sm text-ink-2">
           Not signed in — the vault will be a local git repository. You can connect GitHub any time
