@@ -28,6 +28,7 @@ import {
   openMainWindow,
   resizeCaptureWindow,
   revealDoc,
+  whileCaptureDialogOpen,
 } from "../../windows";
 import { registerHotkey } from "../hotkey/hotkey";
 import { buildAppMenu } from "../menu/menu";
@@ -233,12 +234,15 @@ export function registerIpcHandlers(): void {
     resolveAssets(baseDir, refs, Object.values(getSettings().vault?.assetDirs ?? {})),
   );
   // From the capture sheet this stays parentless: `dialogParent` will not hang a sheet off it.
+  // The hold keeps the sheet from hiding as the dialog takes its focus.
   handleFrom("assets:chooseFolder", (sender, defaultPath) =>
-    chooseFolder(sender, {
-      title: "Where are these images relative to?",
-      properties: ["openDirectory"],
-      defaultPath: defaultPath ?? join(homedir(), "Documents"),
-    }),
+    whileCaptureDialogOpen(() =>
+      chooseFolder(sender, {
+        title: "Where are these images relative to?",
+        properties: ["openDirectory"],
+        defaultPath: defaultPath ?? join(homedir(), "Documents"),
+      }),
+    ),
   );
   handle("capture:readClipboard", () => readClipboard());
   handle("capture:hide", () => hideCaptureWindow());
