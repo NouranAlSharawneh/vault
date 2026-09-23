@@ -6,7 +6,7 @@ import { fire } from "@/lib/api";
 import { useRepoPicker } from "./hooks/use-repo-picker.hook";
 import type { RepoPickerProps } from "./repo-picker.types";
 
-export function RepoPicker({ onDone }: RepoPickerProps) {
+export function RepoPicker({ onDone, onBack }: RepoPickerProps) {
   const p = useRepoPicker(onDone);
 
   return (
@@ -115,7 +115,10 @@ export function RepoPicker({ onDone }: RepoPickerProps) {
         </Button>
       </div>
       {p.submitError && <div className="mt-3 text-xs text-cherry">{p.submitError}</div>}
-      <div className="mt-5 flex justify-end">
+      <div className="mt-5 flex items-center justify-between">
+        <Button variant="subtle" onClick={onBack}>
+          Back
+        </Button>
         <Button
           variant="primary"
           loading={p.busy}
