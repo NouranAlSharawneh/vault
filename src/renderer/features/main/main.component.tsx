@@ -59,6 +59,21 @@ export function Main() {
     [showAll, filtered, show],
   );
 
+  // A relative `.md` link in the reader. Checked against the index so a broken link says so
+  // instead of blanking the reader; from Trash, back to All documents, where live docs are.
+  const openLinkedDoc = useCallback(
+    (path: string) => {
+      if (!index?.docs.some((d) => d.path === path)) {
+        show("That link points to a document that isn’t in the vault");
+
+        return;
+      }
+      if (inTrash) showAll();
+      setSelected(path);
+    },
+    [index, inTrash, showAll, show],
+  );
+
   const openPalette = useCallback(() => setPaletteOpen(true), []);
   // History is about one document, so it is meaningless with nothing selected.
   const toggleHistory = useCallback(() => setHistoryOpen((open) => !open), []);
@@ -155,6 +170,7 @@ export function Main() {
             trashed={isTrashed(doc?.meta.path ?? null)}
             onRestore={() => fire(trashActions.restore())}
             onPurge={() => fire(trashActions.purge())}
+            onOpenDoc={openLinkedDoc}
           />
         }
       />

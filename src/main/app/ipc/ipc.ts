@@ -52,7 +52,9 @@ export function registerIpcHandlers(): void {
   handle("app:version", () => app.getVersion());
   handle("app:platform", () => process.platform);
   handle("app:openExternal", (url) => {
-    if (/^https?:\/\//.test(url)) fire(shell.openExternal(url), "opening a link");
+    // Web pages and mail drafts only: anything else (file:, custom schemes) could launch
+    // an arbitrary app from a link in a pasted document.
+    if (/^(?:https?:\/\/|mailto:)/i.test(url)) fire(shell.openExternal(url), "opening a link");
   });
 
   // ---- auth

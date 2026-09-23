@@ -27,6 +27,7 @@ export function DocumentReader({
   trashed,
   onRestore,
   onPurge,
+  onOpenDoc,
 }: DocumentReaderProps) {
   const meta = doc?.meta ?? null;
 
@@ -75,7 +76,7 @@ export function DocumentReader({
               }
               right={
                 <div className="min-h-0 flex-1 overflow-y-auto px-12 py-4 pb-16">
-                  <Markdown source={doc.body} docPath={meta.path} />
+                  <Markdown source={doc.body} docPath={meta.path} onOpenDoc={onOpenDoc} />
                 </div>
               }
             />
@@ -85,7 +86,7 @@ export function DocumentReader({
                 {view === "markdown" ? (
                   <Raw body={doc.body} />
                 ) : (
-                  <Markdown source={doc.body} docPath={meta.path} />
+                  <Markdown source={doc.body} docPath={meta.path} onOpenDoc={onOpenDoc} />
                 )}
               </article>
             </div>
