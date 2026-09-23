@@ -74,6 +74,7 @@ export const EVENT_CHANNELS = [
   "auth:deviceStatus",
   "auth:webStatus",
   "capture:shown",
+  "capture:hidden",
   "editor:open",
   "doc:reveal",
   "shortcut",

@@ -11,12 +11,15 @@ import { useCaptureKeys } from "./hooks/use-capture-keys.hook";
 import { useCapture } from "./hooks/use-capture.hook";
 import { useFitWindow } from "./hooks/use-fit-window.hook";
 
-/** ⌃⌥V sheet: clipboard → two tabs → ⌘↵. The main window never opens. */
+/**
+ * ⌃⌥V sheet: clipboard → two tabs → ⌘↵, and you are back in the app you copied from.
+ * The main window opens only when asked for, with ⌥⌘↵.
+ */
 export function Capture() {
   const c = useCapture();
   const fit = useFitWindow<HTMLDivElement>();
   useCaptureKeys({
-    onSave: () => fire(c.save()),
+    onSave: (reveal) => fire(c.save(reveal)),
     onOpenEditor: c.openInEditor,
     onHide: c.hide,
   });
@@ -62,7 +65,7 @@ export function Capture() {
               hasRemote={c.hasRemote}
               stranded={c.assets.stranded}
               onOpenEditor={c.openInEditor}
-              onSave={() => fire(c.save())}
+              onSave={(reveal) => fire(c.save(reveal))}
               onRetry={c.retry}
             />
           </div>
