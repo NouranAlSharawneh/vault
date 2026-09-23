@@ -1,5 +1,6 @@
 import { ArrowRight, FolderOpen, Plus, Search } from "lucide-react";
 import { Button, Card, ListRow, Option, SectionLabel, Spinner } from "@/components/ui";
+import { REPO_LIST_LIMIT } from "@/constants";
 import { cx } from "@/helpers";
 import { fire } from "@/lib/api";
 import { useRepoPicker } from "./hooks/use-repo-picker.hook";
@@ -92,6 +93,11 @@ export function RepoPicker({ onDone }: RepoPickerProps) {
               </ListRow>
             ))}
           </div>
+          {p.matchCount > REPO_LIST_LIMIT && (
+            <div className="mt-1.5 text-xs text-ink-4">
+              Showing {REPO_LIST_LIMIT} of {p.matchCount.toLocaleString()} — type to filter.
+            </div>
+          )}
         </div>
       ) : (
         <div className="mt-4 rounded-md border border-line bg-paper-2 p-3 text-sm text-ink-2">
