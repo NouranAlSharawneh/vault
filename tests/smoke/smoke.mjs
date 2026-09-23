@@ -63,7 +63,9 @@ sh(
 );
 const out = process.env.SMOKE_OUT ?? "/tmp";
 const app = await electron.launch({
-  args: ["."],
+  // HOME alone isn't enough on macOS: Electron still resolves userData to the real
+  // ~/Library/Application Support/Vault, and the run would drive the owner's own vault.
+  args: [".", `--user-data-dir=${join(home, "userdata")}`],
   env: {
     ...process.env,
     HOME: home,
@@ -437,6 +439,18 @@ await win.keyboard.type("rate limit");
 await win.waitForSelector("text=Documents", { timeout: 5000 });
 await win.waitForTimeout(300);
 await win.screenshot({ path: join(out, "smoke-8-palette.png") });
+// The input and the window listener both see every key; one press must act once.
+const paletteCursor = () =>
+  win.$$eval('[role="dialog"] button[aria-selected]', (rows) =>
+    rows.findIndex((r) => r.getAttribute("aria-selected") === "true"),
+  );
+if ((await paletteCursor()) !== 0) throw new Error("palette did not start on the first row");
+await win.keyboard.press("ArrowDown");
+if ((await paletteCursor()) !== 1)
+  throw new Error(`one ArrowDown moved the palette to row ${await paletteCursor()}, not 1`);
+await win.keyboard.press("ArrowUp");
+if ((await paletteCursor()) !== 0) throw new Error("one ArrowUp did not return to the first row");
+console.log("palette: one keypress moved one row");
 await win.keyboard.press("Enter");
 await win.waitForSelector("text=Rate limiting at the edge");
 await win.click('button[aria-label="toggle sidebar"]');
@@ -559,12 +573,13 @@ if (sheetFits.win - sheetFits.panel > 40)
 console.log("capture sheet fits its content:", JSON.stringify(sheetFits));
 await sheet.waitForTimeout(400);
 await sheet.screenshot({ path: join(out, "smoke-11-capture.png") });
-await sheet.keyboard.press("Control+Enter");
+// ⌥⌘↵ (Alt+Ctrl here): save, then open the new doc in Vault. A plain ⌘↵ leaves Vault shut.
+await sheet.keyboard.press("Control+Alt+Enter");
 await sheet.waitForSelector("text=committed", { timeout: 15000 });
 await sheet.screenshot({ path: join(out, "smoke-12-capture-saved.png") });
 const log2 = execSync("git log --oneline -1", { cwd: root }).toString().trim();
 console.log("capture commit:", log2);
-// The sheet hands the new doc straight to the main window.
+// Asked to, the sheet hands the new doc straight to the main window.
 await win.waitForSelector("text=_inbox/edge-pop-inventory.md", { timeout: 10000 });
 await win.waitForTimeout(300);
 await win.screenshot({ path: join(out, "smoke-12b-capture-opened.png") });

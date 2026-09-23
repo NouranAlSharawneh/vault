@@ -9,6 +9,7 @@ export interface CaptureFooterProps {
   /** Referenced images that won't be copied, so the save leaves broken links. */
   stranded: number;
   onOpenEditor: () => void;
-  onSave: () => void;
+  /** `reveal`: also open the saved doc in Vault (⌥⌘↵, or ⌥-click). */
+  onSave: (reveal: boolean) => void;
   onRetry: () => void;
 }
