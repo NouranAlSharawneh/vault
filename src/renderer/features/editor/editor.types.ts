@@ -1,4 +1,4 @@
-import type { DocMeta, EditorDraft, Source } from "@shared/types";
+import type { DocMeta, Source } from "@shared/types";
 
 /** Everything the metadata bar edits. */
 export interface DraftMeta {
@@ -31,10 +31,17 @@ export interface EditorShortcutHandlers {
   onEscape: () => void;
 }
 
-export interface EditorOpenPayload {
-  path?: string;
-  draft?: EditorDraft;
-}
+/**
+ * What main opened this window on, read from its hash (so it survives a reload): a
+ * document, or a new one with the key its unsaved text is parked under.
+ */
+export type EditorTarget = { path: string; draftKey: null } | { path: null; draftKey: string };
+
+/** Where opening the window got to. Nothing can be saved until it is `ready`. */
+export type OpenStatus =
+  | { kind: "opening" }
+  | { kind: "ready" }
+  | { kind: "failed"; path: string; reason: string; retrying: boolean };
 
 export const emptyMeta = (source: Source): DraftMeta => ({
   title: "",

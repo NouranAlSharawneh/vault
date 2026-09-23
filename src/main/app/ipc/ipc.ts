@@ -28,6 +28,8 @@ import {
   openMainWindow,
   resizeCaptureWindow,
   revealDoc,
+  setEditorPath,
+  takeEditorSeed,
   whileCaptureDialogOpen,
 } from "../../windows";
 import { registerHotkey } from "../hotkey/hotkey";
@@ -258,8 +260,7 @@ export function registerIpcHandlers(): void {
   handle("capture:resize", (height) => resizeCaptureWindow(height));
   handle("capture:openEditor", (draft) => {
     hideCaptureWindow("handoff");
-    const win = openEditorWindow();
-    win.webContents.once("did-finish-load", () => win.webContents.send("editor:open", { draft }));
+    openEditorWindow({ draft });
   });
 
   // ---- windows
@@ -268,11 +269,8 @@ export function registerIpcHandlers(): void {
   handleFrom("window:setEdited", (sender, edited) => {
     if (IS_MAC) sender?.setDocumentEdited(edited);
   });
-  handle("window:openEditor", (p) => {
-    const win = openEditorWindow(p ? `?path=${encodeURIComponent(p)}` : "");
-    if (p)
-      win.webContents.once("did-finish-load", () =>
-        win.webContents.send("editor:open", { path: p }),
-      );
-  });
+  // The path travels in the window's hash, which is there before anything has loaded.
+  handle("window:openEditor", (p) => void openEditorWindow(p ? { path: p } : {}));
+  handleFrom("editor:seed", (sender) => takeEditorSeed(sender));
+  handleFrom("editor:setPath", (sender, p) => setEditorPath(sender, p));
 }
