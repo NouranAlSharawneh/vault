@@ -1,4 +1,4 @@
-import type { DocMeta, EditorDraft, Source } from "@shared/types";
+import type { DocMeta, Source } from "@shared/types";
 
 /** Everything the metadata bar edits. */
 export interface DraftMeta {
@@ -31,9 +31,10 @@ export interface EditorShortcutHandlers {
   onEscape: () => void;
 }
 
-export interface EditorOpenPayload {
-  path?: string;
-  draft?: EditorDraft;
+/** What main opened this window on, read from its hash (so it survives a reload). */
+export interface EditorTarget {
+  /** The document to open, or null for a new one. */
+  path: string | null;
 }
 
 export const emptyMeta = (source: Source): DraftMeta => ({
