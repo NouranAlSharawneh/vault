@@ -70,11 +70,48 @@ describe("a push that fails", () => {
     expect(sync.status().state).toBe("error");
   });
 
-  it("asks the same question when the repo is readable but not writable", async () => {
+  it("does not ask about the token when the repo is readable but not writable", async () => {
+    // The token passes that check, and the session answered by pushing again — which
+    // failed again and asked again, in a loop that never ended.
     const { sync, said } = engine(boom("remote: Permission to nunu/vault.git denied to nunu"));
     await sync.pushNow();
 
-    expect(said("auth-suspect")).toBe(true);
+    expect(said("auth-suspect")).toBe(false);
+  });
+
+  it("says on the status that the repo is read-only, and does not retry it", async () => {
+    // The token is fine here, so the session's check comes back clean and no sign-in
+    // banner appears: the status is the only place this can be told.
+    const { sync, git } = engine(boom("remote: Permission to nunu/vault.git denied to nunu"));
+    await sync.pushNow();
+    await vi.advanceTimersByTimeAsync(PUSH_RETRY_MAX_MS * 2);
+
+    expect(sync.status().failure).toBe("no-permission");
+    expect(git.push).toHaveBeenCalledTimes(1);
+  });
+
+  it("names the failure for a dead token and for a dead connection too", async () => {
+    const auth = engine(boom("fatal: Authentication failed for 'https://github.com'"));
+    await auth.sync.pushNow();
+    expect(auth.sync.status().failure).toBe("bad-credentials");
+
+    const offline = engine(boom("fatal: unable to access 'x': Could not resolve host"));
+    await offline.sync.pushNow();
+    expect(offline.sync.status().failure).toBe("offline");
+  });
+
+  it("forgets the failure once a push lands", async () => {
+    let denied = true;
+    const { sync } = engine(() =>
+      denied ? new Error("remote: Write access to repository not granted.") : null,
+    );
+    await sync.pushNow();
+    expect(sync.status().failure).toBe("no-permission");
+
+    denied = false;
+    await sync.pushNow();
+    expect(sync.status().failure).toBeNull();
+    expect(sync.status().state).toBe("synced");
   });
 
   it("does not schedule a retry for a credential problem — retrying cannot fix it", async () => {

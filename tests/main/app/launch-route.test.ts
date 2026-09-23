@@ -5,12 +5,13 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const state = vi.hoisted(() => ({
   onboarded: true,
   vault: {} as object | null,
+  configured: {} as object | null,
   mainWindow: null as object | null,
 }));
 const openMainWindow = vi.hoisted(() => vi.fn());
 
 vi.mock("@main/store/settings.store", () => ({
-  getSettings: () => ({ onboarded: state.onboarded }),
+  getSettings: () => ({ onboarded: state.onboarded, vault: state.configured }),
 }));
 vi.mock("@main/app/session/session", () => ({
   session: {
@@ -29,6 +30,7 @@ import { launchRoute, showMainWindow } from "@main/app/session/launch-route";
 beforeEach(() => {
   state.onboarded = true;
   state.vault = {};
+  state.configured = {};
   state.mainWindow = null;
   openMainWindow.mockClear();
 });
@@ -43,8 +45,15 @@ describe("launchRoute", () => {
     expect(launchRoute()).toBe("onboarding");
   });
 
-  it("is onboarding when the vault could not be opened", () => {
+  it("is Main when a vault is set up but would not open, which says why there", () => {
+    // Onboarding would ask to set up from scratch, as if the vault had never existed.
     state.vault = null;
+    expect(launchRoute()).toBe("main");
+  });
+
+  it("is onboarding when no vault has been set up", () => {
+    state.vault = null;
+    state.configured = null;
     expect(launchRoute()).toBe("onboarding");
   });
 });

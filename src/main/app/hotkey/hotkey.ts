@@ -1,4 +1,5 @@
 import { globalShortcut } from "electron";
+import type { HotkeyStatus } from "@shared/types";
 import { fire } from "../../lib/fire";
 import { readClipboard } from "../../services/capture/capture.service";
 import {
@@ -28,17 +29,27 @@ export function toggleCapture(): void {
   );
 }
 
+/**
+ * What the last registration came to. Launch and setup used to drop the answer, so a
+ * shortcut another app already held simply did nothing, with nobody told why.
+ */
+let status: HotkeyStatus = { accelerator: null, active: false };
+
+export function hotkeyStatus(): HotkeyStatus {
+  return status;
+}
+
 /** Bind the capture shortcut. False when the OS refused it (taken by another app, or invalid). */
 export function registerHotkey(accelerator: string): boolean {
   globalShortcut.unregisterAll();
+  let ok = false;
   try {
-    const ok = globalShortcut.register(accelerator, toggleCapture);
+    ok = globalShortcut.register(accelerator, toggleCapture);
     if (!ok) console.warn("Hotkey unavailable:", accelerator);
-
-    return ok;
   } catch (e) {
     console.warn("Hotkey failed", e);
-
-    return false;
   }
+  status = { accelerator, active: ok };
+
+  return ok;
 }

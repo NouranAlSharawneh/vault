@@ -1,6 +1,6 @@
 import { act, renderHook } from "@testing-library/react";
 // @vitest-environment jsdom
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { useSettings } from "@/features/settings/hooks/use-settings.hook";
 import { useApp } from "@/stores/app";
 import { useToast } from "@/stores/toast";
@@ -75,5 +75,21 @@ describe("useSettings", () => {
     expect(invoke).not.toHaveBeenCalledWith("trash:list");
     expect(useToast.getState().toasts).toEqual([]);
     expect(result.current.busy).toBeNull();
+  });
+
+  it("says when the shortcut on screen isn't bound because another app holds it", async () => {
+    mockVaultApi({ "hotkey:status": { accelerator: "Control+Alt+V", active: false } });
+    useApp.setState({ config });
+    const { result } = renderHook(() => useSettings());
+    await vi.waitFor(() => expect(result.current.hotkeyTaken).toBe(true));
+  });
+
+  it("does not call a shortcut taken when it was simply never registered", async () => {
+    // No vault open at launch, so nothing asked for it: that is not another app's doing.
+    const { invoke } = mockVaultApi({ "hotkey:status": { accelerator: null, active: false } });
+    useApp.setState({ config });
+    const { result } = renderHook(() => useSettings());
+    await vi.waitFor(() => expect(invoke).toHaveBeenCalledWith("hotkey:status"));
+    expect(result.current.hotkeyTaken).toBe(false);
   });
 });

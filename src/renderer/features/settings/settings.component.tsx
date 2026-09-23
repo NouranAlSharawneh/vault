@@ -41,6 +41,10 @@ export function Settings() {
               description={
                 s.error ? (
                   <span className="text-cherry">{s.error}</span>
+                ) : s.hotkeyTaken ? (
+                  <span className="text-cherry">
+                    Not active — another app is using this shortcut.
+                  </span>
                 ) : (
                   "Works from any app. Click, then press the combination you want."
                 )

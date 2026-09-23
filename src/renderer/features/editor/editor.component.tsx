@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { AssetPanel, useAssetPlan } from "@/components/asset-panel";
 import { AuthExpiredBanner } from "@/components/auth-expired-banner/auth-expired-banner.component";
 import { Markdown } from "@/components/markdown";
+import { NoWriteAccessBanner } from "@/components/no-write-access-banner/no-write-access-banner.component";
 import { SyncBadge } from "@/components/sync-badge/sync-badge.component";
 import { SectionLabel, SplitPane } from "@/components/ui";
 import { EDITOR_LEAVE_HINT, EDITOR_PLACEHOLDER } from "@/data/editor.data";
@@ -95,6 +96,7 @@ export function Editor() {
         </div>
       </div>
       <AuthExpiredBanner />
+      <NoWriteAccessBanner />
       {opened.status.kind === "failed" ? (
         <OpenFailed
           path={opened.status.path}
