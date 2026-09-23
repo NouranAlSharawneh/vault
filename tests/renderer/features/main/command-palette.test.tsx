@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 // @vitest-environment jsdom
 import { describe, expect, it, vi } from "vitest";
@@ -111,6 +111,70 @@ describe("CommandPalette", () => {
     render(<CommandPalette onClose={onClose} onOpenDoc={() => undefined} />);
     await userEvent.click(screen.getByText("Rescan vault folder"));
     expect(invoke).toHaveBeenCalledWith("vault:rescan");
+    expect(onClose).toHaveBeenCalled();
+  });
+
+  // The input and a window listener both handle the keys; React's root delegation meant
+  // one keypress reached both, so every key used to act twice.
+  const selectedRow = (container: HTMLElement) =>
+    container.querySelector('[aria-selected="true"]')?.textContent ?? "";
+
+  it("Enter runs the chosen action exactly once", async () => {
+    const onTrash = vi.fn();
+    const onClose = vi.fn();
+    mockVaultApi({ "search:query": () => [] });
+    setIndex();
+    render(<CommandPalette onClose={onClose} onOpenDoc={() => undefined} onTrashDoc={onTrash} />);
+    await userEvent.type(screen.getByLabelText("search"), "trash");
+    await userEvent.keyboard("{Enter}");
+    expect(onTrash).toHaveBeenCalledTimes(1);
+  });
+
+  it("Enter opens the highlighted doc exactly once", async () => {
+    const onOpen = vi.fn();
+    mockVaultApi();
+    setIndex();
+    render(<CommandPalette onClose={() => undefined} onOpenDoc={onOpen} />);
+    await userEvent.keyboard("{Enter}");
+    expect(onOpen).toHaveBeenCalledTimes(1);
+    expect(onOpen).toHaveBeenCalledWith("a");
+  });
+
+  it("ArrowDown moves the highlight exactly one row", async () => {
+    mockVaultApi();
+    setIndex();
+    const { container } = render(
+      <CommandPalette onClose={() => undefined} onOpenDoc={() => undefined} />,
+    );
+    expect(selectedRow(container)).toContain("Rate limiting at the edge");
+    await userEvent.keyboard("{ArrowDown}");
+    expect(selectedRow(container)).toContain("Weekly sync");
+    await userEvent.keyboard("{ArrowUp}");
+    expect(selectedRow(container)).toContain("Rate limiting at the edge");
+  });
+
+  it("keys still work, once each, after clicking the preview blurs the input", async () => {
+    const onOpen = vi.fn();
+    mockVaultApi();
+    setIndex();
+    const { container } = render(<CommandPalette onClose={() => undefined} onOpenDoc={onOpen} />);
+    await userEvent.click(screen.getByText("excerpt"));
+    // jsdom keeps focus on a click into plain text; a browser drops it to the body.
+    act(() => screen.getByLabelText("search").blur());
+    expect(document.activeElement).toBe(document.body);
+    await userEvent.keyboard("{ArrowDown}");
+    expect(selectedRow(container)).toContain("Weekly sync");
+    await userEvent.keyboard("{Enter}");
+    expect(onOpen).toHaveBeenCalledTimes(1);
+    expect(onOpen).toHaveBeenCalledWith("b");
+  });
+
+  it("Escape still closes the palette", async () => {
+    const onClose = vi.fn();
+    mockVaultApi();
+    setIndex();
+    render(<CommandPalette onClose={onClose} onOpenDoc={() => undefined} />);
+    await userEvent.keyboard("{Escape}");
     expect(onClose).toHaveBeenCalled();
   });
 });

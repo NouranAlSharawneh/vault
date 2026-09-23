@@ -434,6 +434,18 @@ await win.keyboard.type("rate limit");
 await win.waitForSelector("text=Documents", { timeout: 5000 });
 await win.waitForTimeout(300);
 await win.screenshot({ path: join(out, "smoke-8-palette.png") });
+// The input and the window listener both see every key; one press must act once.
+const paletteCursor = () =>
+  win.$$eval('[role="dialog"] button[aria-selected]', (rows) =>
+    rows.findIndex((r) => r.getAttribute("aria-selected") === "true"),
+  );
+if ((await paletteCursor()) !== 0) throw new Error("palette did not start on the first row");
+await win.keyboard.press("ArrowDown");
+if ((await paletteCursor()) !== 1)
+  throw new Error(`one ArrowDown moved the palette to row ${await paletteCursor()}, not 1`);
+await win.keyboard.press("ArrowUp");
+if ((await paletteCursor()) !== 0) throw new Error("one ArrowUp did not return to the first row");
+console.log("palette: one keypress moved one row");
 await win.keyboard.press("Enter");
 await win.waitForSelector("text=Rate limiting at the edge");
 await win.click('button[aria-label="toggle sidebar"]');

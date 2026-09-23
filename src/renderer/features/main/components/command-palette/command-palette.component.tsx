@@ -49,6 +49,9 @@ export function CommandPalette({
   // went keyboard-dead with no way to close it but the mouse.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
+      // With the input focused, its own onKeyDown has already handled the key and prevented
+      // default on the way up — handling it again moved two rows and ran Enter twice.
+      if (e.defaultPrevented) return;
       if (e.key === "ArrowDown" || e.key === "ArrowUp" || e.key === "Enter") {
         p.onKeyDown(e);
         input.current?.focus();
