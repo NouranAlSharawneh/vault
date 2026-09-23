@@ -1,15 +1,21 @@
 import { useCallback } from "react";
-import { FAILURE_PRESENTATION, SYNC_PRESENTATION, type SyncPresentation } from "@/data/sync.data";
+import {
+  FAILURE_PRESENTATION,
+  SYNC_PRESENTATION,
+  type SyncPresentation,
+  UNKNOWN_PRESENTATION,
+} from "@/data/sync.data";
 import { api } from "@/lib/api";
 import { useApp } from "@/stores/app";
 import type { SyncStatus } from "@shared/types";
 
 /** The failure's own wording when it has one; the state's otherwise. */
 function present(sync: SyncStatus | null): { p: SyncPresentation; explained: boolean } {
-  const state = sync?.state ?? "synced";
+  if (!sync) return { p: UNKNOWN_PRESENTATION, explained: false };
+  const state = sync.state;
   // Only an error is explained by its failure; a retry in flight still reads "pushing…".
   const explained =
-    state === "error" && sync?.failure ? FAILURE_PRESENTATION[sync.failure] : undefined;
+    state === "error" && sync.failure ? FAILURE_PRESENTATION[sync.failure] : undefined;
 
   return { p: explained ?? SYNC_PRESENTATION[state], explained: !!explained };
 }
@@ -19,7 +25,8 @@ export function useSync() {
   const sync = useApp((s) => s.sync);
   const config = useApp((s) => s.config);
   const pushNow = useCallback(() => api("sync:pushNow").catch(() => undefined), []);
-  const state = sync?.state ?? "synced";
+  // Null is "not known yet": nothing to push and nothing to claim.
+  const state = sync?.state ?? null;
   const { p, explained } = present(sync);
 
   return {

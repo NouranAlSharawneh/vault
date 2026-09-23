@@ -154,9 +154,18 @@ export function registerIpcHandlers(): void {
   handle("app:reset", () => resetApp());
   handle("vault:index", () => session.requireVault().index.snapshot());
   handle("vault:rescan", () => session.requireVault().index.rescan());
-  handle("vault:revealInFinder", (p) =>
-    shell.showItemInFolder(join(session.requireVault().root, p ?? "")),
-  );
+  handle("vault:revealInFinder", (p) => {
+    // The folder is worth showing most when the vault inside it would not open.
+    const root = session.vault?.root ?? getSettings().vault?.root;
+    if (!root) throw new Error("No vault is set up");
+    shell.showItemInFolder(join(root, p ?? ""));
+  });
+  handle("vault:reopen", async () => {
+    const vault = await session.reopenVault();
+    registerHotkey(vault.config.hotkey);
+
+    return vault.index.snapshot();
+  });
 
   // ---- docs
   handle("doc:read", (p) => session.requireVault().read(p));

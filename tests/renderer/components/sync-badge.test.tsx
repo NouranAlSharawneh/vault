@@ -48,6 +48,17 @@ describe("SyncBadge", () => {
     expect(screen.getByText(label)).toBeTruthy();
   });
 
+  it("says it is checking, not that everything is pushed, before it knows", async () => {
+    const { invoke } = mockVaultApi();
+    useApp.setState({ config, sync: null });
+    render(<SyncBadge />);
+    expect(screen.getByText("checking…")).toBeTruthy();
+    expect(screen.queryByText("pushed")).toBeNull();
+    // Nothing is known to be waiting, so there is nothing to push either.
+    await userEvent.click(screen.getByRole("button"));
+    expect(invoke).not.toHaveBeenCalledWith("sync:pushNow");
+  });
+
   it("says a read-only repo is a missing permission, not something a retry fixes", () => {
     mockVaultApi();
     useApp.setState({
