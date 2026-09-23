@@ -12,7 +12,7 @@ const KIND_CLASS = {
 
 const SELECTED_CLASS = {
   nav: ["bg-paper-3 font-medium", "hover:bg-paper-3"],
-  item: ["bg-paper-2", "hover:bg-paper-2/60"],
+  item: ["bg-paper-2", "hover:bg-paper-2"],
   option: ["bg-cherry-tint", "hover:bg-paper-2"],
   menu: ["bg-cherry-tint text-cherry-2", "hover:bg-paper-2"],
   palette: ["bg-cherry/25 text-overlay-ink", "hover:bg-overlay-2"],

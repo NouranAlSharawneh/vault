@@ -50,4 +50,12 @@ describe("ListRow", () => {
     );
     expect(screen.getByRole("button", { name: "repo", pressed: true })).toBeTruthy();
   });
+
+  it("hovers a list row in a fill you can see", () => {
+    // paper-2 at 60% over paper measured about 1.03:1 — a hover that wasn't there.
+    render(<ListRow kind="item">doc</ListRow>);
+    const cls = screen.getByRole("button", { name: "doc" }).className;
+    expect(cls).toContain("hover:bg-paper-2");
+    expect(cls).not.toMatch(/hover:bg-paper-2\//);
+  });
 });
