@@ -25,4 +25,14 @@ describe("Toasts", () => {
     await userEvent.click(screen.getAllByRole("button", { name: "dismiss" })[0]);
     expect(onDismiss).toHaveBeenCalledWith(1);
   });
+
+  it("clamps a long message to three lines and keeps the rest in its title", () => {
+    const message = `Couldn’t push: ${"the remote refused the update because ".repeat(8)}`.trim();
+    const toast = { id: 1, message };
+    render(<Toasts toasts={[toast]} announced={toast} onDismiss={vi.fn()} />);
+    const shown = screen.getByTitle(message);
+    expect(shown.textContent).toBe(message);
+    expect(shown.className).toContain("line-clamp-3");
+    expect(shown.className).not.toContain("truncate");
+  });
 });
