@@ -18,4 +18,11 @@ describe("MarkdownEditor", () => {
     const { container } = mount();
     expect(container.querySelector(".cm-activeLine")).toBeNull();
   });
+
+  it("spell-checks the prose but leaves autocorrect and capitals to the writer", () => {
+    const { content } = mount();
+    expect(content.getAttribute("spellcheck")).toBe("true");
+    expect(content.getAttribute("autocorrect")).toBe("off");
+    expect(content.getAttribute("autocapitalize")).toBe("off");
+  });
 });
