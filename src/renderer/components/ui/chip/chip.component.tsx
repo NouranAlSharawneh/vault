@@ -9,6 +9,7 @@ export function Chip({
   selected,
   onClick,
   onRemove,
+  removeLabel = "Remove",
   title,
   className,
 }: ChipProps) {
@@ -30,7 +31,7 @@ export function Chip({
             e.stopPropagation();
             onRemove();
           }}
-          aria-label="remove"
+          aria-label={removeLabel}
         >
           <X size={10} />
         </button>

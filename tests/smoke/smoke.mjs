@@ -122,9 +122,9 @@ await editor.click(".cm-content");
 await editor.keyboard.type(
   "# Rate limiting at the edge\n\nWe currently rate-limit inside the application layer.\n\n```mermaid\nflowchart LR\n  A[Client] --> B[Edge POP]\n```\n",
 );
-await editor.fill('input[aria-label="project"]', "Atlas API");
+await editor.fill('input[aria-label="Project"]', "Atlas API");
 await editor.keyboard.press("Escape");
-await editor.fill('input[aria-label="tags"]', "spec");
+await editor.fill('input[aria-label="Tags"]', "spec");
 await editor.keyboard.press("Enter");
 await editor.waitForSelector("text=atlas-api/rate-limiting-at-the-edge.md");
 await editor.waitForSelector(".mermaid-block svg", { timeout: 20000 });
@@ -159,7 +159,7 @@ if (blank.isClosed()) throw new Error("Escape inside the editor closed the windo
 if (await blank.evaluate(() => !!document.activeElement?.closest(".cm-editor")))
   throw new Error("Escape then Tab did not move focus out of the editor");
 console.log("Escape then Tab leaves the markdown editor");
-await blank.focus('input[aria-label="title"]');
+await blank.focus('input[aria-label="Title"]');
 // Escape from a field closes the window, which can tear the page down while `press` is still in
 // flight — so the press rejecting here means it worked. The close event is the result.
 await Promise.all([

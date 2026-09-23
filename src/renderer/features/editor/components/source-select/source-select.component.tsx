@@ -24,7 +24,7 @@ export function SourceSelect({ value, onChange, dark, hint }: SourceSelectProps)
         )}
         value={value}
         onChange={(e) => onChange(toSource(e.target.value))}
-        aria-label="source"
+        aria-label="From"
       >
         {SOURCE_OPTIONS.map((o) => (
           <option key={o.value} value={o.value}>

@@ -23,7 +23,7 @@ export function MetadataBar({
             value={meta.title}
             placeholder={inferredTitle || "Untitled"}
             onChange={(e) => onChange({ title: e.target.value })}
-            aria-label="title"
+            aria-label="Title"
           />
           {!meta.title && inferredTitle && (
             <span className="pointer-events-none absolute top-2 right-2.5 text-2xs text-ink-4">
