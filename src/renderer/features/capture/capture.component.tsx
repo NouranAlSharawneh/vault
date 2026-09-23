@@ -1,8 +1,9 @@
 import { ArrowDownToLine } from "lucide-react";
+import { useEffect } from "react";
 import { AssetPanel } from "@/components/asset-panel";
 import { Kbd } from "@/components/ui";
 import { plural } from "@/helpers";
-import { fire } from "@/lib/api";
+import { fire, on } from "@/lib/api";
 import { CaptureEmpty } from "./components/capture-empty/capture-empty.component";
 import { CaptureFields } from "./components/capture-fields/capture-fields.component";
 import { CaptureFooter } from "./components/capture-footer/capture-footer.component";
@@ -25,11 +26,18 @@ export function Capture() {
     onOpenEditor: c.openInEditor,
     onHide: c.hide,
   });
+  // Each show lands focus on the sheet itself — not a field, so a stray keystroke doesn't
+  // end up in an input — and screen readers announce the dialog. The keys above still work.
+  useEffect(() => on("capture:shown", () => fit.current?.focus()), [fit]);
 
   return (
     <div
       ref={fit}
-      className="dark flex flex-col rounded-lg border border-overlay-line bg-overlay/95 p-5 text-overlay-ink shadow-sheet backdrop-blur-xl"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Capture from clipboard"
+      tabIndex={-1}
+      className="dark flex flex-col rounded-lg border border-overlay-line bg-overlay/95 p-5 text-overlay-ink shadow-sheet backdrop-blur-xl outline-none"
     >
       <div className="mb-4 flex items-center justify-between">
         <div className="flex items-center gap-2 text-base">
