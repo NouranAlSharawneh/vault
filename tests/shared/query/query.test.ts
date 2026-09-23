@@ -43,4 +43,17 @@ describe("query", () => {
     ).toBe(false);
     expect(matchesFilters(doc({ unpushed: true }), parseQuery("is:unpushed", now))).toBe(true);
   });
+
+  it("ignores a source nobody ships", () => {
+    // `from:banana` used to be cast straight into the union and land as a filter that
+    // nothing could match. Dropping it leaves a search that still returns documents.
+    const q = parseQuery("from:banana", now);
+
+    expect(q.source).toEqual([]);
+    expect(matchesFilters(doc({}), q)).toBe(true);
+  });
+
+  it("takes a source whatever case it was typed in", () => {
+    expect(parseQuery("from:Claude", now).source).toEqual(["claude"]);
+  });
 });

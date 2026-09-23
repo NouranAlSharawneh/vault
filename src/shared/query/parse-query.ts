@@ -1,4 +1,4 @@
-import type { Source } from "../types";
+import { isSource } from "../helpers/source";
 import { parseDateish } from "./parse-dateish";
 import type { ParsedQuery } from "./query.types";
 
@@ -31,7 +31,11 @@ function applyOperator(q: ParsedQuery, key: string, val: string, now: number): v
       break;
     case "source":
     case "from":
-      if (val) q.source.push(val.toLowerCase() as Source);
+      {
+        // `from:banana` filters by nothing rather than quietly by `other`.
+        const source = val.toLowerCase();
+        if (isSource(source)) q.source.push(source);
+      }
       break;
     case "is": {
       const v = val.toLowerCase();

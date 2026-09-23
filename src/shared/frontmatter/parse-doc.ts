@@ -1,7 +1,7 @@
 import { parse as parseYaml } from "yaml";
-import { SOURCES } from "../constants";
 import { inferTitle } from "../helpers/infer-title";
-import type { ConflictMark, Frontmatter, Source } from "../types";
+import { toSource } from "../helpers/source";
+import type { ConflictMark, Frontmatter } from "../types";
 import type { ParsedDoc } from "./frontmatter.types";
 import { splitFrontmatter } from "./split-frontmatter";
 
@@ -31,12 +31,6 @@ function asTags(v: unknown): string[] {
   return [];
 }
 
-function asSource(v: unknown): Source {
-  const s = asString(v)?.toLowerCase();
-
-  return (SOURCES as readonly string[]).includes(s ?? "") ? (s as Source) : "other";
-}
-
 const NONE = (body: string): ParsedDoc => ({ frontmatter: null, body, extra: {} });
 
 /** Parse a whole document. Tolerant: any YAML mess yields `frontmatter: null`. */
@@ -56,7 +50,7 @@ export function parseDoc(raw: string): ParsedDoc {
     project: asString(d.project) ?? "",
     tags: asTags(d.tags),
     created: asString(d.created) ?? new Date(0).toISOString(),
-    source: asSource(d.source),
+    source: toSource(d.source),
   };
   if (d.starred === true) fm.starred = true;
   const conflict = asConflict(d.conflict);

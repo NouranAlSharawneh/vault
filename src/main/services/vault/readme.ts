@@ -2,6 +2,7 @@ import { promises as fs } from "node:fs";
 import { join } from "node:path";
 import { README_FILE } from "@shared/constants";
 import type { IndexSnapshot } from "@shared/types";
+import type { VaultContext } from "./vault.types";
 
 /**
  * The vault's table of contents, regenerated into every commit that changes the set of
@@ -29,4 +30,19 @@ export function renderReadme(snap: IndexSnapshot): string {
 
 export async function writeReadme(root: string, snap: IndexSnapshot): Promise<void> {
   await fs.writeFile(join(root, README_FILE), renderReadme(snap));
+}
+
+/**
+ * The shape every change to the set of documents takes: commit the change, regenerate
+ * the index, and fold it into that same commit. Written out three times before this,
+ * and the README was the thing left behind when one of them was edited.
+ */
+export async function commitWithReadme(
+  ctx: VaultContext,
+  paths: string[],
+  message: string,
+): Promise<void> {
+  await ctx.git.commitPaths(paths, message);
+  await ctx.writeReadme();
+  await ctx.git.amendPaths([README_FILE]);
 }

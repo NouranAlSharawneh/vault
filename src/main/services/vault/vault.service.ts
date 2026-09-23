@@ -28,7 +28,7 @@ import { IndexerService } from "../indexer/indexer.service";
 import { conflicts, resolveConflict } from "./conflicts";
 import { atCommit, diff, history } from "./history";
 import { projects, renameProject } from "./projects";
-import { writeReadme } from "./readme";
+import { commitWithReadme, writeReadme } from "./readme";
 import { SyncEngine } from "./sync.service";
 import { listTrash, purgeTrash, readTrashed, restoreFromTrash } from "./trash";
 import type { TokenProvider } from "./vault.types";
@@ -182,9 +182,7 @@ export class VaultService extends EventEmitter {
         : moved
           ? `move: ${fm.title}`
           : `update: ${fm.title}`;
-      await this.git.commitPaths([target, ...assets], message);
-      await this.writeReadme();
-      await this.git.commitPaths([README_FILE], message, { amend: true });
+      await commitWithReadme(this, [target, ...assets], message);
       committed = true;
       this.schedulePush();
     }
@@ -233,9 +231,7 @@ export class VaultService extends EventEmitter {
     if (!meta) throw new Error(`Not a document: ${relPath}`);
     await this.git.mv(relPath, dest);
     this.index.remove(relPath);
-    await this.git.commitPaths([dest], `trash: ${meta.title}`);
-    await this.writeReadme();
-    await this.git.commitPaths([README_FILE], "", { amend: true });
+    await commitWithReadme(this, [dest], `trash: ${meta.title}`);
     this.schedulePush();
     this.emit("index", this.index.snapshot());
 
