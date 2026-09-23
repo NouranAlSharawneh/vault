@@ -21,7 +21,7 @@ export function RepoPicker({ onDone, onBack }: RepoPickerProps) {
           <Option
             selected={p.choice === "new"}
             onClick={() => p.setChoice("new")}
-            badge="recommended"
+            badge={p.tokenUser ? undefined : "recommended"}
           >
             <div className="flex items-center gap-2">
               <Plus size={13} className="text-ink-3" />

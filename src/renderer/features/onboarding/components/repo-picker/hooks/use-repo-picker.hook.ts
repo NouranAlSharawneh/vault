@@ -3,7 +3,7 @@ import { REPO_LIST_LIMIT, REPO_NAME_PATTERN } from "@/constants";
 import { errorMessage } from "@/helpers";
 import { api, fire } from "@/lib/api";
 import { useApp } from "@/stores/app";
-import { DEFAULT_VAULT_NAME } from "@shared/constants";
+import { CREATE_REPO_FORBIDDEN, DEFAULT_VAULT_NAME } from "@shared/constants";
 import type { GitHubRepo } from "@shared/types";
 import type { RepoChoice } from "../repo-picker.types";
 
@@ -13,13 +13,18 @@ export function useRepoPicker(onDone: () => void) {
   const config = useApp((s) => s.config);
   const setConfig = useApp((s) => s.setConfig);
   const signedIn = auth.status === "signed-in";
+  // The token form has people make a fine-grained token scoped to one repo, which can't
+  // create another — so for them the list is the way in, not "Create a new private repo".
+  const tokenUser = auth.method === "pat";
   // Attaching a repo to a vault that already exists: the folder is settled, and
   // suggesting a fresh one would quietly set up a second, empty vault instead.
   const existingRoot = config?.root ?? null;
 
   const [repos, setRepos] = useState<GitHubRepo[] | null>(null);
   const [filter, setFilter] = useState("");
-  const [choice, setChoice] = useState<RepoChoice>(signedIn ? "new" : "local");
+  const [choice, setChoice] = useState<RepoChoice | null>(
+    !signedIn ? "local" : tokenUser ? null : "new",
+  );
   const [newName, setNewName] = useState(DEFAULT_VAULT_NAME);
   const [localPath, setLocalPath] = useState(existingRoot ?? "");
   const [busy, setBusy] = useState(false);
@@ -33,7 +38,13 @@ export function useRepoPicker(onDone: () => void) {
     if (!signedIn) return;
     let cancelled = false;
     api("github:listRepos")
-      .then((r) => !cancelled && setRepos(r))
+      .then((r) => {
+        if (cancelled) return;
+        setRepos(r);
+        // A token scoped to one repo lists exactly that repo: nothing else to pick.
+        const [only] = r;
+        if (only && r.length === 1) setChoice((c) => c ?? only.fullName);
+      })
       .catch((e: unknown) => !cancelled && setListError(errorMessage(e)));
 
     return () => {
@@ -50,7 +61,11 @@ export function useRepoPicker(onDone: () => void) {
   useEffect(() => {
     if (existingRoot) return;
     const name =
-      choice === "new" ? newName : choice === "local" ? DEFAULT_VAULT_NAME : choice.split("/")[1];
+      choice === "new"
+        ? newName
+        : choice === "local" || choice === null
+          ? DEFAULT_VAULT_NAME
+          : choice.split("/")[1];
     fire(api("vault:defaultPath", name || DEFAULT_VAULT_NAME).then(setLocalPath));
   }, [choice, newName, existingRoot]);
 
@@ -81,13 +96,21 @@ export function useRepoPicker(onDone: () => void) {
       setConfig(await api("vault:setup", { repo, localPath }));
       onDone();
     } catch (e) {
-      setSubmitError(errorMessage(e));
+      const message = errorMessage(e);
+      // The token can't create repos: point at the list, fresh, so the one they make
+      // on GitHub shows up in it.
+      if (message === CREATE_REPO_FORBIDDEN) {
+        setChoice(null);
+        retryList();
+      }
+      setSubmitError(message);
       setBusy(false);
     }
   };
 
   return {
     signedIn,
+    tokenUser,
     login: auth.user?.login ?? "",
     repos,
     filtered,
@@ -106,6 +129,6 @@ export function useRepoPicker(onDone: () => void) {
     retryList,
     submitError,
     submit,
-    canSubmit: !nameError && !!localPath,
+    canSubmit: choice !== null && !nameError && !!localPath,
   };
 }
