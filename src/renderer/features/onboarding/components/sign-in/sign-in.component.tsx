@@ -34,7 +34,10 @@ export function SignIn({ onBack, onLocal }: SignInProps) {
         ))}
       </ul>
       <div className="mt-6 flex flex-col gap-2">
-        {methods.oauth ? (
+        {!methods ? (
+          // Holds the primary button's height until main says which one it is.
+          <div className="h-9" />
+        ) : methods.oauth ? (
           <Button
             variant="primary"
             size="lg"
@@ -54,12 +57,12 @@ export function SignIn({ onBack, onLocal }: SignInProps) {
           </Button>
         )}
         <div className="flex items-center justify-center gap-4">
-          {methods.device && (
+          {methods?.device && (
             <Button variant="subtle" onClick={() => setMode("device")}>
               <Smartphone size={11} /> Use a device code
             </Button>
           )}
-          {methods.oauth && (
+          {methods?.oauth && (
             <Button variant="subtle" onClick={() => setMode("token")}>
               <KeyRound size={11} /> Paste a token instead
             </Button>
