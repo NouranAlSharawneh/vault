@@ -9,6 +9,7 @@ export function EditorFooter({
   saving,
   canSave,
   dirty,
+  persisted,
   error,
   keptOtherVersion,
   onSave,
@@ -28,7 +29,9 @@ export function EditorFooter({
             <GitBranch size={11} /> This file had changed — the other version is in its history
           </span>
         )}
-        {!dirty && !error && !keptOtherVersion && <span className="text-ink-4">Saved</span>}
+        {persisted && !dirty && !error && !keptOtherVersion && (
+          <span className="text-ink-4">Saved</span>
+        )}
         <Button
           variant="ghost"
           disabled={!canSave}

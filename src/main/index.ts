@@ -1,6 +1,7 @@
 import { electronApp, optimizer } from "@electron-toolkit/utils";
 import { app, dialog, globalShortcut, nativeTheme } from "electron";
 import { APP_ID } from "@shared/constants";
+import { attachContextMenu } from "./app/context-menu/context-menu";
 import { registerHotkey } from "./app/hotkey/hotkey";
 import { registerIpcHandlers } from "./app/ipc/ipc";
 import { buildAppMenu } from "./app/menu/menu";
@@ -24,7 +25,10 @@ app.on("second-instance", () => fire(boot.then(showMainWindow), "showing the mai
 const boot = app.whenReady().then(async () => {
   electronApp.setAppUserModelId(APP_ID);
   nativeTheme.themeSource = "light";
-  app.on("browser-window-created", (_, w) => optimizer.watchWindowShortcuts(w));
+  app.on("browser-window-created", (_, w) => {
+    optimizer.watchWindowShortcuts(w);
+    attachContextMenu(w.webContents);
+  });
 
   configureNetwork({
     getToken: loadToken,
