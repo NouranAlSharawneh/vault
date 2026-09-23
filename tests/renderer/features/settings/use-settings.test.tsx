@@ -60,18 +60,20 @@ describe("useSettings", () => {
     expect(invoke).toHaveBeenCalledWith("vault:updateConfig", { assetDirs: {} });
     await act(() => result.current.emptyTrash());
     expect(invoke).toHaveBeenCalledWith("trash:purge");
-    expect(useToast.getState().toast?.message).toContain("2 docs gone for good, with 1 image");
+    expect(useToast.getState().toasts.at(-1)?.message).toContain(
+      "2 docs gone for good, with 1 image",
+    );
   });
 
   it("says nothing when the user cancels emptying the trash", async () => {
     const { invoke } = mockVaultApi({ "trash:purge": () => ({ removed: 0, assets: [] }) });
     useApp.setState({ config });
-    useToast.setState({ toast: null });
+    useToast.getState().dismiss();
     const { result } = renderHook(() => useSettings());
     await act(() => result.current.emptyTrash());
     expect(invoke).toHaveBeenCalledWith("trash:purge");
     expect(invoke).not.toHaveBeenCalledWith("trash:list");
-    expect(useToast.getState().toast).toBeNull();
+    expect(useToast.getState().toasts).toEqual([]);
     expect(result.current.busy).toBeNull();
   });
 });

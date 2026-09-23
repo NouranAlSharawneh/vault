@@ -1,43 +1,70 @@
 import { X } from "lucide-react";
+import { cx } from "@/helpers";
 import { fire } from "@/lib/api";
 import { Button } from "../button/button.component";
-import type { ToastProps } from "./toast.types";
+import type { ToastItemProps, ToastsProps } from "./toast.types";
 
-/** Dark pill at the bottom of the window with an optional action ("Undo"). */
-export function Toast({ toast, onDismiss }: ToastProps) {
-  if (!toast) return null;
+/**
+ * Dark pills at the edge of the window, newest nearest the edge, each with an optional
+ * action ("Undo").
+ *
+ * The live region is always in the document and only its text changes: a `role="status"`
+ * element that mounts together with its message is not reliably announced.
+ */
+export function Toasts({ toasts, announced, onDismiss, side = "bottom", onDark }: ToastsProps) {
+  return (
+    <>
+      <div role="status" aria-live="polite" aria-atomic="true" className="sr-only">
+        {announced?.message ?? ""}
+      </div>
+      {toasts.length > 0 && (
+        <div
+          className={cx(
+            "pointer-events-none absolute inset-x-0 z-40 flex flex-col items-center gap-2",
+            side === "bottom" ? "bottom-5" : "top-5 flex-col-reverse",
+          )}
+        >
+          {toasts.map((t) => (
+            <ToastItem key={t.id} toast={t} onDismiss={onDismiss} onDark={onDark} />
+          ))}
+        </div>
+      )}
+    </>
+  );
+}
 
+function ToastItem({ toast, onDismiss, onDark }: ToastItemProps) {
   return (
     <div
-      role="status"
-      className="pointer-events-none absolute inset-x-0 bottom-5 z-40 flex justify-center"
+      className={cx(
+        "pointer-events-auto flex h-9 animate-pop-in items-center gap-3 rounded-md pr-1 pl-3.5 text-sm text-paper shadow-sheet",
+        onDark ? "border border-overlay-line bg-overlay-3" : "bg-ink",
+      )}
     >
-      <div className="pointer-events-auto flex h-9 animate-pop-in items-center gap-3 rounded-md bg-ink pr-1 pl-3.5 text-sm text-paper shadow-sheet">
-        <span className="max-w-md truncate">{toast.message}</span>
-        {toast.action && (
-          <Button
-            variant="ghost"
-            size="sm"
-            className="text-cherry-3 hover:bg-ink-2 hover:text-white"
-            onClick={() => {
-              const undo = toast.action?.run();
-              if (undo) fire(undo, "Couldn't undo that");
-              onDismiss();
-            }}
-          >
-            {toast.action.label}
-          </Button>
-        )}
+      <span className="max-w-md truncate">{toast.message}</span>
+      {toast.action && (
         <Button
           variant="ghost"
           size="sm"
-          className="w-6 px-0 text-ink-4 hover:bg-ink-2 hover:text-white"
-          onClick={onDismiss}
-          aria-label="dismiss"
+          className="text-cherry-3 hover:bg-ink-2 hover:text-white"
+          onClick={() => {
+            const undo = toast.action?.run();
+            if (undo) fire(undo, "Couldn't undo that");
+            onDismiss(toast.id);
+          }}
         >
-          <X size={12} />
+          {toast.action.label}
         </Button>
-      </div>
+      )}
+      <Button
+        variant="ghost"
+        size="sm"
+        className="w-6 px-0 text-ink-4 hover:bg-ink-2 hover:text-white"
+        onClick={() => onDismiss(toast.id)}
+        aria-label="dismiss"
+      >
+        <X size={12} />
+      </Button>
     </div>
   );
 }
