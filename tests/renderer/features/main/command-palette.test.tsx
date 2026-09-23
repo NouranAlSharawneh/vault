@@ -169,6 +169,46 @@ describe("CommandPalette", () => {
     expect(onOpen).toHaveBeenCalledWith("b");
   });
 
+  it("the trash action names the doc it will trash", () => {
+    mockVaultApi();
+    setIndex();
+    render(
+      <CommandPalette
+        onClose={() => undefined}
+        onOpenDoc={() => undefined}
+        onTrashDoc={() => undefined}
+        trashTitle="Weekly sync"
+      />,
+    );
+    expect(screen.getByText("Move “Weekly sync” to trash")).toBeTruthy();
+    expect(screen.queryByText("Move document to trash")).toBeNull();
+  });
+
+  it.each(["trash", "move document"])(
+    "typing “%s” still finds the named trash action",
+    async (q) => {
+      mockVaultApi({ "search:query": () => [] });
+      setIndex();
+      render(
+        <CommandPalette
+          onClose={() => undefined}
+          onOpenDoc={() => undefined}
+          onTrashDoc={() => undefined}
+          trashTitle="Weekly sync"
+        />,
+      );
+      await userEvent.type(screen.getByLabelText("search"), q);
+      expect(screen.getByText("Move “Weekly sync” to trash")).toBeTruthy();
+    },
+  );
+
+  it("with no doc open there is no trash action at all", () => {
+    mockVaultApi();
+    setIndex();
+    render(<CommandPalette onClose={() => undefined} onOpenDoc={() => undefined} />);
+    expect(screen.queryByText(/to trash/)).toBeNull();
+  });
+
   it("Escape still closes the palette", async () => {
     const onClose = vi.fn();
     mockVaultApi();

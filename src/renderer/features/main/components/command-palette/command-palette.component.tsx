@@ -39,9 +39,10 @@ export function CommandPalette({
   onClose,
   onOpenDoc,
   onTrashDoc,
+  trashTitle,
   onReviewConflicts,
 }: CommandPaletteProps) {
-  const p = useCommandPalette(onOpenDoc, onClose, onTrashDoc, onReviewConflicts);
+  const p = useCommandPalette(onOpenDoc, onClose, onTrashDoc, onReviewConflicts, trashTitle);
   const input = useRef<HTMLInputElement>(null);
 
   // Arrows and Enter are the palette's whole interaction, and they used to live on the
