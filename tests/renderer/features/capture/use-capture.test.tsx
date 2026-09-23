@@ -49,7 +49,63 @@ describe("useCapture", () => {
     await waitFor(() => expect(result.current.clip).not.toBeNull());
     expect(result.current.phase).toBe("empty");
     act(() => emit("capture:shown", clip));
+    await waitFor(() => expect(result.current.phase).toBe("ready"));
+  });
+
+  it("stays quiet until the clipboard has been read, instead of flashing “empty”", async () => {
+    let answer: (c: ClipboardCapture) => void = () => undefined;
+    mockVaultApi({
+      "capture:readClipboard": () => new Promise<ClipboardCapture>((r) => (answer = r)),
+      "doc:pathPreview": () => "",
+    });
+    const { result } = renderHook(() => useCapture());
+    expect(result.current.phase).toBe("loading");
+    await act(async () => answer(clip));
     expect(result.current.phase).toBe("ready");
+  });
+
+  it("forgets the last show when hidden, so the next one doesn't flash “saved”", async () => {
+    const { emit } = mockVaultApi({
+      "capture:readClipboard": () => clip,
+      "doc:pathPreview": () => "",
+      "doc:save": () => ({ path: "atlas-api/pasted-spec.md", committed: true, meta: {} }),
+    });
+    const { result } = renderHook(() => useCapture());
+    await waitFor(() => expect(result.current.phase).toBe("ready"));
+    await act(async () => {
+      await result.current.save();
+    });
+    expect(result.current.phase).toBe("saved");
+    act(() => emit("capture:hidden", null));
+    expect(result.current.phase).toBe("loading");
+    expect(result.current.clip).toBeNull();
+  });
+
+  it("prefills the project saved last, even when that save happened after boot", async () => {
+    // The sheet lives for the whole session. Main moves `lastProject` on with every save;
+    // the copy the sheet read at boot does not.
+    const { emit } = mockVaultApi({
+      "capture:readClipboard": () => clip,
+      "doc:pathPreview": () => "",
+      "vault:config": () => ({ ...config, lastProject: "Research log" }),
+    });
+    useApp.setState({ config });
+    const { result } = renderHook(() => useCapture());
+    await waitFor(() => expect(result.current.phase).toBe("ready"));
+    expect(result.current.form.project).toBe("Atlas API");
+    act(() => emit("capture:shown", clip));
+    await waitFor(() => expect(result.current.form.project).toBe("Research log"));
+    expect(result.current.lastProject).toBe("Research log");
+  });
+
+  it("keeps what the user typed when config arrives mid-edit", async () => {
+    mockVaultApi({ "capture:readClipboard": () => clip, "doc:pathPreview": () => "" });
+    useApp.setState({ config });
+    const { result } = renderHook(() => useCapture());
+    await waitFor(() => expect(result.current.phase).toBe("ready"));
+    act(() => result.current.setForm({ project: "Onboarding v2", tags: ["infra"] }));
+    act(() => useApp.setState({ config: { ...config, lastProject: "Research log" } }));
+    expect(result.current.form).toMatchObject({ project: "Onboarding v2", tags: ["infra"] });
   });
 
   const saved = { path: "atlas-api/pasted-spec.md", committed: true, meta: {} };
