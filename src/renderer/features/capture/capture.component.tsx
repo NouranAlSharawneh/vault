@@ -18,6 +18,8 @@ import { useFitWindow } from "./hooks/use-fit-window.hook";
 export function Capture() {
   const c = useCapture();
   const fit = useFitWindow<HTMLDivElement>();
+  // Something worth saving is on the clipboard (not still being read, not blank).
+  const clip = c.phase === "empty" || c.phase === "loading" ? null : c.clip;
   useCaptureKeys({
     onSave: (reveal) => fire(c.save(reveal)),
     onOpenEditor: c.openInEditor,
@@ -33,18 +35,22 @@ export function Capture() {
         <div className="flex items-center gap-2 text-base">
           <ArrowDownToLine size={14} className="text-overlay-ink-3" />
           <span className="font-medium">Capture from clipboard</span>
-          {c.clip && c.phase !== "empty" && (
+          {clip && (
             <span className="font-mono text-xs text-overlay-ink-3">
-              {plural(c.clip.words, "word")} detected
+              {plural(clip.words, "word")} detected
             </span>
           )}
         </div>
         <Kbd dark>esc</Kbd>
       </div>
 
-      {c.clip && c.phase !== "empty" ? (
+      {c.phase === "loading" ? (
+        // Quiet until the clipboard is read: "Clipboard is empty" (or the last save) used
+        // to flash here for a frame on every show.
+        <div role="status" aria-label="Reading the clipboard" className="py-16" />
+      ) : clip ? (
         <>
-          <CapturePreview clip={c.clip} compact={c.assets.refs.length > 0} />
+          <CapturePreview clip={clip} compact={c.assets.refs.length > 0} />
           <AssetPanel plan={c.assets} dark className="mt-3" />
           <div className="mt-4">
             <CaptureFields
@@ -53,7 +59,7 @@ export function Capture() {
               projects={c.projects}
               tags={c.tags}
               lastProject={c.lastProject}
-              detected={c.form.source === c.clip.detectedSource}
+              detected={c.form.source === clip.detectedSource}
             />
           </div>
           <div className="mt-4">

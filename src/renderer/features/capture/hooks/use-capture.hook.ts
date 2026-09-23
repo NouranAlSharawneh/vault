@@ -11,7 +11,7 @@ import type { CaptureForm, CaptureState } from "../capture.types";
 const EMPTY: CaptureState = {
   clip: null,
   form: { project: "", source: "claude", tags: [] },
-  phase: "empty",
+  phase: "loading",
   error: null,
   savedPath: null,
   pathPreview: "",
@@ -33,35 +33,64 @@ export function useCapture() {
     pending.current = null;
   }, []);
 
+  // Read through a ref: the long-lived sheet must prefill from the latest save, but config
+  // arriving must not re-run `load` and wipe a form the user is typing into.
+  const lastProject = useRef(config?.lastProject ?? null);
   useEffect(() => {
-    const off = on("capture:hidden", cancelPending);
+    lastProject.current = config?.lastProject ?? null;
+  }, [config?.lastProject]);
 
-    return () => {
-      off();
-      cancelPending();
-    };
-  }, [cancelPending]);
+  const load = useCallback((clip: ClipboardCapture) => {
+    setState({
+      ...EMPTY,
+      clip,
+      phase: clip.text.trim() ? "ready" : "empty",
+      form: { project: lastProject.current ?? "", source: clip.detectedSource, tags: [] },
+    });
+  }, []);
 
-  const load = useCallback(
-    (clip: ClipboardCapture) => {
-      setState({
-        ...EMPTY,
-        clip,
-        phase: clip.text.trim() ? "ready" : "empty",
-        form: { project: config?.lastProject ?? "", source: clip.detectedSource, tags: [] },
-      });
-    },
-    [config?.lastProject],
-  );
+  // Bumped on every show and hide, so an answer that arrives after the sheet has moved on
+  // is dropped instead of painting over the newer state.
+  const showing = useRef(0);
 
   // First paint may happen before main sends the event; ask once, then follow events.
   useEffect(() => {
+    const first = showing.current;
     api("capture:readClipboard")
-      .then(load)
+      .then((clip) => {
+        if (showing.current === first) load(clip);
+      })
       .catch(() => undefined);
 
-    return on("capture:shown", load);
-  }, [load]);
+    const offShown = on("capture:shown", (clip) => {
+      const mine = ++showing.current;
+      // The sheet outlives many saves, and every save (here or in the editor) moves
+      // "last project" on in main. Ask again rather than trusting the copy from boot.
+      const refreshed = api("vault:config")
+        .then((fresh) => {
+          if (!fresh) return;
+          lastProject.current = fresh.lastProject ?? null;
+          useApp.getState().setConfig(fresh);
+        })
+        .catch(() => undefined)
+        .then(() => {
+          if (showing.current === mine) load(clip);
+        });
+      fireQuietly(refreshed, "filling the sheet");
+    });
+    const offHidden = on("capture:hidden", () => {
+      showing.current++;
+      cancelPending();
+      // Start the next show blank rather than flashing whatever this one ended on.
+      setState(EMPTY);
+    });
+
+    return () => {
+      offShown();
+      offHidden();
+      cancelPending();
+    };
+  }, [load, cancelPending]);
 
   const title =
     state.clip?.detectedTitle ?? (state.clip ? (inferTitle(state.clip.text) ?? "Untitled") : "");
