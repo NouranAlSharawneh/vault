@@ -23,6 +23,7 @@ import {
   dialogParent,
   hideCaptureWindow,
   IS_MAC,
+  isCaptureVisible,
   openEditorWindow,
   openMainWindow,
   resizeCaptureWindow,
@@ -242,6 +243,9 @@ export function registerIpcHandlers(): void {
   handle("capture:readClipboard", () => readClipboard());
   handle("capture:hide", () => hideCaptureWindow());
   handle("capture:reveal", (path) => {
+    // The sheet blurred or was dismissed while "saved" was showing: the user is back in
+    // another app, and pulling the main window over it now would be a surprise.
+    if (!isCaptureVisible()) return;
     hideCaptureWindow();
     revealDoc(path);
   });

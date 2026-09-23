@@ -58,6 +58,7 @@ export function showCaptureWindow(): BrowserWindow {
 export function hideCaptureWindow(): void {
   const win = captureWin;
   if (win && !win.isDestroyed() && win.isVisible()) {
+    win.webContents.send("capture:hidden", null);
     win.hide();
     if (IS_MAC && !getMainWindow() && editorWindowCount() === 0) app.hide();
   }
