@@ -53,6 +53,14 @@ export function useCodeMirror({ value, onChange, onSubmit, placeholder, autoFocu
         history(),
         drawSelection(),
         vaultTheme,
+        // CodeMirror turns spellcheck off on its content; this is prose, so turn it back
+        // on (Electron's checker is on for every window). The OS's autocorrect and
+        // auto-capitalisation would rewrite markdown syntax, so those stay off.
+        EditorView.contentAttributes.of({
+          spellcheck: "true",
+          autocorrect: "off",
+          autocapitalize: "off",
+        }),
         EditorView.lineWrapping,
         markdown({ base: markdownLanguage, codeLanguages: languages }),
         syntaxHighlighting(mdHighlight),
