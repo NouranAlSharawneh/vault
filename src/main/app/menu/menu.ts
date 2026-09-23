@@ -3,8 +3,9 @@ import { DEFAULT_HOTKEY } from "@shared/constants";
 import { appMenu, VAULT_REPO } from "../../data/menu.data";
 import { fire } from "../../lib/fire";
 import { openOnGitHub } from "../../network/github";
-import { IS_MAC, openEditorWindow, openMainWindow } from "../../windows";
+import { IS_MAC, openEditorWindow } from "../../windows";
 import { toggleCapture } from "../hotkey/hotkey";
+import { showMainWindow } from "../session/launch-route";
 import { resetApp } from "../session/reset-app";
 import type { MenuAction, MenuItemData, MenuSectionData } from "./menu.types";
 
@@ -18,7 +19,7 @@ function run(action: MenuAction): () => void {
     case "capture":
       return toggleCapture;
     case "openMain":
-      return () => openMainWindow();
+      return showMainWindow;
     case "openOnGitHub":
       return () => openOnGitHub(VAULT_REPO);
     case "resetApp":
