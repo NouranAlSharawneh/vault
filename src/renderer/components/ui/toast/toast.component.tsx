@@ -2,7 +2,14 @@ import { X } from "lucide-react";
 import { cx } from "@/helpers";
 import { fire } from "@/lib/api";
 import { Button } from "../button/button.component";
-import type { ToastItemProps, ToastsProps } from "./toast.types";
+import type { ToastItemProps, ToastPlacement, ToastsProps } from "./toast.types";
+
+/** Newest nearest the edge it sits on. */
+const PLACEMENT: Record<ToastPlacement, string> = {
+  bottom: "bottom-5",
+  "above-footer": "bottom-16",
+  top: "top-5 flex-col-reverse",
+};
 
 /**
  * Dark pills at the edge of the window, newest nearest the edge, each with an optional
@@ -11,7 +18,13 @@ import type { ToastItemProps, ToastsProps } from "./toast.types";
  * The live region is always in the document and only its text changes: a `role="status"`
  * element that mounts together with its message is not reliably announced.
  */
-export function Toasts({ toasts, announced, onDismiss, side = "bottom", onDark }: ToastsProps) {
+export function Toasts({
+  toasts,
+  announced,
+  onDismiss,
+  placement = "bottom",
+  onDark,
+}: ToastsProps) {
   return (
     <>
       <div role="status" aria-live="polite" aria-atomic="true" className="sr-only">
@@ -21,7 +34,7 @@ export function Toasts({ toasts, announced, onDismiss, side = "bottom", onDark }
         <div
           className={cx(
             "pointer-events-none absolute inset-x-0 z-40 flex flex-col items-center gap-2",
-            side === "bottom" ? "bottom-5" : "top-5 flex-col-reverse",
+            PLACEMENT[placement],
           )}
         >
           {toasts.map((t) => (
