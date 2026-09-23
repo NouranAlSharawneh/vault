@@ -110,6 +110,8 @@ export interface IpcInvoke {
   /** Bring the main window forward with this document selected. */
   "window:revealDoc": (path: string) => void;
   "window:openEditor": (path?: string) => void;
+  /** macOS: mark the sending window as having unsaved changes (the dot in its close button). */
+  "window:setEdited": (edited: boolean) => void;
   "app:version": () => string;
   "app:platform": () => NodeJS.Platform;
   "app:openExternal": (url: string) => void;
