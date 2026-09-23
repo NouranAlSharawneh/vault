@@ -9,3 +9,4 @@ export {
   resizeCaptureWindow,
 } from "./capture.window";
 export { IS_MAC } from "./load-route";
+export { dialogParent } from "./dialog-parent";

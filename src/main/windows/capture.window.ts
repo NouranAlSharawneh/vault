@@ -78,3 +78,7 @@ export function resizeCaptureWindow(height: number): void {
   const [w, h] = win.getContentSize();
   if (Math.abs(h - wanted) > 1) win.setContentSize(w, wanted, false);
 }
+
+export function isCaptureWindow(win: BrowserWindow): boolean {
+  return win === captureWin;
+}
