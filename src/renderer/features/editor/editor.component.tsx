@@ -6,7 +6,7 @@ import { SyncBadge } from "@/components/sync-badge/sync-badge.component";
 import { SectionLabel, SplitPane } from "@/components/ui";
 import { EDITOR_PLACEHOLDER } from "@/data/editor.data";
 import { parentDir, plural } from "@/helpers";
-import { api, fire } from "@/lib/api";
+import { api, fire, fireQuietly } from "@/lib/api";
 import { useApp } from "@/stores/app";
 import { countWords } from "@shared/helpers";
 import { EditorFooter } from "./components/editor-footer/editor-footer.component";
@@ -65,6 +65,14 @@ export function Editor() {
     // Nothing to lose: go straight out. Otherwise ask, the same as clicking the X.
     onEscape: useCallback(() => (d.dirty ? guard.prompt() : guard.closeNow()), [d.dirty, guard]),
   });
+
+  // Main finds this window by its document, so opening that document again focuses it —
+  // including after the first save gives a new one a path, or a save renames it.
+  useEffect(() => {
+    if (d.existingPath) {
+      fireQuietly(api("editor:setPath", d.existingPath), "telling main this window's document");
+    }
+  }, [d.existingPath]);
 
   useEffect(() => {
     const name = d.effectiveTitle || target.path || "New document";

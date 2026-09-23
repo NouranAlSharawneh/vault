@@ -59,6 +59,29 @@ describe("Editor", () => {
     expect(docSaves(invoke)).toHaveLength(1);
   });
 
+  it("tells main which document it holds once it has one, so a second open focuses it", async () => {
+    window.location.hash = "#editor?draft=untitled%3Aa";
+    vi.spyOn(window, "close").mockImplementation(() => undefined);
+    const { invoke } = mockVaultApi({
+      "draft:load": PARKED,
+      "doc:pathPreview": () => "inbox/half-a-thought.md",
+      "doc:save": () => ({
+        path: "inbox/half-a-thought.md",
+        meta: { path: "inbox/half-a-thought.md", title: "Half a thought", mtime: 1 },
+        committed: true,
+      }),
+    });
+    render(<Editor />);
+    await screen.findByRole("heading", { name: "Half a thought" });
+    expect(invoke).not.toHaveBeenCalledWith("editor:setPath", expect.anything());
+
+    fireEvent.click(screen.getByRole("button", { name: /Save without committing/ }));
+
+    await waitFor(() =>
+      expect(invoke).toHaveBeenCalledWith("editor:setPath", "inbox/half-a-thought.md"),
+    );
+  });
+
   describe("a document that can't be read", () => {
     it("says so, and saves nothing — not even from ⌘↵", async () => {
       // The failed read was swallowed: the header said "New document", the parked draft
