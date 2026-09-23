@@ -4,7 +4,7 @@ import { AuthExpiredBanner } from "@/components/auth-expired-banner/auth-expired
 import { Markdown } from "@/components/markdown";
 import { SyncBadge } from "@/components/sync-badge/sync-badge.component";
 import { SectionLabel, SplitPane } from "@/components/ui";
-import { EDITOR_PLACEHOLDER } from "@/data/editor.data";
+import { EDITOR_LEAVE_HINT, EDITOR_PLACEHOLDER } from "@/data/editor.data";
 import { parentDir, plural } from "@/helpers";
 import { api, fire } from "@/lib/api";
 import { useApp } from "@/stores/app";
@@ -82,7 +82,9 @@ export function Editor() {
           <>
             <div className="flex h-8 shrink-0 items-center justify-between px-6">
               <SectionLabel>Markdown</SectionLabel>
-              <span className="text-2xs text-ink-4">{plural(countWords(d.body), "word")}</span>
+              <span className="text-2xs text-ink-4">
+                {EDITOR_LEAVE_HINT} · {plural(countWords(d.body), "word")}
+              </span>
             </div>
             <MarkdownEditor
               value={d.body}
