@@ -1,6 +1,7 @@
 import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 // @vitest-environment jsdom
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { FirstScan } from "@/features/onboarding/components/first-scan/first-scan.component";
 import { useApp } from "@/stores/app";
 import type { IndexSnapshot } from "@shared/types";
@@ -25,7 +26,7 @@ beforeEach(() => {
 describe("FirstScan — counts", () => {
   it("says “1 document”, not “1 documents”", async () => {
     mockVaultApi({ "vault:index": snapshot(1, 1, 1) });
-    render(<FirstScan onDone={noop} />);
+    render(<FirstScan onDone={noop} onBack={noop} />);
     expect(await screen.findByText("document")).toBeTruthy();
     expect(screen.getByText("project")).toBeTruthy();
     expect(screen.getByText("tag")).toBeTruthy();
@@ -33,10 +34,46 @@ describe("FirstScan — counts", () => {
 
   it("keeps the plural for none and for many", async () => {
     mockVaultApi({ "vault:index": snapshot(0, 3, 0) });
-    render(<FirstScan onDone={noop} />);
+    render(<FirstScan onDone={noop} onBack={noop} />);
     expect(await screen.findByText("3")).toBeTruthy();
     expect(screen.getByText("projects")).toBeTruthy();
     expect(screen.getByText("documents")).toBeTruthy();
     expect(screen.getByText("tags")).toBeTruthy();
+  });
+});
+
+describe("FirstScan — when the folder can’t be read", () => {
+  it("stops the bar and says why, instead of sitting at 10% forever", async () => {
+    mockVaultApi({ "vault:index": new Error("EACCES: permission denied, scandir '/v'") });
+    render(<FirstScan onDone={noop} onBack={noop} />);
+    expect(await screen.findByText("Couldn’t read the vault folder.")).toBeTruthy();
+    expect(screen.getByText("EACCES: permission denied, scandir '/v'")).toBeTruthy();
+    expect(screen.queryByText("documents")).toBeNull();
+  });
+
+  it("Try again reads the folder again and carries on when it works", async () => {
+    let fail = true;
+    const { invoke } = mockVaultApi({
+      "vault:index": () => {
+        if (fail) throw new Error("ENOENT");
+
+        return snapshot(2, 1, 1);
+      },
+    });
+    render(<FirstScan onDone={noop} onBack={noop} />);
+    await screen.findByText("Couldn’t read the vault folder.");
+    fail = false;
+    await userEvent.click(screen.getByRole("button", { name: "Try again" }));
+    expect(await screen.findByText("2")).toBeTruthy();
+    expect(screen.queryByText("Couldn’t read the vault folder.")).toBeNull();
+    expect(invoke.mock.calls.filter(([c]) => c === "vault:index")).toHaveLength(2);
+  });
+
+  it("Choose a different folder goes back to the repo step", async () => {
+    mockVaultApi({ "vault:index": new Error("ENOENT") });
+    const onBack = vi.fn();
+    render(<FirstScan onDone={noop} onBack={onBack} />);
+    await userEvent.click(await screen.findByRole("button", { name: "Choose a different folder" }));
+    expect(onBack).toHaveBeenCalledOnce();
   });
 });
