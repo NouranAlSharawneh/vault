@@ -12,6 +12,7 @@ import type {
   DocMeta,
   Frontmatter,
   IndexSnapshot,
+  PullResult,
   SaveRequest,
   SaveResult,
   SavedView,
@@ -355,7 +356,7 @@ export class VaultService extends EventEmitter {
     return this.syncEngine.pushNow();
   }
 
-  async pull(): Promise<{ conflicts: ConflictPair[] }> {
+  async pull(): Promise<PullResult> {
     return this.syncEngine.pull();
   }
 

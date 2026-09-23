@@ -38,3 +38,11 @@ export const UNKNOWN_PRESENTATION: SyncPresentation = {
 export const FAILURE_PRESENTATION: Partial<Record<PushFailure, SyncPresentation>> = {
   "no-permission": { label: () => "can’t push — no write access", dot: "bg-cherry" },
 };
+
+/** Said after a pull asked for by hand fails. The badge says the rest. */
+export const PULL_FAILURE_MESSAGE: Record<PushFailure, string> = {
+  offline: "Couldn’t reach GitHub — pull again once you’re online",
+  "bad-credentials": "GitHub signed you out — sign in again to pull",
+  "no-permission": "This account can’t read the repo on GitHub",
+  other: "Couldn’t pull from GitHub — documents here are unchanged",
+};

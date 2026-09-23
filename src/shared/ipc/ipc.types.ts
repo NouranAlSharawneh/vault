@@ -13,6 +13,7 @@ import type {
   EditorDraft,
   GitHubRepo,
   GitHubUser,
+  PullResult,
   HotkeyStatus,
   IndexSnapshot,
   SaveRequest,
@@ -86,7 +87,7 @@ export interface IpcInvoke {
   "sync:status": () => SyncStatus;
   "sync:pushNow": () => SyncStatus;
   /** Fetch and rebase. Conflicts are kept as pairs, never left in the working tree. */
-  "sync:pull": () => { conflicts: ConflictPair[] };
+  "sync:pull": () => PullResult;
   "conflicts:list": () => ConflictPair[];
   /** `copyPath` is the stamped copy; the choice decides what ends up at the original path. */
   "conflicts:resolve": (copyPath: string, choice: ConflictChoice) => void;

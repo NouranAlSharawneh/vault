@@ -29,6 +29,15 @@ const docs = [
 ];
 const setIndex = () =>
   useApp.setState({
+    config: {
+      root: "/v",
+      remote: "x",
+      branch: "main",
+      lastProject: null,
+      lastSource: "manual",
+      hotkey: "Control+Alt+V",
+      pushDebounceMs: 3000,
+    },
     index: { docs, projects: [], tags: [], orphans: 0, headSha: null, scannedAt: 0 },
     sync: {
       state: "pending",
@@ -107,7 +116,9 @@ describe("CommandPalette", () => {
 
   it("Escape closes; actions run their IPC", async () => {
     const onClose = vi.fn();
-    const { invoke } = mockVaultApi();
+    const { invoke } = mockVaultApi({
+      "vault:rescan": { docs: [], projects: [], tags: [], orphans: 0, headSha: null, scannedAt: 0 },
+    });
     setIndex();
     render(<CommandPalette onClose={onClose} onOpenDoc={() => undefined} />);
     await userEvent.click(screen.getByText("Rescan vault folder"));

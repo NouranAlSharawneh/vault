@@ -217,6 +217,16 @@ export interface ConflictPair {
   mark: ConflictMark;
 }
 
+/** What a pull did, so whoever asked for it can be told. */
+export interface PullResult {
+  /** Every pair still waiting on a decision, including any this pull left. */
+  conflicts: ConflictPair[];
+  /** Commits that came down from GitHub. */
+  pulled: number;
+  /** Set when the pull failed; the sync status carries the message. */
+  failure: PushFailure | null;
+}
+
 export type ConflictChoice = "mine" | "theirs" | "both";
 
 export interface GitHubUser {

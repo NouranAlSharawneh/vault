@@ -59,6 +59,17 @@ describe("SyncBadge", () => {
     expect(invoke).not.toHaveBeenCalledWith("sync:pushNow");
   });
 
+  it("says what is waiting on GitHub beside the push state", () => {
+    mockVaultApi();
+    useApp.setState({ config, sync: { ...status("synced"), behind: 1 } });
+    const { unmount } = render(<SyncBadge />);
+    expect(screen.getByText("pushed · 1 change on GitHub")).toBeTruthy();
+    unmount();
+    useApp.setState({ sync: { ...status("pending", 2), behind: 3 } });
+    render(<SyncBadge />);
+    expect(screen.getByText("2 not pushed · 3 changes on GitHub")).toBeTruthy();
+  });
+
   it("says a read-only repo is a missing permission, not something a retry fixes", () => {
     mockVaultApi();
     useApp.setState({
