@@ -133,6 +133,7 @@ function ConflictRow({ pair, onResolved }: ConflictRowProps) {
           paneRef={(el) => (panes.current[0] = el)}
           onScroll={onPaneScroll(0)}
           action="Use this one"
+          actionLabel="Use this Mac’s version"
           onKeep={() => resolve("mine")}
           busy={busy === "mine"}
           faded={!!busy && busy !== "mine"}
@@ -148,6 +149,7 @@ function ConflictRow({ pair, onResolved }: ConflictRowProps) {
           paneRef={(el) => (panes.current[1] = el)}
           onScroll={onPaneScroll(1)}
           action="Use this one"
+          actionLabel="Use the GitHub version"
           onKeep={() => resolve("theirs")}
           busy={busy === "theirs"}
           faded={!!busy && busy !== "theirs"}
@@ -155,9 +157,10 @@ function ConflictRow({ pair, onResolved }: ConflictRowProps) {
       </div>
 
       <div className="mt-2 flex items-center justify-between gap-3">
-        {/* Said plainly, because it is the sentence that makes the choice reversible. */}
+        {/* Said plainly, because it is the sentence that makes the choice reversible.
+            It is about the two cards above, not Keep both — which drops nothing. */}
         <span className="text-2xs text-ink-4">
-          Whichever you drop goes to the trash, and both stay in this document's history.
+          Use one and the other goes to the trash. Either way, both stay in this document’s history.
         </span>
         <Button
           variant="outline"
@@ -169,12 +172,18 @@ function ConflictRow({ pair, onResolved }: ConflictRowProps) {
           Keep both
         </Button>
       </div>
+      <p className="mt-1 text-right text-2xs text-ink-4">
+        You’ll get both files — the GitHub one saved as {fileName(pair.theirs.path)}.
+      </p>
       {failed && <div className="mt-1.5 text-2xs text-cherry">{failed}</div>}
     </section>
   );
 }
 
 const EMPTY: Set<string> = new Set();
+
+/** The copy is already on disk beside the original (`…-from-github.md`), so name it as is. */
+const fileName = (path: string) => path.slice(path.lastIndexOf("/") + 1);
 
 function VersionCard({
   where,
@@ -187,6 +196,7 @@ function VersionCard({
   paneRef,
   onScroll,
   action,
+  actionLabel,
   onKeep,
   busy,
   faded,
@@ -234,6 +244,7 @@ function VersionCard({
         className="mt-2.5 w-full justify-center"
         loading={busy}
         onClick={onKeep}
+        aria-label={actionLabel}
       >
         {action}
       </Button>

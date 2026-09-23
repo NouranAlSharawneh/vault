@@ -70,7 +70,7 @@ export interface IpcInvoke {
   "doc:diff": (path: string, sha: string) => string;
   "doc:pathPreview": (project: string, title: string) => string;
 
-  /** Unsaved editor text, parked outside the vault. `key` is a doc path, or "new". */
+  /** Unsaved editor text, parked outside the vault. `key` is a doc path, or `untitled:<id>`. */
   "draft:save": (key: string, draft: StoredDraft) => void;
   "draft:load": (key: string) => StoredDraft | null;
   "draft:clear": (key: string) => void;
@@ -118,6 +118,14 @@ export interface IpcInvoke {
   /** Bring the main window forward with this document selected. */
   "window:revealDoc": (path: string) => void;
   "window:openEditor": (path?: string) => void;
+  /**
+   * The text an editor window was opened with (from the capture sheet), handed over once.
+   * The window asks for it when it is ready: an event pushed on did-finish-load could
+   * arrive before the editor was listening, and the text was lost.
+   */
+  "editor:seed": () => EditorDraft | null;
+  /** The asking editor window now holds this document, so opening it again focuses it. */
+  "editor:setPath": (path: string | null) => void;
   /** macOS: mark the sending window as having unsaved changes (the dot in its close button). */
   "window:setEdited": (edited: boolean) => void;
   "app:version": () => string;
@@ -143,7 +151,6 @@ export interface IpcEvents {
   "capture:shown": ClipboardCapture;
   /** The sheet went away (Esc, blur, save or the hotkey): drop anything still pending. */
   "capture:hidden": null;
-  "editor:open": { path?: string; draft?: EditorDraft };
   /** Select this document in the main window, clearing filters so it is in the list. */
   "doc:reveal": string;
   shortcut: Shortcut;

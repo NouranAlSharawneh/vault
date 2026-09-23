@@ -1,37 +1,41 @@
-import { useCallback, useEffect } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { AssetPanel, useAssetPlan } from "@/components/asset-panel";
 import { AuthExpiredBanner } from "@/components/auth-expired-banner/auth-expired-banner.component";
 import { Markdown } from "@/components/markdown";
 import { NoWriteAccessBanner } from "@/components/no-write-access-banner/no-write-access-banner.component";
 import { SyncBadge } from "@/components/sync-badge/sync-badge.component";
 import { SectionLabel, SplitPane } from "@/components/ui";
-import { EDITOR_PLACEHOLDER } from "@/data/editor.data";
+import { EDITOR_LEAVE_HINT, EDITOR_PLACEHOLDER } from "@/data/editor.data";
 import { parentDir, plural } from "@/helpers";
-import { api, fire } from "@/lib/api";
+import { api, fire, fireQuietly } from "@/lib/api";
 import { useApp } from "@/stores/app";
 import { countWords } from "@shared/helpers";
 import { EditorFooter } from "./components/editor-footer/editor-footer.component";
 import { MarkdownEditor } from "./components/markdown-editor/markdown-editor.component";
 import { MetadataBar } from "./components/metadata-bar/metadata-bar.component";
+import { OpenFailed } from "./components/open-failed/open-failed.component";
 import { useUnsavedGuard } from "./components/unsaved-guard/hooks/use-unsaved-guard.hook";
 import { UnsavedGuard } from "./components/unsaved-guard/unsaved-guard.component";
 import type { SaveMode } from "./editor.types";
 import { useDocumentEdited } from "./hooks/use-document-edited.hook";
 import { useEditorDraft } from "./hooks/use-editor-draft.hook";
-import { useEditorOpen } from "./hooks/use-editor-open.hook";
+import { readEditorTarget, useEditorOpen } from "./hooks/use-editor-open.hook";
 import { useEditorShortcuts } from "./hooks/use-editor-shortcuts.hook";
 
 /** Full save window: raw markdown left, live preview right, metadata bar and actions below. */
 export function Editor() {
-  const d = useEditorDraft();
+  const [target] = useState(readEditorTarget);
+  const d = useEditorDraft(target.draftKey);
   const index = useApp((s) => s.index);
   const config = useApp((s) => s.config);
 
-  useEditorOpen({
+  const opened = useEditorOpen(target, {
     onDoc: d.loadDoc,
     onDraft: d.loadDraft,
-    onRecover: (key) => fire(d.recoverDraft(key), "Couldn't recover the draft"),
+    onRecover: d.recoverDraft,
   });
+  // Until the document is in, a save would have no path and write a new file beside it.
+  const ready = opened.status.kind === "ready";
   const plan = useAssetPlan({
     body: d.body,
     project: d.meta.project,
@@ -44,7 +48,9 @@ export function Editor() {
    * which read as the window refusing to go; the main window shows the result anyway.
    */
   const saveAndClose = useCallback(
-    (mode: SaveMode) =>
+    (mode: SaveMode) => {
+      // Every way in comes through here — the buttons, ⌘↵ in the text, File → Save.
+      if (!ready) return;
       fire(
         d.save(mode, plan.request).then((r) => {
           if (!r) return;
@@ -52,8 +58,9 @@ export function Editor() {
           fire(api("window:revealDoc", r.path), "Saved, but couldn't reveal it");
           guard.closeNow();
         }),
-      ),
-    [d, plan.request, guard],
+      );
+    },
+    [ready, d, plan.request, guard],
   );
   const commit = useCallback(() => saveAndClose("commit"), [saveAndClose]);
   useEditorShortcuts({
@@ -62,9 +69,18 @@ export function Editor() {
     onEscape: useCallback(() => (d.dirty ? guard.prompt() : guard.closeNow()), [d.dirty, guard]),
   });
 
+  // Main finds this window by its document, so opening that document again focuses it —
+  // including after the first save gives a new one a path, or a save renames it.
   useEffect(() => {
-    document.title = `${d.effectiveTitle || "New document"}${d.dirty ? " •" : ""} — Vault`;
-  }, [d.effectiveTitle, d.dirty]);
+    if (d.existingPath) {
+      fireQuietly(api("editor:setPath", d.existingPath), "telling main this window's document");
+    }
+  }, [d.existingPath]);
+
+  useEffect(() => {
+    const name = d.effectiveTitle || target.path || "New document";
+    document.title = `${name}${d.dirty ? " •" : ""} — Vault`;
+  }, [d.effectiveTitle, d.dirty, target.path]);
 
   const projects = index?.projects.filter((p) => p.slug !== "_inbox").map((p) => p.name) ?? [];
   const tags = index?.tags.map((t) => t.tag) ?? [];
@@ -72,68 +88,84 @@ export function Editor() {
   return (
     <div className="relative flex h-full flex-col">
       <div className="flex h-12 shrink-0 items-center justify-between pr-4 pl-titlebar drag">
-        <span className="text-sm text-ink-3">{d.existingPath ?? "New document"}</span>
+        <span className="text-sm text-ink-3">
+          {d.existingPath ?? target.path ?? "New document"}
+        </span>
         <div className="flex items-center gap-3 no-drag">
           <SyncBadge />
         </div>
       </div>
       <AuthExpiredBanner />
       <NoWriteAccessBanner />
-      <SplitPane
-        className="flex-1"
-        storageKey="editor-split"
-        left={
-          <>
-            <div className="flex h-8 shrink-0 items-center justify-between px-6">
-              <SectionLabel>Markdown</SectionLabel>
-              <span className="text-2xs text-ink-4">{plural(countWords(d.body), "word")}</span>
-            </div>
-            <MarkdownEditor
-              value={d.body}
-              onChange={d.setBody}
-              onSubmit={commit}
-              placeholder={EDITOR_PLACEHOLDER}
-              autoFocus
-            />
-          </>
-        }
-        right={
-          <>
-            <div className="flex h-8 shrink-0 items-center px-6">
-              <SectionLabel>Preview</SectionLabel>
-            </div>
-            <div className="min-h-0 flex-1 overflow-y-auto px-8 pb-16">
-              <article className="mx-auto max-w-170">
-                {d.body.trim() ? (
-                  <Markdown source={d.body} docPath={d.existingPath ?? d.pathPreview} />
-                ) : (
-                  <div className="text-sm text-ink-4">Nothing to preview yet.</div>
-                )}
-              </article>
-            </div>
-          </>
-        }
-      />
-      <AssetPanel plan={plan} className="mx-4 mb-2" />
-      <MetadataBar
-        meta={d.meta}
-        inferredTitle={d.inferredTitle}
-        onChange={d.setMeta}
-        projects={projects}
-        tags={tags}
-        lastProject={config?.lastProject ?? null}
-      />
-      <EditorFooter
-        pathPreview={d.pathPreview}
-        hasRemote={!!config?.remote}
-        saving={d.saving}
-        canSave={d.canSave}
-        dirty={d.dirty}
-        persisted={!!d.existingPath}
-        error={d.error}
-        keptOtherVersion={!!d.lastSaved?.preservedExternalEdit}
-        onSave={saveAndClose}
-      />
+      {opened.status.kind === "failed" ? (
+        <OpenFailed
+          path={opened.status.path}
+          reason={opened.status.reason}
+          retrying={opened.status.retrying}
+          onRetry={opened.retry}
+          onClose={guard.closeNow}
+        />
+      ) : (
+        <>
+          <SplitPane
+            className="flex-1"
+            storageKey="editor-split"
+            left={
+              <>
+                <div className="flex h-8 shrink-0 items-center justify-between px-6">
+                  <SectionLabel>Markdown</SectionLabel>
+                  <span className="text-2xs text-ink-4">
+                    {EDITOR_LEAVE_HINT} · {plural(countWords(d.body), "word")}
+                  </span>
+                </div>
+                <MarkdownEditor
+                  value={d.body}
+                  onChange={d.setBody}
+                  onSubmit={commit}
+                  placeholder={EDITOR_PLACEHOLDER}
+                  autoFocus
+                />
+              </>
+            }
+            right={
+              <>
+                <div className="flex h-8 shrink-0 items-center px-6">
+                  <SectionLabel>Preview</SectionLabel>
+                </div>
+                <div className="min-h-0 flex-1 overflow-y-auto px-8 pb-16">
+                  <article className="mx-auto max-w-170">
+                    {d.body.trim() ? (
+                      <Markdown source={d.body} docPath={d.existingPath ?? d.pathPreview} />
+                    ) : (
+                      <div className="text-sm text-ink-4">Nothing to preview yet.</div>
+                    )}
+                  </article>
+                </div>
+              </>
+            }
+          />
+          <AssetPanel plan={plan} className="mx-4 mb-2" />
+          <MetadataBar
+            meta={d.meta}
+            inferredTitle={d.inferredTitle}
+            onChange={d.setMeta}
+            projects={projects}
+            tags={tags}
+            lastProject={config?.lastProject ?? null}
+          />
+          <EditorFooter
+            pathPreview={d.pathPreview}
+            hasRemote={!!config?.remote}
+            saving={d.saving}
+            canSave={d.canSave && ready}
+            dirty={d.dirty}
+            persisted={!!d.existingPath}
+            error={d.error}
+            keptOtherVersion={!!d.lastSaved?.preservedExternalEdit}
+            onSave={saveAndClose}
+          />
+        </>
+      )}
       <UnsavedGuard
         open={guard.prompting}
         onKeepEditing={guard.dismiss}
@@ -144,6 +176,8 @@ export function Editor() {
           guard.closeNow();
         }}
         onSave={commit}
+        saving={d.saving === "commit"}
+        error={d.error}
       />
     </div>
   );

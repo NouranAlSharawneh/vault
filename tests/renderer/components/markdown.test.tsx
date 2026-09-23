@@ -1,6 +1,6 @@
-import { render } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 // @vitest-environment jsdom
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { Markdown } from "@/components/markdown";
 import { mockVaultApi } from "../helpers/mock-vault-api";
 
@@ -94,5 +94,63 @@ describe("Markdown — GFM still works alongside raw HTML", () => {
   it("keeps the language class a fenced block needs", () => {
     const c = html("```ts\nconst a = 1;\n```");
     expect(c.querySelector("code")?.className).toContain("language-ts");
+  });
+});
+
+describe("Markdown — links", () => {
+  const DOC = [
+    "# Intro",
+    "",
+    "See [setup](#set-up), [the spec](../specs/limits.md) or [mail](mailto:a@b.c).",
+    "",
+    "## Set up",
+    "",
+    "Steps.",
+  ].join("\n");
+
+  /** Mounted inside a scroll container, as the reader and the editor preview both are. */
+  const mount = (onOpenDoc?: (path: string) => void) => {
+    const api = mockVaultApi();
+    const view = render(
+      <div data-testid="scroller" style={{ overflowY: "auto" }}>
+        <Markdown source={DOC} docPath="atlas-api/notes/doc.md" onOpenDoc={onOpenDoc} />
+      </div>,
+    );
+
+    return { ...view, api, scroller: view.getByTestId("scroller") };
+  };
+
+  it("gives headings GitHub's ids, behind the sanitizer's prefix", () => {
+    const { container } = mount();
+    expect(container.querySelector("h2")?.id).toBe("user-content-set-up");
+  });
+
+  it("scrolls a #fragment click to its heading within the scroll container", () => {
+    const { container, scroller, api } = mount();
+    const heading = container.querySelector("h2")!;
+    heading.getBoundingClientRect = () => ({ top: 640 }) as DOMRect;
+    scroller.getBoundingClientRect = () => ({ top: 40 }) as DOMRect;
+    fireEvent.click(screen.getByText("setup"));
+    expect(scroller.scrollTop).toBe(600);
+    expect(api.invoke).not.toHaveBeenCalled();
+  });
+
+  it("opens a relative .md link in Vault, resolved against the doc's folder", () => {
+    const onOpenDoc = vi.fn();
+    mount(onOpenDoc);
+    fireEvent.click(screen.getByText("the spec"));
+    expect(onOpenDoc).toHaveBeenCalledWith("atlas-api/specs/limits.md");
+  });
+
+  it("leaves a relative .md link alone where there is nothing to open it in", () => {
+    const { api } = mount();
+    expect(() => fireEvent.click(screen.getByText("the spec"))).not.toThrow();
+    expect(api.invoke).not.toHaveBeenCalled();
+  });
+
+  it("hands mailto: to the system", () => {
+    const { api } = mount();
+    fireEvent.click(screen.getByText("mail"));
+    expect(api.invoke).toHaveBeenCalledWith("app:openExternal", "mailto:a@b.c");
   });
 });

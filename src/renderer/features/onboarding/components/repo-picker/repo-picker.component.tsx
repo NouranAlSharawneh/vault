@@ -1,5 +1,5 @@
 import { ArrowRight, FolderOpen, Plus, Search } from "lucide-react";
-import { Button, Card, ListRow, Option, SectionLabel, Spinner } from "@/components/ui";
+import { Button, Card, ListRow, Option, PathText, SectionLabel, Spinner } from "@/components/ui";
 import { REPO_LIST_LIMIT } from "@/constants";
 import { cx } from "@/helpers";
 import { fire } from "@/lib/api";
@@ -107,9 +107,9 @@ export function RepoPicker({ onDone, onBack }: RepoPickerProps) {
       )}
 
       <div className="mt-5 flex items-center gap-2 text-xs text-ink-3">
-        <FolderOpen size={12} />
-        <span>clones to</span>
-        <span className="truncate font-mono text-ink-2">{p.localPath}</span>
+        <FolderOpen size={12} className="shrink-0" />
+        <span className="shrink-0 whitespace-nowrap">clones to</span>
+        <PathText path={p.localPath} className="text-ink-2" />
         <Button variant="link" className="ml-auto shrink-0" onClick={() => fire(p.chooseFolder())}>
           Change
         </Button>

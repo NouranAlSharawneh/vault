@@ -51,3 +51,9 @@ export const MARKDOWN_SANITIZE_SCHEMA: typeof defaultSchema = {
     video: ["src", "poster", "controls", "width", "height"],
   },
 };
+
+/**
+ * What the sanitizer puts in front of every `id` so a doc can't clobber the app's own
+ * elements. Links keep the fragment as written (`#intro`), so anchor clicks add it back.
+ */
+export const MARKDOWN_ID_PREFIX = MARKDOWN_SANITIZE_SCHEMA.clobberPrefix ?? "user-content-";

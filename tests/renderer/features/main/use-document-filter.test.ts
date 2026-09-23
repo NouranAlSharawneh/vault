@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { applyFilter } from "@/features/main/hooks/use-document-filter.hook";
+import { applyFilter, touchedAt } from "@/features/main/hooks/use-document-filter.hook";
 import type { DocMeta, IndexSnapshot } from "@shared/types";
 
 const NOW = Date.parse("2026-09-10T12:00:00Z");
@@ -136,5 +136,50 @@ describe("Recent keeps its own order", () => {
 
   it("still drops anything outside the window", () => {
     expect(filter("newest")).not.toContain("Mike");
+  });
+
+  it("keeps a doc whose `created` doesn't parse but which was edited this week", () => {
+    const odd: IndexSnapshot = {
+      ...index,
+      docs: [doc({ path: "w", title: "Undated", created: "someday", mtime: NOW - 3_600_000 })],
+    };
+    const r = applyFilter(odd, { ...base, collection: "recent" }, [], NOW);
+    expect(r.docs.map((d) => d.title)).toEqual(["Undated"]);
+  });
+});
+
+describe("touchedAt", () => {
+  it("is the later of created and mtime", () => {
+    const edited = Date.parse("2026-09-09T00:00:00Z");
+    expect(touchedAt(doc({ created: "2026-09-01T00:00:00Z", mtime: edited }))).toBe(edited);
+    expect(touchedAt(doc({ created: "2026-09-10T00:00:00Z", mtime: edited }))).toBe(
+      Date.parse("2026-09-10T00:00:00Z"),
+    );
+  });
+
+  it("never comes out NaN", () => {
+    expect(touchedAt(doc({ created: "", mtime: 5 }))).toBe(5);
+    expect(touchedAt(doc({ created: "nope", mtime: Number.NaN }))).toBe(0);
+  });
+});
+
+describe("date sorts", () => {
+  // As text, "2026-09-01T23:00:00-05:00" sorts before "2026-09-02T01:00:00Z"; as an
+  // instant it is two hours later. A date-only value and a bad one join in.
+  const mixed: IndexSnapshot = {
+    ...index,
+    docs: [
+      doc({ path: "utc", created: "2026-09-02T01:00:00Z" }),
+      doc({ path: "offset", created: "2026-09-01T23:00:00-05:00" }),
+      doc({ path: "day", created: "2026-08-30" }),
+      doc({ path: "bad", created: "not a date" }),
+    ],
+  };
+  const order = (sort: "newest" | "oldest") =>
+    applyFilter(mixed, { ...base, sort }, [], NOW).docs.map((d) => d.path);
+
+  it("orders by the instant, not the string", () => {
+    expect(order("newest")).toEqual(["offset", "utc", "day", "bad"]);
+    expect(order("oldest")).toEqual(["day", "utc", "offset", "bad"]);
   });
 });
