@@ -61,7 +61,7 @@ export function ReaderToolbar({
             tooltip={doc.starred ? "Unstar" : "Star"}
             aria-label="star"
           >
-            <Star size={12} className={cx(doc.starred && "fill-warn text-warn")} />
+            <Star size={12} className={cx(doc.starred && "fill-warn-2 text-warn-2")} />
           </Button>
           {/* Icons only: with the history drawer open the reader is narrow, and labelled
               buttons ran into each other. Every one names itself on hover instead. */}

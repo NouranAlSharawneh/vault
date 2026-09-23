@@ -44,11 +44,13 @@
   --color-line-2: #d9d4ca;
   --color-ink: #1e1d1b;
   --color-ink-2: #4b4844;
-  /* Contrast against paper: 5.6:1 and 4.8:1. ink-4 carries every section label, timestamp
+  /* Contrast against paper: 6.1:1 and 5.2:1. ink-4 carries every section label, timestamp
      and count in the app, mostly at 10.5px, and used to sit at 2.4:1 — quiet to the point
-     of not reliably existing. Both moved together so the two tiers stay distinct. */
-  --color-ink-3: #6b665e;
-  --color-ink-4: #767066;
+     of not reliably existing. It also sits on paper-3 (hover fills, the tag filter box,
+     the search pill), where it has to clear 4.5:1 too; ink-3 stepped down with it so the
+     two tiers stay as far apart as they were. */
+  --color-ink-3: #656058;
+  --color-ink-4: #706a60;
 
   --color-cherry: #b4232f;
   --color-cherry-2: #8f1a25;
@@ -61,8 +63,9 @@
      This is the one to use when a word or a number has to be green. */
   --color-ok-2: #33774e;
   --color-warn: #e4b04a;
-  /* `warn` is a dot, a star fill and a spinner — 1.9:1, fine as a shape and unreadable
-     as a word. This is the one to use when the warning is text on a light ground. */
+  /* `warn` is a dot and a spinner — 1.9:1, fine as a shape beside a word and unreadable
+     as a word. This is the one to use when the warning is text on a light ground, or a
+     shape that has to be seen on its own (the star: 3:1 is the floor for that). */
   --color-warn-2: #856a20;
 
   /* GitHub alert accents. Their own ramp, so ok/warn stay reserved for sync status. */
@@ -78,7 +81,9 @@
   --color-overlay-line: #3f3c38;
   --color-overlay-ink: #f3f0ea;
   --color-overlay-ink-2: #b8b3aa;
-  --color-overlay-ink-3: #7d786f;
+  /* The quiet tier on the dark surfaces (palette hints, capture labels, placeholders).
+     Readable on overlay-2 as well as overlay, since the capture fields sit on overlay-2. */
+  --color-overlay-ink-3: #938e85;
 
   --radius-xs: 5px;
   --radius-sm: 6px;
@@ -501,7 +506,7 @@ input {
 }
 .hljs-comment,
 .hljs-quote {
-  color: #7d786f;
+  color: var(--color-overlay-ink-3);
   font-style: italic;
 }
 .hljs-title,

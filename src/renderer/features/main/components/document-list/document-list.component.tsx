@@ -52,7 +52,7 @@ export function DocumentList({
           >
             <div className="flex items-baseline justify-between gap-2">
               <span className="flex min-w-0 items-center gap-1.5">
-                {d.starred && <Star size={10} className="shrink-0 fill-warn text-warn" />}
+                {d.starred && <Star size={10} className="shrink-0 fill-warn-2 text-warn-2" />}
                 {d.conflict && (
                   <GitMerge
                     size={10}
