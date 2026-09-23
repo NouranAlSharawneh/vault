@@ -1,4 +1,7 @@
-import { useEffect, useRef } from "react";
+import { defaultKeymap, history, historyKeymap, indentWithTab } from "@codemirror/commands";
+import { markdown, markdownLanguage } from "@codemirror/lang-markdown";
+import { HighlightStyle, syntaxHighlighting } from "@codemirror/language";
+import { languages } from "@codemirror/language-data";
 import { EditorState, Compartment } from "@codemirror/state";
 import {
   EditorView,
@@ -7,11 +10,8 @@ import {
   drawSelection,
   highlightActiveLine,
 } from "@codemirror/view";
-import { defaultKeymap, history, historyKeymap, indentWithTab } from "@codemirror/commands";
-import { markdown, markdownLanguage } from "@codemirror/lang-markdown";
-import { languages } from "@codemirror/language-data";
-import { HighlightStyle, syntaxHighlighting } from "@codemirror/language";
 import { tags } from "@lezer/highlight";
+import { useEffect, useRef } from "react";
 import type { MarkdownEditorProps } from "../markdown-editor.types";
 
 const mdHighlight = HighlightStyle.define([
@@ -58,6 +58,7 @@ export function useCodeMirror({ value, onChange, onSubmit, placeholder, autoFocu
               key: "Mod-Enter",
               run: () => {
                 onSubmitRef.current?.();
+
                 return true;
               },
             },
@@ -72,6 +73,7 @@ export function useCodeMirror({ value, onChange, onSubmit, placeholder, autoFocu
     const v = new EditorView({ state, parent: host.current });
     view.current = v;
     if (autoFocus) v.focus();
+
     return () => {
       v.destroy();
       view.current = null;

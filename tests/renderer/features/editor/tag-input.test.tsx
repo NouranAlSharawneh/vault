@@ -1,7 +1,7 @@
-// @vitest-environment jsdom
-import { describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+// @vitest-environment jsdom
+import { describe, expect, it, vi } from "vitest";
 import { TagInput } from "@/features/editor/components/tag-input/tag-input.component";
 
 describe("TagInput", () => {

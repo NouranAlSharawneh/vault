@@ -1,11 +1,8 @@
-import { app, dialog, ipcMain, shell } from "electron";
-import { existsSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
-import { DEFAULT_BRANCH, DEFAULT_HOTKEY, DEFAULT_PUSH_DEBOUNCE_MS } from "@shared/constants";
+import { app, dialog, ipcMain, shell } from "electron";
 import type { InvokeChannel, IpcInvoke } from "@shared/ipc";
-import type { IpcHandler } from "./ipc.types";
-import type { VaultConfig } from "@shared/types";
+import { fire } from "../../lib/fire";
 import { NetworkError } from "../../network/axios";
 import {
   createRepo,
@@ -14,13 +11,13 @@ import {
   pollDeviceFlow,
   startDeviceFlow,
 } from "../../network/github";
-import { readClipboard } from "../../services/capture/capture.service";
-import { GitService } from "../../services/git/git.service";
-import { clearDraft, loadDraft, saveDraft } from "../../store/draft.store";
-import { getSettings, updateSettings } from "../../store/settings.store";
-import { loadCredentials, loadToken } from "../../store/token.store";
-import { getOAuthConfig } from "../../store/oauth-config";
+import { resolveAssets } from "../../services/assets";
 import { cancelWebFlow, runWebFlow } from "../../services/auth/web-flow.service";
+import { readClipboard } from "../../services/capture/capture.service";
+import { clearDraft, loadDraft, saveDraft } from "../../store/draft.store";
+import { getOAuthConfig } from "../../store/oauth-config";
+import { getSettings, updateSettings } from "../../store/settings.store";
+import { loadCredentials } from "../../store/token.store";
 import {
   broadcast,
   hideCaptureWindow,
@@ -32,9 +29,10 @@ import {
 import { registerHotkey } from "../hotkey/hotkey";
 import { buildAppMenu } from "../menu/menu";
 import { resetApp } from "../session/reset-app";
-import { resolveAssets } from "../../services/assets";
-import { confirmPurge } from "./confirm-purge";
 import { session } from "../session/session";
+import { confirmPurge } from "./confirm-purge";
+import type { IpcHandler } from "./ipc.types";
+import { setupVault } from "./setup-vault";
 
 /** Typed `ipcMain.handle` that normalises errors so the renderer sees a plain message. */
 function handle<C extends InvokeChannel>(channel: C, fn: IpcHandler<C>): void {
@@ -54,7 +52,7 @@ export function registerIpcHandlers(): void {
   handle("app:version", () => app.getVersion());
   handle("app:platform", () => process.platform);
   handle("app:openExternal", (url) => {
-    if (/^https?:\/\//.test(url)) void shell.openExternal(url);
+    if (/^https?:\/\//.test(url)) fire(shell.openExternal(url), "opening a link");
   });
 
   // ---- auth
@@ -67,6 +65,7 @@ export function registerIpcHandlers(): void {
   );
   handle("auth:methods", () => {
     const cfg = getOAuthConfig();
+
     return { oauth: !!cfg?.clientSecret, device: !!cfg };
   });
   handle("auth:webStart", () => {
@@ -87,7 +86,7 @@ export function registerIpcHandlers(): void {
     deviceAbort?.abort();
     deviceAbort = new AbortController();
     const { deviceCode, ...publicSession } = await startDeviceFlow(clientId);
-    void shell.openExternal(publicSession.verificationUri);
+    fire(shell.openExternal(publicSession.verificationUri), "opening GitHub");
     const { signal } = deviceAbort;
     void pollDeviceFlow(clientId, deviceCode, publicSession.interval, signal, (status) =>
       broadcast("auth:deviceStatus", { status }),
@@ -96,12 +95,14 @@ export function registerIpcHandlers(): void {
       .catch((e: unknown) => {
         if (!signal.aborted) console.warn("device flow failed", e);
       });
+
     return publicSession;
   });
   handle("auth:deviceCancel", () => deviceAbort?.abort());
   handle("auth:signOut", () => session.signOut());
   handle("auth:tokenStatus", () => {
     const creds = loadCredentials();
+
     return {
       present: !!creds,
       expiresAt: creds?.expiresAt ?? null,
@@ -124,41 +125,13 @@ export function registerIpcHandlers(): void {
       properties: ["openDirectory", "createDirectory"],
       defaultPath: join(homedir(), "Documents"),
     });
+
     return r.canceled ? null : r.filePaths[0];
   });
   handle("vault:setup", async ({ repo, localPath }) => {
-    if (!(await GitService.isAvailable())) {
-      throw new Error("git is not installed. On macOS run `xcode-select --install` and try again.");
-    }
-    // Connecting an existing local vault to a repo runs through here too, so anything
-    // that belongs to the vault rather than to the repo is carried over — otherwise
-    // attaching a remote silently reset the hotkey, the push cadence and the last project.
-    const previous = getSettings().vault;
-    const keep = previous?.root === localPath ? previous : null;
-    const config: VaultConfig = {
-      root: localPath,
-      remote: repo?.fullName ?? null,
-      branch: repo?.defaultBranch ?? keep?.branch ?? DEFAULT_BRANCH,
-      lastProject: keep?.lastProject ?? null,
-      lastSource: keep?.lastSource ?? "claude",
-      hotkey: keep?.hotkey ?? DEFAULT_HOTKEY,
-      pushDebounceMs: keep?.pushDebounceMs ?? DEFAULT_PUSH_DEBOUNCE_MS,
-    };
-    if (repo && !existsSync(join(localPath, ".git"))) {
-      try {
-        await GitService.clone(repo.cloneUrl, localPath, loadToken(), repo.defaultBranch);
-      } catch {
-        // An empty repo can't be cloned; init locally and point origin at it below.
-      }
-    }
-    if (!existsSync(join(localPath, ".git"))) await GitService.init(localPath, config.branch);
-    updateSettings({ vault: config, onboarded: true });
-    const vault = await session.openVault(config);
-    if (repo) {
-      await vault.git.setRemote(repo.cloneUrl);
-      vault.schedulePush();
-    }
+    const config = await setupVault(session, repo, localPath);
     registerHotkey(config.hotkey);
+
     return config;
   });
   handle("vault:updateConfig", (patch) => {
@@ -172,6 +145,7 @@ export function registerIpcHandlers(): void {
     updateSettings({ vault: next });
     if (session.vault) Object.assign(session.vault.config, next);
     if (patch.hotkey) buildAppMenu(next.hotkey);
+
     return next;
   });
   handle("draft:save", (key, draft) => saveDraft(key, draft));
@@ -194,6 +168,7 @@ export function registerIpcHandlers(): void {
       lastSource: req.frontmatter.source,
     });
     updateSettings({ vault: vault.config });
+
     return res;
   });
   handle("doc:trash", (p) => session.requireVault().trash(p));
@@ -204,6 +179,7 @@ export function registerIpcHandlers(): void {
     const vault = session.requireVault();
     // Asked here so neither the reader nor Settings can skip it.
     if (!(await confirmPurge(p, await vault.listTrash()))) return { removed: 0, assets: [] };
+
     return vault.purgeTrash(p);
   });
   handle("doc:setStarred", (p, starred) => session.requireVault().setStarred(p, starred));
@@ -240,6 +216,7 @@ export function registerIpcHandlers(): void {
       properties: ["openDirectory"],
       defaultPath: defaultPath ?? join(homedir(), "Documents"),
     });
+
     return r.canceled ? null : r.filePaths[0];
   });
   handle("capture:readClipboard", () => readClipboard());

@@ -1,6 +1,6 @@
+import { act, renderHook } from "@testing-library/react";
 // @vitest-environment jsdom
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { act, renderHook } from "@testing-library/react";
 import { useUnsavedGuard } from "@/features/editor/components/unsaved-guard/hooks/use-unsaved-guard.hook";
 import { useEditorShortcuts } from "@/features/editor/hooks/use-editor-shortcuts.hook";
 import { mockVaultApi } from "../../helpers/mock-vault-api";
@@ -8,6 +8,7 @@ import { mockVaultApi } from "../../helpers/mock-vault-api";
 const fireBeforeUnload = () => {
   const e = new Event("beforeunload", { cancelable: true });
   window.dispatchEvent(e);
+
   return e.defaultPrevented;
 };
 

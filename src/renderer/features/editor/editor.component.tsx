@@ -1,23 +1,23 @@
 import { useCallback, useEffect } from "react";
-import { countWords } from "@shared/helpers";
 import { AssetPanel, useAssetPlan } from "@/components/asset-panel";
 import { AuthExpiredBanner } from "@/components/auth-expired-banner/auth-expired-banner.component";
-import { api } from "@/lib/api";
 import { Markdown } from "@/components/markdown";
 import { SyncBadge } from "@/components/sync-badge/sync-badge.component";
 import { SectionLabel, SplitPane } from "@/components/ui";
 import { EDITOR_PLACEHOLDER } from "@/data/editor.data";
 import { parentDir, plural } from "@/helpers";
+import { api, fire } from "@/lib/api";
 import { useApp } from "@/stores/app";
+import { countWords } from "@shared/helpers";
+import { EditorFooter } from "./components/editor-footer/editor-footer.component";
+import { MarkdownEditor } from "./components/markdown-editor/markdown-editor.component";
+import { MetadataBar } from "./components/metadata-bar/metadata-bar.component";
+import { useUnsavedGuard } from "./components/unsaved-guard/hooks/use-unsaved-guard.hook";
+import { UnsavedGuard } from "./components/unsaved-guard/unsaved-guard.component";
 import type { SaveMode } from "./editor.types";
 import { useEditorDraft } from "./hooks/use-editor-draft.hook";
 import { useEditorOpen } from "./hooks/use-editor-open.hook";
 import { useEditorShortcuts } from "./hooks/use-editor-shortcuts.hook";
-import { MarkdownEditor } from "./components/markdown-editor/markdown-editor.component";
-import { MetadataBar } from "./components/metadata-bar/metadata-bar.component";
-import { EditorFooter } from "./components/editor-footer/editor-footer.component";
-import { UnsavedGuard } from "./components/unsaved-guard/unsaved-guard.component";
-import { useUnsavedGuard } from "./components/unsaved-guard/hooks/use-unsaved-guard.hook";
 
 /** Full save window: raw markdown left, live preview right, metadata bar and actions below. */
 export function Editor() {
@@ -25,7 +25,11 @@ export function Editor() {
   const index = useApp((s) => s.index);
   const config = useApp((s) => s.config);
 
-  useEditorOpen({ onDoc: d.loadDoc, onDraft: d.loadDraft, onRecover: d.recoverDraft });
+  useEditorOpen({
+    onDoc: d.loadDoc,
+    onDraft: d.loadDraft,
+    onRecover: (key) => fire(d.recoverDraft(key), "Couldn't recover the draft"),
+  });
   const plan = useAssetPlan({
     body: d.body,
     project: d.meta.project,
@@ -38,12 +42,14 @@ export function Editor() {
    */
   const saveAndClose = useCallback(
     (mode: SaveMode) =>
-      void d.save(mode, plan.request).then((r) => {
-        if (!r) return;
-        // Same as the capture sheet: hand the new doc to the main window on the way out.
-        void api("window:revealDoc", r.path);
-        guard.closeNow();
-      }),
+      fire(
+        d.save(mode, plan.request).then((r) => {
+          if (!r) return;
+          // Same as the capture sheet: hand the new doc to the main window on the way out.
+          fire(api("window:revealDoc", r.path), "Saved, but couldn't reveal it");
+          guard.closeNow();
+        }),
+      ),
     [d, plan.request, guard],
   );
   const commit = useCallback(() => saveAndClose("commit"), [saveAndClose]);

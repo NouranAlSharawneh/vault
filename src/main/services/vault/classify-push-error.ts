@@ -16,5 +16,6 @@ export function classifyPushError(message: string): PushFailure {
   if (/could not resolve|network|timed out|unable to access|connection/.test(msg)) {
     return "offline";
   }
+
   return "other";
 }

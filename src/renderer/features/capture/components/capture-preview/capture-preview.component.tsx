@@ -4,6 +4,7 @@ import type { CapturePreviewProps } from "./capture-preview.types";
 /** The whole clipboard, monospace on the deep-stone surface, scrollable. */
 export function CapturePreview({ clip, compact }: CapturePreviewProps) {
   const lines = clip.text.split(/\r?\n/);
+
   return (
     <div>
       <pre

@@ -7,6 +7,7 @@ export function useCombobox(value: string, onChange: (v: string) => void, option
 
   const matches = useMemo(() => {
     const q = value.trim().toLowerCase();
+
     return options.filter((o) => !q || o.toLowerCase().includes(q)).slice(0, 8);
   }, [value, options]);
 

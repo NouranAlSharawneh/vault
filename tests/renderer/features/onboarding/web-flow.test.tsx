@@ -1,9 +1,9 @@
-// @vitest-environment jsdom
-import { describe, expect, it, vi } from "vitest";
 import { act, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { WebFlow } from "@/features/onboarding/components/web-flow/web-flow.component";
+// @vitest-environment jsdom
+import { describe, expect, it, vi } from "vitest";
 import { WEB_FLOW_STATUS_TEXT } from "@/data/auth.data";
+import { WebFlow } from "@/features/onboarding/components/web-flow/web-flow.component";
 import { mockVaultApi } from "../../helpers/mock-vault-api";
 
 describe("WebFlow — what the user sees when GitHub says no", () => {

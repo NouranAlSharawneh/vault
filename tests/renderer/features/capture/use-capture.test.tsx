@@ -1,6 +1,6 @@
+import { act, renderHook, waitFor } from "@testing-library/react";
 // @vitest-environment jsdom
 import { describe, expect, it } from "vitest";
-import { act, renderHook, waitFor } from "@testing-library/react";
 import { useCapture } from "@/features/capture/hooks/use-capture.hook";
 import { useApp } from "@/stores/app";
 import type { ClipboardCapture } from "@shared/types";

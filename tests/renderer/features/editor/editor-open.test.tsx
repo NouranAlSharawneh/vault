@@ -1,6 +1,6 @@
+import { renderHook } from "@testing-library/react";
 // @vitest-environment jsdom
 import { describe, expect, it, vi } from "vitest";
-import { renderHook } from "@testing-library/react";
 import { useEditorOpen } from "@/features/editor/hooks/use-editor-open.hook";
 import { mockVaultApi } from "../../helpers/mock-vault-api";
 
@@ -14,7 +14,11 @@ describe("useEditorOpen", () => {
     // and the config changes from inside this window when the image panel picks a folder.
     // Re-reading would replace whatever the user had typed.
     const { rerender } = renderHook(() =>
-      useEditorOpen({ onDoc: () => undefined, onDraft: () => undefined, onRecover: () => undefined }),
+      useEditorOpen({
+        onDoc: () => undefined,
+        onDraft: () => undefined,
+        onRecover: () => undefined,
+      }),
     );
     rerender();
     rerender();

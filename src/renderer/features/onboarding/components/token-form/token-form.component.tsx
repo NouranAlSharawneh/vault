@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react";
 import { Button, Card } from "@/components/ui";
 import { TOKEN_SETTINGS_PATH } from "@/data/onboarding.data";
-import { api } from "@/lib/api";
+import { api, fire } from "@/lib/api";
 import { useTokenSignIn } from "./hooks/use-token-sign-in.hook";
 import type { TokenFormProps } from "./token-form.types";
 
@@ -20,7 +20,9 @@ export function TokenForm({ onBack }: TokenFormProps) {
           <Button
             variant="link"
             className="text-sm underline"
-            onClick={() => api("github:openInBrowser", TOKEN_SETTINGS_PATH)}
+            onClick={() =>
+              fire(api("github:openInBrowser", TOKEN_SETTINGS_PATH), "Couldn't open GitHub")
+            }
           >
             github.com/{TOKEN_SETTINGS_PATH}
           </Button>
@@ -55,7 +57,7 @@ export function TokenForm({ onBack }: TokenFormProps) {
           variant="primary"
           loading={busy}
           disabled={!canSubmit}
-          onClick={() => void submit()}
+          onClick={() => fire(submit())}
         >
           Sign in
         </Button>

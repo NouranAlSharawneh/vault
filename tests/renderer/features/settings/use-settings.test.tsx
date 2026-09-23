@@ -1,10 +1,10 @@
+import { act, renderHook } from "@testing-library/react";
 // @vitest-environment jsdom
 import { describe, expect, it } from "vitest";
-import { act, renderHook } from "@testing-library/react";
-import type { VaultConfig } from "@shared/types";
 import { useSettings } from "@/features/settings/hooks/use-settings.hook";
 import { useApp } from "@/stores/app";
 import { useToast } from "@/stores/toast";
+import type { VaultConfig } from "@shared/types";
 import { mockVaultApi } from "../../helpers/mock-vault-api";
 
 const config: VaultConfig = {

@@ -1,7 +1,8 @@
 import { FolderOpen, Image, TriangleAlert } from "lucide-react";
-import { ASSET_WARN_BYTES } from "@shared/constants";
 import { Button, Chip } from "@/components/ui";
 import { cx, formatBytes, plural, shortPath } from "@/helpers";
+import { fire } from "@/lib/api";
+import { ASSET_WARN_BYTES } from "@shared/constants";
 import type { AssetPanelProps } from "./asset-panel.types";
 
 /**
@@ -17,6 +18,7 @@ export function AssetPanel({ plan, dark, className }: AssetPanelProps) {
   if (!plan.refs.length) return null;
   const muted = dark ? "text-overlay-ink-3" : "text-ink-4";
   const strong = dark ? "text-overlay-ink" : "text-ink";
+
   return (
     <div
       className={cx(
@@ -46,7 +48,7 @@ export function AssetPanel({ plan, dark, className }: AssetPanelProps) {
           variant={dark ? "ghost" : "outline"}
           size="sm"
           className={cx("ml-auto", dark && "text-overlay-ink-2 hover:bg-overlay-3")}
-          onClick={() => void plan.chooseFolder()}
+          onClick={() => fire(plan.chooseFolder())}
         >
           <FolderOpen size={11} /> {plan.baseDir ? "Change folder" : "Choose folder…"}
         </Button>
@@ -55,6 +57,7 @@ export function AssetPanel({ plan, dark, className }: AssetPanelProps) {
         {plan.refs.map((r) => {
           const off = plan.excluded.includes(r.ref);
           const big = r.bytes > ASSET_WARN_BYTES;
+
           return (
             <li key={r.ref} className="flex items-center gap-2 font-mono">
               <span

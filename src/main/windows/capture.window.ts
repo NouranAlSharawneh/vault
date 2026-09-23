@@ -5,9 +5,10 @@ import {
   CAPTURE_WINDOW,
   OVERLAY_BG,
 } from "@shared/constants";
+import { fire } from "../lib/fire";
+import { editorWindowCount } from "./editor.window";
 import { COMMON_WINDOW_OPTIONS, IS_MAC, loadRoute } from "./load-route";
 import { getMainWindow } from "./main.window";
-import { editorWindowCount } from "./editor.window";
 
 let captureWin: BrowserWindow | null = null;
 
@@ -37,6 +38,7 @@ export function getCaptureWindow(): BrowserWindow {
   });
   captureWin.on("closed", () => (captureWin = null));
   loadRoute(captureWin, "capture");
+
   return captureWin;
 }
 
@@ -46,9 +48,10 @@ export function showCaptureWindow(): BrowserWindow {
   const { x, y, width, height } = display.workArea;
   const [w] = win.getSize();
   win.setPosition(Math.round(x + (width - w) / 2), Math.round(y + height * 0.18), false);
-  if (IS_MAC) app.dock?.show();
+  if (IS_MAC && app.dock) fire(app.dock.show(), "showing the dock icon");
   win.show();
   win.focus();
+
   return win;
 }
 

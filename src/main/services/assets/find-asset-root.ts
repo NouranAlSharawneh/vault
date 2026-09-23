@@ -28,6 +28,7 @@ import { spotlightRoots } from "./spotlight";
 export async function findAssetRoot(refs: string[], known: string[] = []): Promise<string | null> {
   const probes = pickProbes(refs);
   if (!probes.length) return null;
+
   return (
     (await best(await spotlightRoots(probes), refs)) ?? best(await walkRoots(probes, known), refs)
   );
@@ -85,6 +86,7 @@ async function walkRoots(probes: string[], known: string[]): Promise<string[]> {
     }
     queue = next;
   }
+
   return out;
 }
 
@@ -104,6 +106,7 @@ async function best(candidates: string[], refs: string[]): Promise<string | null
       score = hits;
     }
   }
+
   return score > 0 ? winner : null;
 }
 

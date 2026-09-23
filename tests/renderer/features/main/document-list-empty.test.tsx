@@ -1,6 +1,6 @@
+import { fireEvent, render, screen } from "@testing-library/react";
 // @vitest-environment jsdom
 import { describe, expect, it, vi } from "vitest";
-import { fireEvent, render, screen } from "@testing-library/react";
 import { DocumentList } from "@/features/main/components/document-list/document-list.component";
 
 const props = {
@@ -32,7 +32,12 @@ describe("an empty document list", () => {
   it("names the filter when there is one, and offers to clear it", () => {
     const onClearTags = vi.fn();
     render(
-      <DocumentList {...props} title="Atlas API" activeTags={["spec", "infra"]} onClearTags={onClearTags} />,
+      <DocumentList
+        {...props}
+        title="Atlas API"
+        activeTags={["spec", "infra"]}
+        onClearTags={onClearTags}
+      />,
     );
     expect(screen.getByText("Nothing matches")).toBeTruthy();
     expect(screen.getByText("No documents in Atlas API tagged #spec #infra.")).toBeTruthy();

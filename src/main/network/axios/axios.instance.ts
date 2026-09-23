@@ -1,8 +1,8 @@
 import axios, { type AxiosInstance } from "axios";
 import { GITHUB_API, GITHUB_WEB, NETWORK_TIMEOUT_MS } from "@shared/constants";
+import type { NetworkOptions } from "./axios.types";
 import { createRequestInterceptor } from "./request.interceptor";
 import { createResponseInterceptor } from "./response.interceptor";
-import type { NetworkOptions } from "./axios.types";
 
 let api: AxiosInstance | null = null;
 let oauth: AxiosInstance | null = null;
@@ -27,11 +27,13 @@ export function configureNetwork(opts: NetworkOptions): void {
 /** REST client for api.github.com. */
 export function githubApi(): AxiosInstance {
   if (!api) throw new Error("configureNetwork() must run before any request");
+
   return api;
 }
 
 /** Client for the github.com OAuth device-flow endpoints. */
 export function githubOAuth(): AxiosInstance {
   if (!oauth) throw new Error("configureNetwork() must run before any request");
+
   return oauth;
 }

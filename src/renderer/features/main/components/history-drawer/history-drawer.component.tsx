@@ -1,9 +1,10 @@
 import { RotateCcw, X } from "lucide-react";
 import { Button, Empty, ListRow, SectionLabel } from "@/components/ui";
 import { cx, diffStat, parseUnifiedDiff } from "@/helpers";
+import { fire } from "@/lib/api";
 import type { DiffHunk } from "@shared/types";
-import { useDocHistory } from "./hooks/use-doc-history.hook";
 import type { HistoryDrawerProps } from "./history-drawer.types";
+import { useDocHistory } from "./hooks/use-doc-history.hook";
 
 /** ⌘Y: every commit that touched this document, what each changed, and a way back. */
 export function HistoryDrawer({ path, onClose, onRestored }: HistoryDrawerProps) {
@@ -80,7 +81,7 @@ export function HistoryDrawer({ path, onClose, onRestored }: HistoryDrawerProps)
                 variant="outline"
                 size="sm"
                 loading={h.restoring}
-                onClick={() => void h.restore()}
+                onClick={() => fire(h.restore())}
                 tooltip="Brings it back as a new commit — nothing is rewritten"
               >
                 <RotateCcw size={11} /> Restore this version
@@ -140,5 +141,6 @@ function lineRange(hunk: DiffHunk): string {
   if (!numbers.length) return "";
   const from = Math.min(...numbers);
   const to = Math.max(...numbers);
+
   return from === to ? `Line ${from}` : `Lines ${from}–${to}`;
 }

@@ -1,5 +1,5 @@
-import { Component } from "react";
 import { RotateCcw } from "lucide-react";
+import { Component } from "react";
 import { Button } from "@/components/ui";
 import type { ErrorBoundaryProps, ErrorBoundaryState } from "./error-boundary.types";
 
@@ -26,6 +26,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
   override render() {
     const { error } = this.state;
     if (!error) return this.props.children;
+
     return (
       // Painted, and rounded: the capture sheet is a transparent window, so an unpainted
       // panel would leave this message sitting on the desktop.

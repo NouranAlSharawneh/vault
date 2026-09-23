@@ -1,6 +1,6 @@
+import { fireEvent, render, screen } from "@testing-library/react";
 // @vitest-environment jsdom
 import { describe, expect, it } from "vitest";
-import { fireEvent, render, screen } from "@testing-library/react";
 import { SplitPane } from "@/components/ui";
 
 describe("SplitPane", () => {

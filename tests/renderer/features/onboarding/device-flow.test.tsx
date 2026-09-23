@@ -1,8 +1,8 @@
+import { act, render, screen } from "@testing-library/react";
 // @vitest-environment jsdom
 import { describe, expect, it } from "vitest";
-import { act, render, screen } from "@testing-library/react";
-import { DeviceFlow } from "@/features/onboarding/components/device-flow/device-flow.component";
 import { DEVICE_FLOW_STATUS_TEXT } from "@/data/auth.data";
+import { DeviceFlow } from "@/features/onboarding/components/device-flow/device-flow.component";
 import { mockVaultApi } from "../../helpers/mock-vault-api";
 
 const session = {

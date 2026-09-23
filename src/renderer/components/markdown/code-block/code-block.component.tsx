@@ -5,6 +5,7 @@ import type { CodeBlockProps, PreBlockProps } from "./code-block.types";
 const mermaidSource = (child: unknown): string | null => {
   if (!isValidElement<{ className?: string; children?: unknown }>(child)) return null;
   if (!/language-mermaid/.test(child.props.className ?? "")) return null;
+
   return String(child.props.children ?? "").replace(/\n$/, "");
 };
 
@@ -12,6 +13,7 @@ const mermaidSource = (child: unknown): string | null => {
 export function PreBlock({ children, ...rest }: PreBlockProps) {
   const code = mermaidSource(children);
   if (code !== null) return <MermaidBlock code={code} />;
+
   return <pre {...rest}>{children as React.ReactNode}</pre>;
 }
 

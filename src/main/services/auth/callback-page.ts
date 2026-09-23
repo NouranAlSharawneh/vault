@@ -4,6 +4,7 @@ export function callbackPage(ok: boolean, detail?: string): string {
   const body = ok
     ? "You can close this tab and go back to Vault."
     : `Something went wrong${detail ? `: ${escapeHtml(detail)}` : ""}. Go back to Vault and try again.`;
+
   return `<!doctype html><html lang="en"><head><meta charset="utf-8"><title>Vault — ${title}</title>
 <style>body{margin:0;min-height:100vh;display:grid;place-items:center;font:15px/1.5 -apple-system,system-ui,sans-serif;background:#fdfcfa;color:#1e1d1b}
 main{max-width:26rem;text-align:center;padding:2rem}h1{font-weight:500;font-size:1.5rem;margin:0 0 .5rem}p{color:#7a766f;margin:0}

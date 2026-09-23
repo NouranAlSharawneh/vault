@@ -26,6 +26,7 @@ export async function importAssets(
     map[ref] = `${ASSETS_DIR}/${name}`;
     paths.push(`${docFolder}/${ASSETS_DIR}/${name}`);
   }
+
   return { map, paths };
 }
 

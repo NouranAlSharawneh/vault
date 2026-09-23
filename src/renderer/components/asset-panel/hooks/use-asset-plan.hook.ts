@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { INBOX_SLUG } from "@shared/constants";
-import { findAssetRefs, projectSlug } from "@shared/helpers";
-import type { AssetResolution } from "@shared/types";
 import { ASSET_RESOLVE_DEBOUNCE_MS } from "@/constants";
 import { api } from "@/lib/api";
 import { useApp } from "@/stores/app";
+import { INBOX_SLUG } from "@shared/constants";
+import { findAssetRefs, projectSlug } from "@shared/helpers";
+import type { AssetResolution } from "@shared/types";
 import type { AssetPlan, AssetPlanOptions } from "../asset-panel.types";
 
 /**
@@ -40,6 +40,7 @@ export function useAssetPlan({ body, project, sourceDir }: AssetPlanOptions): As
         .then((r) => !cancelled && setResolved({ key, ...r }))
         .catch(() => undefined);
     }, ASSET_RESOLVE_DEBOUNCE_MS);
+
     return () => {
       cancelled = true;
       clearTimeout(t);
@@ -65,6 +66,7 @@ export function useAssetPlan({ body, project, sourceDir }: AssetPlanOptions): As
   );
 
   const included = refs.filter((r) => r.status === "found" && !excluded.includes(r.ref));
+
   return {
     refs,
     baseDir,

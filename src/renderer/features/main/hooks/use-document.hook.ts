@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
+import { api } from "@/lib/api";
 import { TRASH_DIR } from "@shared/constants";
 import type { DocContent, DocMeta } from "@shared/types";
-import { api } from "@/lib/api";
 import type { LoadedDocument } from "../main.types";
 
 /**
@@ -18,6 +18,7 @@ export function useDocument(path: string | null, live?: DocMeta[]): DocContent |
     api(isTrashed(path) ? "trash:read" : "doc:read", path)
       .then((doc) => !cancelled && setLoaded({ path, doc }))
       .catch(() => !cancelled && setLoaded({ path, doc: null }));
+
     return () => {
       cancelled = true;
     };
@@ -25,6 +26,7 @@ export function useDocument(path: string | null, live?: DocMeta[]): DocContent |
 
   if (!path || loaded?.path !== path || !loaded.doc) return null;
   const fresh = live?.find((d) => d.path === path);
+
   return fresh ? { ...loaded.doc, meta: fresh } : loaded.doc;
 }
 

@@ -5,5 +5,6 @@ import { mapRepo } from "./map-repo";
 
 export async function getRepo(fullName: string): Promise<GitHubRepo> {
   const { data } = await githubApi().get<RawGitHubRepo>(`/repos/${fullName}`);
+
   return mapRepo(data);
 }

@@ -1,10 +1,11 @@
 import { Card, Stat } from "@/components/ui";
 import { plural } from "@/helpers";
-import { useFirstScan } from "./hooks/use-first-scan.hook";
 import type { FirstScanProps } from "./first-scan.types";
+import { useFirstScan } from "./hooks/use-first-scan.hook";
 
 export function FirstScan({ onDone }: FirstScanProps) {
   const { index, percent } = useFirstScan(onDone);
+
   return (
     <Card className="p-7">
       <h2 className="font-serif text-2xl font-medium text-ink">Reading your vault</h2>

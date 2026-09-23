@@ -29,5 +29,6 @@ export function composeDoc(
   if (Object.keys(extra).length) lines.push(stringifyYaml(extra, { lineWidth: 0 }).trimEnd());
   const trimmed = body.replace(/^\s*\n/, "").replace(/\s+$/, "");
   const block = `${META_RULE}\n\n${META_FENCE_OPEN}\n${lines.join("\n")}\n${META_FENCE_CLOSE}\n`;
+
   return trimmed ? `${trimmed}\n\n${block}` : block;
 }

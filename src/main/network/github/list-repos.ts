@@ -1,5 +1,5 @@
-import type { GitHubRepo } from "@shared/types";
 import { REPO_MAX_PAGES, REPO_PAGE_SIZE } from "@shared/constants";
+import type { GitHubRepo } from "@shared/types";
 import { githubApi } from "../axios";
 import type { RawGitHubRepo } from "./github.types";
 import { mapRepo } from "./map-repo";
@@ -14,5 +14,6 @@ export async function listRepos(): Promise<GitHubRepo[]> {
     out.push(...data.filter((r) => r.permissions?.push !== false).map(mapRepo));
     if (data.length < REPO_PAGE_SIZE) break;
   }
+
   return out;
 }

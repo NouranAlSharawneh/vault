@@ -7,5 +7,6 @@ export function useSync() {
   const sync = useApp((s) => s.sync);
   const config = useApp((s) => s.config);
   const pushNow = useCallback(() => api("sync:pushNow").catch(() => undefined), []);
+
   return { sync, hasRemote: !!config?.remote, branch: config?.branch ?? "main", pushNow };
 }

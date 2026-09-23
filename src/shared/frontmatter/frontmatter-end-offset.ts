@@ -7,5 +7,6 @@ export function frontmatterEndOffset(head: string): number | null {
   const rest = head.slice(open[0].length);
   const close = FM_CLOSE.exec(rest);
   if (!close) return null;
+
   return open[0].length + close.index + close[0].length;
 }

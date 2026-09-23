@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
-import type { GitHubRepo } from "@shared/types";
-import { DEFAULT_VAULT_NAME } from "@shared/constants";
 import { REPO_LIST_LIMIT, REPO_NAME_PATTERN } from "@/constants";
 import { errorMessage } from "@/helpers";
-import { api } from "@/lib/api";
+import { api, fire } from "@/lib/api";
 import { useApp } from "@/stores/app";
+import { DEFAULT_VAULT_NAME } from "@shared/constants";
+import type { GitHubRepo } from "@shared/types";
 import type { RepoChoice } from "../repo-picker.types";
 
 /** Repo list, selection, new-repo name, local path and the setup call. */
@@ -36,11 +36,12 @@ export function useRepoPicker(onDone: () => void) {
     if (existingRoot) return;
     const name =
       choice === "new" ? newName : choice === "local" ? DEFAULT_VAULT_NAME : choice.split("/")[1];
-    void api("vault:defaultPath", name || DEFAULT_VAULT_NAME).then(setLocalPath);
+    fire(api("vault:defaultPath", name || DEFAULT_VAULT_NAME).then(setLocalPath));
   }, [choice, newName, existingRoot]);
 
   const filtered = useMemo(() => {
     const f = filter.trim().toLowerCase();
+
     return (repos ?? [])
       .filter((r) => !f || r.fullName.toLowerCase().includes(f))
       .slice(0, REPO_LIST_LIMIT);

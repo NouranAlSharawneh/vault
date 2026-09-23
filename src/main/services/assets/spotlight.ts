@@ -26,12 +26,14 @@ export async function spotlightRoots(probes: string[]): Promise<string[]> {
       return out; // no Spotlight on this platform, or it timed out — the walk takes over
     }
   }
+
   return out;
 }
 
 /** `/Users/n/concorde/docs/hero.gif` + `docs/hero.gif` → `/Users/n/concorde`. */
 export function rootsFromHits(stdout: string, probe: string): string[] {
   const tail = sep + probe.split("/").join(sep);
+
   return stdout
     .split("\n")
     .map((line) => line.trim())

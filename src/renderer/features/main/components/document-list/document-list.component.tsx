@@ -1,7 +1,7 @@
 import { GitMerge, Star } from "lucide-react";
-import { relativeTime } from "@shared/helpers";
-import { plural } from "@/helpers";
 import { Button, Dot, Empty, ListRow } from "@/components/ui";
+import { plural } from "@/helpers";
+import { relativeTime } from "@shared/helpers";
 import { ListHeader } from "../list-header/list-header.component";
 import { TagFilter } from "../tag-filter/tag-filter.component";
 import type { DocumentListProps } from "./document-list.types";
@@ -94,5 +94,6 @@ function defaultHint(title: string, tags: string[]): string {
   if (title === "Starred") return "Star a document from the reader to keep it here.";
   if (title === "Recent") return "Documents you open or save show up here.";
   if (title === "All documents") return "Capture something with the hotkey, or press New.";
+
   return `Nothing in ${title} yet.`;
 }

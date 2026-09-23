@@ -3,6 +3,7 @@ import type { LogoProps } from "./logo.types";
 /** The cherry mark: two stones on a splayed stem. */
 export function Logo({ size = 28, small = false, className }: LogoProps) {
   const cy = small ? 16 : 21;
+
   return (
     <svg width={size} height={size} viewBox="0 0 32 32" className={className} aria-label="Vault">
       {!small && (

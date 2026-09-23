@@ -1,6 +1,6 @@
+import { act, renderHook, waitFor } from "@testing-library/react";
 // @vitest-environment jsdom
 import { describe, expect, it, vi } from "vitest";
-import { act, renderHook, waitFor } from "@testing-library/react";
 import { useEditorDraft } from "@/features/editor/hooks/use-editor-draft.hook";
 import { useApp } from "@/stores/app";
 import { mockVaultApi } from "../../helpers/mock-vault-api";
@@ -104,7 +104,11 @@ describe("an unsaved draft", () => {
   it("is parked outside the vault while you type, and cleared once it is saved", async () => {
     vi.useFakeTimers();
     const { invoke } = mockVaultApi({
-      "doc:save": { path: "p/note.md", meta: { path: "p/note.md", created: "x", mtime: 1, title: "Note" }, committed: true },
+      "doc:save": {
+        path: "p/note.md",
+        meta: { path: "p/note.md", created: "x", mtime: 1, title: "Note" },
+        committed: true,
+      },
     });
     const { result } = renderHook(() => useEditorDraft());
     act(() => result.current.setBody("half a thought"));

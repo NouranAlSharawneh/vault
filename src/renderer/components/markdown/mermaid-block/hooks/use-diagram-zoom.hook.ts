@@ -43,6 +43,7 @@ export function useDiagramZoom(svg: string | null, paneRef: RefObject<HTMLDivEle
     measure();
     const observer = new ResizeObserver(measure);
     observer.observe(pane);
+
     return () => observer.disconnect();
   }, [natural, paneRef]);
 
@@ -87,6 +88,7 @@ export function useDiagramZoom(svg: string | null, paneRef: RefObject<HTMLDivEle
   );
 
   const by = useCallback((delta: number) => setZoom((z) => round(clamp(z + delta))), []);
+
   return {
     zoom,
     width,

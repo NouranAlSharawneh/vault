@@ -1,10 +1,10 @@
+import { act, renderHook } from "@testing-library/react";
 // @vitest-environment jsdom
 import { describe, expect, it, vi } from "vitest";
-import { act, renderHook } from "@testing-library/react";
-import type { DocMeta } from "@shared/types";
 import { useTrashActions } from "@/features/main/hooks/use-trash-actions.hook";
 import { useApp } from "@/stores/app";
 import { useToast } from "@/stores/toast";
+import type { DocMeta } from "@shared/types";
 import { mockVaultApi } from "../../helpers/mock-vault-api";
 
 const meta: DocMeta = {

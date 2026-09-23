@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
-import type { DocContent, EditorDraft } from "@shared/types";
 import { api, on } from "@/lib/api";
+import type { DocContent, EditorDraft } from "@shared/types";
 
 interface Handlers {
   onDoc: (doc: DocContent) => void;

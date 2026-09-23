@@ -12,6 +12,7 @@ function splitTail(raw: string): SplitResult | null {
   const open = META_TAIL_OPEN.exec(raw.slice(0, openEnd + 1));
   if (!open) return null;
   const bodyEnd = openEnd + 1 - open[0].length;
+
   return {
     yaml: raw.slice(openEnd + 1, close.index),
     body: raw.slice(0, bodyEnd).replace(/^(?:[ \t]*\r?\n)+/, ""),
@@ -26,6 +27,7 @@ function splitHead(raw: string): SplitResult | null {
   const rest = raw.slice(open[0].length);
   const close = FM_CLOSE.exec(rest);
   if (!close) return null;
+
   return {
     yaml: rest.slice(0, close.index),
     // Drop the blank line conventionally written between the closing `---` and the body,

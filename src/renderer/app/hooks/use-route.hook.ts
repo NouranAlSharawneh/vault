@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
+import { on } from "@/lib/api";
 import { APP_ROUTES } from "@shared/constants";
 import type { AppRoute } from "@shared/types";
-import { on } from "@/lib/api";
 
 function routeFromHash(): AppRoute {
   const h = window.location.hash.replace(/^#\/?/, "").split("?")[0];
+
   return (APP_ROUTES as readonly string[]).includes(h) ? (h as AppRoute) : "main";
 }
 
@@ -17,10 +18,12 @@ export function useRoute(): AppRoute {
     const off = on("navigate", (r) => {
       window.location.hash = r;
     });
+
     return () => {
       window.removeEventListener("hashchange", onHash);
       off();
     };
   }, []);
+
   return route;
 }

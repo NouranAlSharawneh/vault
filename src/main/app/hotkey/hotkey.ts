@@ -1,4 +1,5 @@
 import { globalShortcut } from "electron";
+import { fire } from "../../lib/fire";
 import { readClipboard } from "../../services/capture/capture.service";
 import {
   hideCaptureWindow,
@@ -13,14 +14,18 @@ export function toggleCapture(): void {
   if (isCaptureVisible()) return hideCaptureWindow();
   if (!session.vault) {
     openMainWindow("onboarding");
+
     return;
   }
   const win = showCaptureWindow();
-  void readClipboard().then((payload) => {
-    const send = () => win.webContents.send("capture:shown", payload);
-    if (win.webContents.isLoading()) win.webContents.once("did-finish-load", send);
-    else send();
-  });
+  fire(
+    readClipboard().then((payload) => {
+      const send = () => win.webContents.send("capture:shown", payload);
+      if (win.webContents.isLoading()) win.webContents.once("did-finish-load", send);
+      else send();
+    }),
+    "reading the clipboard",
+  );
 }
 
 /** Bind the capture shortcut. False when the OS refused it (taken by another app, or invalid). */
@@ -29,9 +34,11 @@ export function registerHotkey(accelerator: string): boolean {
   try {
     const ok = globalShortcut.register(accelerator, toggleCapture);
     if (!ok) console.warn("Hotkey unavailable:", accelerator);
+
     return ok;
   } catch (e) {
     console.warn("Hotkey failed", e);
+
     return false;
   }
 }

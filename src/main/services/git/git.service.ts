@@ -1,9 +1,9 @@
-import { simpleGit, type SimpleGit } from "simple-git";
 import { existsSync, mkdirSync } from "node:fs";
 import { dirname } from "node:path";
-import type { CommitInfo } from "@shared/types";
+import { simpleGit, type SimpleGit } from "simple-git";
 import { DEFAULT_BRANCH } from "@shared/constants";
 import { relativeTime } from "@shared/helpers";
+import type { CommitInfo } from "@shared/types";
 import type { AheadBehind, ChangedFile, ConflictSide, TokenProvider } from "./git.types";
 
 /**
@@ -28,6 +28,7 @@ export class GitService {
   private static authArgsFor(token: string | null): string[] {
     if (!token) return [];
     const basic = Buffer.from(`x-access-token:${token}`).toString("base64");
+
     // An explicit Authorization header wins over any credential helper, so none needs disabling
     // (simple-git refuses `-c credential.helper=` anyway).
     return ["-c", `http.https://github.com/.extraheader=AUTHORIZATION: basic ${basic}`];
@@ -41,6 +42,7 @@ export class GitService {
   static async isAvailable(): Promise<string | null> {
     try {
       const v = await simpleGit().version();
+
       return v.installed ? `${v.major}.${v.minor}.${v.patch}` : null;
     } catch {
       return null;
@@ -106,6 +108,7 @@ export class GitService {
   /** Files changed between a commit and HEAD, with renames detected. */
   async changedSince(sha: string): Promise<ChangedFile[]> {
     const out = await this.git.raw(["diff", "--name-status", "-M", sha, "HEAD"]);
+
     return out
       .split("\n")
       .filter(Boolean)
@@ -113,25 +116,33 @@ export class GitService {
         const parts = line.split("\t");
         const status = parts[0][0];
         if (status === "R" || status === "C") return { status, oldPath: parts[1], path: parts[2] };
+
         return { status, path: parts[1] };
       });
   }
 
-  async commitPaths(
-    paths: string[],
-    message: string,
-    opts: { amend?: boolean } = {},
-  ): Promise<string> {
+  async commitPaths(paths: string[], message: string): Promise<string> {
     if (paths.length) await this.git.add(paths);
-    if (opts.amend) {
-      await this.git.raw(["commit", "--amend", "--no-edit", "--quiet"]);
-      return (await this.headSha()) ?? "";
-    }
+
     return (await this.git.commit(message)).commit;
+  }
+
+  /**
+   * Fold more paths into the commit that was just made, keeping its message. Used for
+   * the regenerated README, which belongs to the change that caused it rather than to a
+   * commit of its own — a vault's history should read as the documents, not as the
+   * index being rewritten after every one of them.
+   */
+  async amendPaths(paths: string[]): Promise<string> {
+    if (paths.length) await this.git.add(paths);
+    await this.git.raw(["commit", "--amend", "--no-edit", "--quiet"]);
+
+    return (await this.headSha()) ?? "";
   }
 
   async commitAll(message: string): Promise<string> {
     await this.git.add(["-A"]);
+
     return (await this.git.commit(message)).commit;
   }
 
@@ -156,11 +167,13 @@ export class GitService {
         `${branch}...origin/${branch}`,
       ]);
       const [a, b] = out.trim().split(/\s+/).map(Number);
+
       return { ahead: a || 0, behind: b || 0 };
     } catch {
       // no upstream yet: everything is "ahead"
       try {
         const n = Number((await this.git.raw(["rev-list", "--count", "HEAD"])).trim());
+
         return { ahead: n, behind: 0 };
       } catch {
         return { ahead: 0, behind: 0 };
@@ -186,10 +199,12 @@ export class GitService {
     const branch = await this.currentBranch();
     try {
       await this.git.raw([...this.authArgs(), "pull", "--rebase", "--autostash", "origin", branch]);
+
       return [];
     } catch (e) {
       const conflicted = await this.conflictedPaths();
       if (!conflicted.length) throw e;
+
       return conflicted;
     }
   }
@@ -302,6 +317,7 @@ export class GitService {
         if (current.path === path) current.path = line.trim();
       }
     }
+
     return commits;
   }
 
@@ -322,6 +338,7 @@ export class GitService {
     try {
       const branch = await this.currentBranch();
       const out = await this.git.raw(["diff", "--name-only", `origin/${branch}...HEAD`]);
+
       return new Set(out.split("\n").filter(Boolean));
     } catch {
       return new Set();
