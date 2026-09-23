@@ -9,13 +9,18 @@ export function getMainWindow(): BrowserWindow | null {
   return mainWin && !mainWin.isDestroyed() ? mainWin : null;
 }
 
-export function openMainWindow(route = "main"): BrowserWindow {
+/**
+ * Show the main window, creating it on `route` (default Main) if there is none. An open
+ * window only navigates when a route is asked for; without one it is just brought forward,
+ * so whatever you were in the middle of is still there.
+ */
+export function openMainWindow(route?: string): BrowserWindow {
   const existing = getMainWindow();
   if (existing) {
     if (existing.isMinimized()) existing.restore();
     existing.show();
     existing.focus();
-    existing.webContents.send("navigate", route);
+    if (route !== undefined) existing.webContents.send("navigate", route);
 
     return existing;
   }
@@ -35,14 +40,14 @@ export function openMainWindow(route = "main"): BrowserWindow {
     return { action: "deny" };
   });
   mainWin.on("closed", () => (mainWin = null));
-  loadRoute(mainWin, route);
+  loadRoute(mainWin, route ?? "main");
 
   return mainWin;
 }
 
 /** Bring the main window forward with one document selected. */
 export function revealDoc(path: string): void {
-  const win = openMainWindow();
+  const win = openMainWindow("main");
   const send = () => win.webContents.send("doc:reveal", path);
   if (win.webContents.isLoading()) win.webContents.once("did-finish-load", send);
   else send();
