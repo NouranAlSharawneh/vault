@@ -4,9 +4,12 @@ import type { AuthMethods } from "@shared/types";
 
 const NONE: AuthMethods = { oauth: false, device: false };
 
-/** Which sign-in routes main has credentials for (PAT paste is always available). */
-export function useAuthMethods(): AuthMethods {
-  const [methods, setMethods] = useState<AuthMethods>(NONE);
+/**
+ * Which sign-in routes main has credentials for (PAT paste is always available). `null`
+ * until main answers, so the screen doesn't offer "Paste a token" and then swap it out.
+ */
+export function useAuthMethods(): AuthMethods | null {
+  const [methods, setMethods] = useState<AuthMethods | null>(null);
   useEffect(() => {
     api("auth:methods")
       .then(setMethods)

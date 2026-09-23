@@ -18,6 +18,10 @@ export const PALETTE_MAX_RECENT = 2;
 export const SEARCH_DEBOUNCE_MS = 80;
 export const CAPTURE_SAVED_FLASH_MS = 900;
 export const TOAST_MS = 6000;
+/** A toast with a button (Undo) stays up long enough to reach it. */
+export const TOAST_ACTION_MS = 10000;
+/** Toasts on screen at once; the oldest plain one makes room for a new one. */
+export const TOAST_MAX = 3;
 export const ASSET_RESOLVE_DEBOUNCE_MS = 250;
 /** Diagram zoom bounds. Chromium's `zoom` reflows, so the pane scrolls when it overflows. */
 export const MERMAID_ZOOM_MIN = 0.5;

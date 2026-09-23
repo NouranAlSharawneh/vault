@@ -36,3 +36,13 @@ describe("EditorFooter", () => {
     expect(screen.queryByText("Saved")).toBeNull();
   });
 });
+
+describe("EditorFooter errors", () => {
+  it("wraps a save error instead of cutting it off", () => {
+    const error = "Couldn’t commit — another git process is running in this repository";
+    footer({ canSave: true, dirty: true, error });
+    const shown = screen.getByText(error);
+    expect(shown.className).not.toContain("truncate");
+    expect(shown.className).toContain("wrap-break-word");
+  });
+});

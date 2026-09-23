@@ -11,7 +11,7 @@ import { session } from "../session/session";
 
 /** ⌃⌥V (configurable): show the capture sheet pre-filled from the clipboard, or hide it. */
 export function toggleCapture(): void {
-  if (isCaptureVisible()) return hideCaptureWindow();
+  if (isCaptureVisible()) return hideCaptureWindow("dismiss");
   if (!session.vault) {
     openMainWindow("onboarding");
 
