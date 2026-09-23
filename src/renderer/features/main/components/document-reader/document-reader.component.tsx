@@ -71,12 +71,16 @@ export function DocumentReader({
               storageKey="reader-split"
               left={
                 <div className="min-h-0 flex-1 overflow-y-auto px-12 py-4">
-                  <Raw body={doc.body} />
+                  <div className="mx-auto max-w-170">
+                    <Raw body={doc.body} />
+                  </div>
                 </div>
               }
               right={
                 <div className="min-h-0 flex-1 overflow-y-auto px-12 py-4 pb-16">
-                  <Markdown source={doc.body} docPath={meta.path} onOpenDoc={onOpenDoc} />
+                  <article className="mx-auto max-w-170">
+                    <Markdown source={doc.body} docPath={meta.path} onOpenDoc={onOpenDoc} />
+                  </article>
                 </div>
               }
             />

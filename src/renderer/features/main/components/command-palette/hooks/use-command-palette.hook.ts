@@ -18,6 +18,7 @@ export function useCommandPalette(
   onClose: () => void,
   onTrashDoc?: () => void,
   onReviewConflicts?: () => void,
+  trashTitle?: string,
 ) {
   const index = useApp((s) => s.index);
   const sync = useApp((s) => s.sync);
@@ -83,28 +84,37 @@ export function useCommandPalette(
 
     const pending = sync?.ahead ?? 0;
     const conflicts = sync?.conflicts ?? 0;
-    const actions: PaletteItem[] = PALETTE_ACTIONS.filter(
+    const q = parsed.text.toLowerCase();
+    const visibleActions: PaletteItem[] = PALETTE_ACTIONS.filter(
       (a) =>
         (!a.needsPending || pending > 0) &&
         (!a.needsDoc || !!onTrashDoc) &&
         (!a.needsConflicts || conflicts > 0),
-    ).map((a) => ({
-      kind: "action",
-      key: a.key,
-      label:
-        a.key === "pushPending"
-          ? `Push ${pending} pending doc${pending === 1 ? "" : "s"}`
-          : a.label,
-      shortcut: a.shortcut,
-    }));
-    const q = parsed.text.toLowerCase();
-    const visibleActions = q
-      ? actions.filter((a) => a.kind === "action" && a.label.toLowerCase().includes(q))
-      : actions;
+    )
+      .map((a) => ({
+        data: a,
+        label:
+          a.key === "pushPending"
+            ? `Push ${pending} pending doc${pending === 1 ? "" : "s"}`
+            : a.key === "trashDoc" && trashTitle
+              ? `Move “${trashTitle}” to trash`
+              : a.label,
+      }))
+      // The shown label names the open doc; the generic one keeps "move document" findable.
+      .filter(
+        ({ data, label }) =>
+          !q || label.toLowerCase().includes(q) || data.label.toLowerCase().includes(q),
+      )
+      .map(({ data, label }) => ({
+        kind: "action",
+        key: data.key,
+        label,
+        shortcut: data.shortcut,
+      }));
     if (visibleActions.length) out.push({ title: "Actions", items: visibleActions });
 
     return out;
-  }, [index, liveHits, query, sync?.ahead, sync?.conflicts, onTrashDoc]);
+  }, [index, liveHits, query, sync?.ahead, sync?.conflicts, onTrashDoc, trashTitle]);
 
   const flat = useMemo(() => groups.flatMap((g) => g.items), [groups]);
   const active = flat[Math.min(cursor, Math.max(0, flat.length - 1))] ?? null;

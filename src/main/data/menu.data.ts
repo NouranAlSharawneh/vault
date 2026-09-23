@@ -1,18 +1,54 @@
-import type { MenuSectionData } from "../app/menu/menu.types";
+import type { MenuItemData, MenuSectionData, MenuTarget } from "../app/menu/menu.types";
 
-/** Application menu, as plain data. Behaviour lives in `app/menu.ts`. */
-export const appMenu = (captureHotkey: string): MenuSectionData[] => [
+const SETTINGS: MenuItemData = {
+  label: "Settings…",
+  accelerator: "CmdOrCtrl+,",
+  action: { shortcut: "settings" },
+};
+const RESET: MenuItemData = { label: "Reset Vault…", action: "resetApp" };
+const SEPARATOR: MenuItemData = { type: "separator" };
+
+/**
+ * Application menu, as plain data. Behaviour lives in `app/menu.ts`.
+ *
+ * On macOS, Settings and Reset live in the app menu, where every Mac app keeps them;
+ * elsewhere they sit in File. Reload and the dev tools only exist in development — in a
+ * release they are a way to lose an unsaved draft, not a feature.
+ */
+export const appMenu = (captureHotkey: string, { mac, dev }: MenuTarget): MenuSectionData[] => [
+  ...(mac
+    ? [
+        {
+          label: "Vault",
+          items: [
+            { role: "about" as const },
+            SEPARATOR,
+            SETTINGS,
+            RESET,
+            SEPARATOR,
+            { role: "services" as const },
+            SEPARATOR,
+            { role: "hide" as const },
+            { role: "hideOthers" as const },
+            { role: "unhide" as const },
+            SEPARATOR,
+            { role: "quit" as const },
+          ],
+        },
+      ]
+    : []),
   {
     label: "File",
     items: [
       { label: "New Document", accelerator: "CmdOrCtrl+N", action: "newDocument" },
       { label: "Capture from Clipboard", accelerator: captureHotkey, action: "capture" },
       { label: "Save", accelerator: "CmdOrCtrl+Enter", action: { shortcut: "save" } },
-      { type: "separator" },
+      SEPARATOR,
       { label: "Move to Trash", accelerator: "CmdOrCtrl+Backspace", action: { shortcut: "trash" } },
-      { type: "separator" },
+      SEPARATOR,
       { label: "Open Vault Window", accelerator: "CmdOrCtrl+Shift+V", action: "openMain" },
-      { type: "separator" },
+      SEPARATOR,
+      ...(mac ? [] : [SETTINGS, RESET, SEPARATOR]),
       { role: "close" },
     ],
   },
@@ -27,22 +63,22 @@ export const appMenu = (captureHotkey: string): MenuSectionData[] => [
         action: { shortcut: "toggleSidebar" },
       },
       { label: "History", accelerator: "CmdOrCtrl+Y", action: { shortcut: "history" } },
-      { label: "Settings…", accelerator: "CmdOrCtrl+,", action: { shortcut: "settings" } },
-      { type: "separator" },
-      { role: "reload" },
-      { role: "toggleDevTools" },
-      { type: "separator" },
+      SEPARATOR,
+      ...(dev
+        ? [
+            { role: "reload" as const },
+            { role: "forceReload" as const },
+            { role: "toggleDevTools" as const },
+            SEPARATOR,
+          ]
+        : []),
       { role: "togglefullscreen" },
     ],
   },
   { role: "windowMenu" },
   {
     label: "Help",
-    items: [
-      { label: "Vault on GitHub", action: "openOnGitHub" },
-      { type: "separator" },
-      { label: "Reset Vault (sign out & forget vault)…", action: "resetApp" },
-    ],
+    items: [{ label: "Vault on GitHub", action: "openOnGitHub" }],
   },
 ];
 
