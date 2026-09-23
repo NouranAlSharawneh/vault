@@ -17,6 +17,7 @@ import { TopBar } from "./components/top-bar/top-bar.component";
 import { VaultUnavailable } from "./components/vault-unavailable/vault-unavailable.component";
 import { useDocumentFilter } from "./hooks/use-document-filter.hook";
 import { isTrashed, useDocument } from "./hooks/use-document.hook";
+import { useHotkeyWarning } from "./hooks/use-hotkey-warning.hook";
 import { useMainShortcuts } from "./hooks/use-main-shortcuts.hook";
 import { useSidebarState } from "./hooks/use-sidebar-state.hook";
 import { useTrashActions } from "./hooks/use-trash-actions.hook";
@@ -64,6 +65,7 @@ export function Main() {
   // History is about one document, so it is meaningless with nothing selected.
   const toggleHistory = useCallback(() => setHistoryOpen((open) => !open), []);
   const openSettings = useCallback(() => (window.location.hash = "settings"), []);
+  useHotkeyWarning(openSettings);
   useMainShortcuts({
     onSearch: openPalette,
     onTrash: () => fire(trashActions.trash()),
