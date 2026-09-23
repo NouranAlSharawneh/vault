@@ -2,6 +2,7 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 // @vitest-environment jsdom
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { REPO_LIST_LIMIT } from "@/constants";
 import { RepoPicker } from "@/features/onboarding/components/repo-picker/repo-picker.component";
 import { useApp } from "@/stores/app";
 import type { AuthMethod, GitHubRepo, VaultConfig } from "@shared/types";
@@ -66,5 +67,28 @@ describe("RepoPicker — when the repo list fails", () => {
     expect(await screen.findByText("name already exists on this account")).toBeTruthy();
     expect(screen.getByText(/Couldn’t load your repos/)).toBeTruthy();
     expect(onDone).not.toHaveBeenCalled();
+  });
+});
+
+describe("RepoPicker — long lists", () => {
+  const many = Array.from({ length: 120 }, (_, i) => repo(`nunu/repo-${i}`));
+
+  it("says the list is cut short and how to find the rest", async () => {
+    mockVaultApi({ ...base, "github:listRepos": many });
+    render(<RepoPicker onDone={noop} />);
+    expect(
+      await screen.findByText(`Showing ${REPO_LIST_LIMIT} of 120 — type to filter.`),
+    ).toBeTruthy();
+  });
+
+  it("counts what the filter matches, and goes quiet once it all fits", async () => {
+    mockVaultApi({ ...base, "github:listRepos": many });
+    render(<RepoPicker onDone={noop} />);
+    await screen.findByText("nunu/repo-0");
+    await userEvent.type(screen.getByPlaceholderText("Filter your repos…"), "repo-1");
+    // repo-1, repo-10…19, repo-100…119
+    expect(screen.queryByText(/Showing \d+ of/)).toBeNull();
+    await userEvent.clear(screen.getByPlaceholderText("Filter your repos…"));
+    expect(screen.getByText(/Showing \d+ of 120/)).toBeTruthy();
   });
 });
