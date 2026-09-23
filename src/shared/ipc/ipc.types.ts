@@ -13,6 +13,7 @@ import type {
   EditorDraft,
   GitHubRepo,
   GitHubUser,
+  HotkeyStatus,
   IndexSnapshot,
   SaveRequest,
   SaveResult,
@@ -114,6 +115,8 @@ export interface IpcInvoke {
   "window:openEditor": (path?: string) => void;
   "app:version": () => string;
   "app:platform": () => NodeJS.Platform;
+  /** Whether the capture shortcut is really bound, or another app is holding it. */
+  "hotkey:status": () => HotkeyStatus;
   "app:openExternal": (url: string) => void;
   "app:reset": () => void;
 }

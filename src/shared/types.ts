@@ -308,6 +308,14 @@ export interface EditorDraft {
 
 export type AppRoute = (typeof APP_ROUTES)[number];
 
+/** Whether the capture shortcut is actually bound, which the OS may refuse at any launch. */
+export interface HotkeyStatus {
+  /** The shortcut last asked for, or null before one has been. */
+  accelerator: string | null;
+  /** False when another app holds it (or it isn't a shortcut the OS accepts). */
+  active: boolean;
+}
+
 /** Enough about the stored credential to explain a sign-out, with no secret in it. */
 export interface TokenStatus {
   present: boolean;

@@ -26,7 +26,7 @@ import {
   resizeCaptureWindow,
   revealDoc,
 } from "../../windows";
-import { registerHotkey } from "../hotkey/hotkey";
+import { hotkeyStatus, registerHotkey } from "../hotkey/hotkey";
 import { buildAppMenu } from "../menu/menu";
 import { resetApp } from "../session/reset-app";
 import { session } from "../session/session";
@@ -51,6 +51,7 @@ let deviceAbort: AbortController | null = null;
 export function registerIpcHandlers(): void {
   handle("app:version", () => app.getVersion());
   handle("app:platform", () => process.platform);
+  handle("hotkey:status", () => hotkeyStatus());
   handle("app:openExternal", (url) => {
     if (/^https?:\/\//.test(url)) fire(shell.openExternal(url), "opening a link");
   });

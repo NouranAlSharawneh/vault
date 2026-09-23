@@ -62,6 +62,7 @@ export const INVOKE_CHANNELS = [
   "window:openEditor",
   "app:version",
   "app:platform",
+  "hotkey:status",
   "app:openExternal",
   "app:reset",
 ] as const satisfies readonly InvokeChannel[];
