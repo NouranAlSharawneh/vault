@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { NOTHING_TO_SAVE } from "@/data/editor.data";
 import { errorMessage } from "@/helpers";
 import { api } from "@/lib/api";
 import { useApp } from "@/stores/app";
@@ -122,7 +123,13 @@ export function useEditorDraft() {
   const inFlight = useRef(false);
   const save = useCallback(
     async (mode: SaveMode, assets?: AssetImport) => {
-      if (!state.body.trim() || inFlight.current) return null;
+      if (inFlight.current) return null;
+      if (!state.body.trim()) {
+        // Say so: from the unsaved prompt this used to be a Save button that did nothing.
+        setError(NOTHING_TO_SAVE);
+
+        return null;
+      }
       inFlight.current = true;
       setSaving(mode);
       setError(null);

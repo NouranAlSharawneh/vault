@@ -1,4 +1,4 @@
-import { act, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 // @vitest-environment jsdom
 import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { Editor } from "@/features/editor/editor.component";
@@ -57,5 +57,58 @@ describe("Editor", () => {
     });
     await act(() => Promise.resolve());
     expect(docSaves(invoke)).toHaveLength(1);
+  });
+
+  describe("the unsaved-changes prompt", () => {
+    const openPrompt = async () => {
+      act(() => {
+        window.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" }));
+      });
+
+      return screen.findByRole("dialog", { name: "Unsaved changes" });
+    };
+    const saveButton = (dialog: HTMLElement) =>
+      within(dialog).getByRole<HTMLButtonElement>("button", { name: /Save & commit/ });
+
+    it("shows a failed save where it can be seen, and stays open", async () => {
+      // The error only reached the footer, behind the backdrop: Save looked dead.
+      window.location.hash = "#editor";
+      const close = vi.spyOn(window, "close").mockImplementation(() => undefined);
+      let fail: (e: Error) => void = () => undefined;
+      mockVaultApi({
+        "draft:load": PARKED,
+        "doc:pathPreview": () => "inbox/half-a-thought.md",
+        "doc:save": () => new Promise((_, reject) => (fail = reject)),
+      });
+      render(<Editor />);
+      await screen.findByRole("heading", { name: "Half a thought" });
+      const dialog = await openPrompt();
+
+      fireEvent.click(saveButton(dialog));
+      await waitFor(() => expect(saveButton(dialog).disabled).toBe(true));
+      await act(async () => fail(new Error("git is not installed")));
+
+      expect(within(dialog).getByRole("alert").textContent).toBe("git is not installed");
+      expect(saveButton(dialog).disabled).toBe(false);
+      expect(close).not.toHaveBeenCalled();
+    });
+
+    it("says why an emptied document can't be saved", async () => {
+      window.location.hash = "#editor";
+      vi.spyOn(window, "close").mockImplementation(() => undefined);
+      const { invoke } = mockVaultApi({
+        "draft:load": { ...PARKED, body: "  \n" },
+        "doc:pathPreview": () => "",
+      });
+      render(<Editor />);
+      // Only the metadata changed: dirty, but there is no text to write.
+      fireEvent.change(screen.getByLabelText("title"), { target: { value: "Later" } });
+      const dialog = await openPrompt();
+
+      fireEvent.click(saveButton(dialog));
+
+      expect((await within(dialog).findByRole("alert")).textContent).toMatch(/nothing to save/);
+      expect(docSaves(invoke)).toHaveLength(0);
+    });
   });
 });

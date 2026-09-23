@@ -1,7 +1,14 @@
 import { Button, DialogShell } from "@/components/ui";
 import type { UnsavedGuardProps } from "./unsaved-guard.types";
 
-export function UnsavedGuard({ open, onKeepEditing, onDiscard, onSave }: UnsavedGuardProps) {
+export function UnsavedGuard({
+  open,
+  onKeepEditing,
+  onDiscard,
+  onSave,
+  saving,
+  error,
+}: UnsavedGuardProps) {
   if (!open) return null;
 
   return (
@@ -18,14 +25,19 @@ export function UnsavedGuard({ open, onKeepEditing, onDiscard, onSave }: Unsaved
       <p className="mt-1 text-sm text-ink-3">
         You&rsquo;ll lose what you&rsquo;ve written. Save it, or discard it?
       </p>
+      {error && !saving && (
+        <p role="alert" className="mt-3 text-sm text-cherry">
+          {error}
+        </p>
+      )}
       <div className="mt-4 flex justify-end gap-2">
         <Button variant="subtle" data-keep-editing onClick={onKeepEditing}>
           Keep editing
         </Button>
-        <Button variant="outline" onClick={onDiscard}>
+        <Button variant="outline" disabled={saving} onClick={onDiscard}>
           Discard
         </Button>
-        <Button variant="primary" onClick={onSave}>
+        <Button variant="primary" loading={saving} onClick={onSave}>
           Save &amp; commit
         </Button>
       </div>

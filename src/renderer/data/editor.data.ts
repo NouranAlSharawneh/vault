@@ -14,3 +14,7 @@ export const SOURCE_OPTIONS: SourceOption[] = [
 ];
 
 export const EDITOR_PLACEHOLDER = "# Title\n\nPaste or write markdown…";
+
+/** Why Save did nothing: an empty document is not written, and closing would lose nothing. */
+export const NOTHING_TO_SAVE =
+  "There’s nothing to save — the document is empty. Discard it to close the window.";
