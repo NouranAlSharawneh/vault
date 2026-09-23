@@ -24,6 +24,7 @@ const status = (state: "synced" | "pending" | "pushing" | "offline" | "error", a
   lastError: state === "error" ? "401 Bad credentials" : null,
   remote: "nunu/vault",
   conflicts: 0,
+  failure: null,
 });
 
 describe("SyncBadge", () => {
@@ -45,6 +46,23 @@ describe("SyncBadge", () => {
     useApp.setState({ config, sync: status(state, ahead) });
     render(<SyncBadge />);
     expect(screen.getByText(label)).toBeTruthy();
+  });
+
+  it("says a read-only repo is a missing permission, not something a retry fixes", () => {
+    mockVaultApi();
+    useApp.setState({
+      config,
+      sync: {
+        ...status("error"),
+        failure: "no-permission",
+        lastError: "remote: Permission to nunu/vault.git denied",
+      },
+    });
+    render(<SyncBadge />);
+    expect(screen.getByText("can’t push — no write access")).toBeTruthy();
+    expect(screen.queryByText("couldn't push — retry")).toBeNull();
+    // The raw error is not what the user needs to read here.
+    expect(screen.queryByText(/Permission to/)).toBeNull();
   });
 
   it("asks for a review only when something is waiting, and only where it can show one", () => {

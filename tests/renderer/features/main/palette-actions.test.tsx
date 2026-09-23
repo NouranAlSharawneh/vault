@@ -15,6 +15,7 @@ const sync = (patch: Partial<SyncStatus> = {}): SyncStatus => ({
   lastError: null,
   remote: "nunu/vault",
   conflicts: 0,
+  failure: null,
   ...patch,
 });
 
