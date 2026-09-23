@@ -1,6 +1,7 @@
 import { act, render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 // @vitest-environment jsdom
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { DEVICE_FLOW_STATUS_TEXT } from "@/data/auth.data";
 import { DeviceFlow } from "@/features/onboarding/components/device-flow/device-flow.component";
 import { mockVaultApi } from "../../helpers/mock-vault-api";
@@ -50,6 +51,47 @@ describe("DeviceFlow — rejection states", () => {
     act(() => emit("auth:deviceStatus", { status: "slow_down" }));
     expect(screen.getByText(DEVICE_FLOW_STATUS_TEXT.slow_down)).toBeTruthy();
     expect(screen.getByRole("button", { name: "Cancel" })).toBeTruthy();
+  });
+});
+
+describe("DeviceFlow — a way out of every state", () => {
+  it("while asking for a code: Cancel and Use another method", async () => {
+    mockVaultApi({ "auth:deviceStart": () => new Promise(() => undefined) });
+    const onBack = vi.fn();
+    render(<DeviceFlow onBack={onBack} />);
+    expect(await screen.findByText("Asking GitHub for a code…")).toBeTruthy();
+    await userEvent.click(screen.getByRole("button", { name: "Cancel" }));
+    await userEvent.click(screen.getByRole("button", { name: "Use another method" }));
+    expect(onBack).toHaveBeenCalledTimes(2);
+  });
+
+  it("when no code comes back: the reason, Try again and Use another method", async () => {
+    const reason = "No GitHub OAuth client ID configured. Paste a token instead.";
+    let fail = true;
+    const { invoke } = mockVaultApi({
+      "auth:deviceStart": () => {
+        if (fail)
+          throw new Error(`Error invoking remote method 'auth:deviceStart': Error: ${reason}`);
+
+        return session;
+      },
+    });
+    const onBack = vi.fn();
+    render(<DeviceFlow onBack={onBack} />);
+    expect(await screen.findByText(reason)).toBeTruthy();
+    await userEvent.click(screen.getByRole("button", { name: "Use another method" }));
+    expect(onBack).toHaveBeenCalledOnce();
+    fail = false;
+    await userEvent.click(screen.getByRole("button", { name: "Try again" }));
+    expect(await screen.findByText("W")).toBeTruthy();
+    expect(invoke.mock.calls.filter(([c]) => c === "auth:deviceStart")).toHaveLength(2);
+  });
+
+  it("with a code on screen: Use another method is still there", async () => {
+    mockVaultApi({ "auth:deviceStart": session });
+    render(<DeviceFlow onBack={() => undefined} />);
+    await screen.findByText("W");
+    expect(screen.getByRole("button", { name: "Use another method" })).toBeTruthy();
   });
 });
 

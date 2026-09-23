@@ -81,12 +81,28 @@ export function DeviceFlow({ onBack }: DeviceFlowProps) {
           </div>
         </>
       ) : error ? (
-        <div className="mt-6 text-sm text-cherry">{error}</div>
+        // No code ever came back (no client ID, offline): without these it was a dead end.
+        <div className="mt-6 flex items-center justify-between gap-3 rounded-md border border-line bg-paper-2 px-3 py-2 text-left text-xs">
+          <span className="text-cherry">{error}</span>
+          <Button variant="link" className="shrink-0" onClick={restart}>
+            Try again
+          </Button>
+        </div>
       ) : (
-        <div className="mt-8 flex justify-center">
-          <Spinner className="text-ink-3" />
+        <div className="mt-6 flex items-center justify-between rounded-md border border-line bg-paper-2 px-3 py-2 text-xs text-ink-2">
+          <span className="flex items-center gap-2">
+            <Spinner className="text-cherry" /> Asking GitHub for a code…
+          </span>
+          <Button variant="subtle" onClick={onBack}>
+            Cancel
+          </Button>
         </div>
       )}
+      <div className="mt-4 flex justify-center">
+        <Button variant="ghost" onClick={onBack}>
+          Use another method
+        </Button>
+      </div>
     </Card>
   );
 }
