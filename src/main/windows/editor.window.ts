@@ -1,6 +1,7 @@
 import { BrowserWindow, type WebContents } from "electron";
 import { EDITOR_WINDOW, PAPER_BG, TRAFFIC_LIGHTS } from "@shared/constants";
 import type { EditorDraft } from "@shared/types";
+import { findOrphanedUntitledDraft, newUntitledDraftKey } from "../store/draft.store";
 import { createEditorRegistry } from "./editor-registry";
 import type { EditorTarget } from "./editor-registry.types";
 import { COMMON_WINDOW_OPTIONS, IS_MAC, loadRoute } from "./load-route";
@@ -11,8 +12,30 @@ export function editorWindowCount(): number {
   return editors.size();
 }
 
-/** A document named in the hash, or text from the capture sheet the window asks for. */
+/**
+ * Where a new untitled window parks its text. Every one used to share "new", so a second
+ * window opened with the first one's text, and saving either one cleared the other's.
+ *
+ * Text left behind by a crash or a quit that no open window is still writing comes back
+ * in the next one. A window opened with text of its own starts clean, so that text is
+ * never parked on top of it.
+ */
+function untitledDraftKey(seeded: boolean): string {
+  if (seeded) return newUntitledDraftKey();
+  try {
+    return findOrphanedUntitledDraft(editors.heldDraftKeys()) ?? newUntitledDraftKey();
+  } catch {
+    return newUntitledDraftKey();
+  }
+}
+
+/**
+ * A document, or an untitled window with its own draft key. Both travel in the hash, so
+ * a reload opens the same thing; text from the capture sheet is asked for separately.
+ */
 export function openEditorWindow({ path, draft }: EditorTarget = {}): BrowserWindow {
+  const draftKey = path ? null : untitledDraftKey(!!draft);
+  const query: Record<string, string> = draftKey ? { draft: draftKey } : { path: path ?? "" };
   const win = new BrowserWindow({
     ...COMMON_WINDOW_OPTIONS,
     ...EDITOR_WINDOW,
@@ -23,8 +46,8 @@ export function openEditorWindow({ path, draft }: EditorTarget = {}): BrowserWin
   });
   win.once("ready-to-show", () => win.show());
   win.on("closed", () => editors.remove(win));
-  editors.add(win, { seed: draft ?? null });
-  loadRoute(win, `editor${path ? `?path=${encodeURIComponent(path)}` : ""}`);
+  editors.add(win, { draftKey, seed: draft ?? null });
+  loadRoute(win, `editor?${new URLSearchParams(query).toString()}`);
 
   return win;
 }

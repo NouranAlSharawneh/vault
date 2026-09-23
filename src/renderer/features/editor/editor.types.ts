@@ -31,11 +31,11 @@ export interface EditorShortcutHandlers {
   onEscape: () => void;
 }
 
-/** What main opened this window on, read from its hash (so it survives a reload). */
-export interface EditorTarget {
-  /** The document to open, or null for a new one. */
-  path: string | null;
-}
+/**
+ * What main opened this window on, read from its hash (so it survives a reload): a
+ * document, or a new one with the key its unsaved text is parked under.
+ */
+export type EditorTarget = { path: string; draftKey: null } | { path: null; draftKey: string };
 
 /** Where opening the window got to. Nothing can be saved until it is `ready`. */
 export type OpenStatus =

@@ -66,7 +66,7 @@ export interface IpcInvoke {
   "doc:diff": (path: string, sha: string) => string;
   "doc:pathPreview": (project: string, title: string) => string;
 
-  /** Unsaved editor text, parked outside the vault. `key` is a doc path, or "new". */
+  /** Unsaved editor text, parked outside the vault. `key` is a doc path, or `untitled:<id>`. */
   "draft:save": (key: string, draft: StoredDraft) => void;
   "draft:load": (key: string) => StoredDraft | null;
   "draft:clear": (key: string) => void;

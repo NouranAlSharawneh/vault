@@ -8,8 +8,8 @@ describe("editor registry", () => {
   it("forgets a window once it closes", () => {
     const editors = createEditorRegistry<{ name: string }>();
     const a = win("a");
-    editors.add(a, { seed: { body: "from the clipboard" } });
-    editors.add(win("b"), {});
+    editors.add(a, { draftKey: "untitled:a", seed: { body: "from the clipboard" } });
+    editors.add(win("b"), { draftKey: null });
     expect(editors.size()).toBe(2);
 
     editors.remove(a);
@@ -20,10 +20,21 @@ describe("editor registry", () => {
   it("hands a window its starting text once, so a reload recovers the draft instead", () => {
     const editors = createEditorRegistry<{ name: string }>();
     const a = win("a");
-    editors.add(a, { seed: { body: "from the clipboard" } });
+    editors.add(a, { draftKey: "untitled:a", seed: { body: "from the clipboard" } });
 
     expect(editors.takeSeed(a)).toEqual({ body: "from the clipboard" });
     expect(editors.takeSeed(a)).toBeNull();
     expect(editors.takeSeed(win("stranger"))).toBeNull();
+  });
+
+  it("knows which untitled drafts open windows are still writing", () => {
+    const editors = createEditorRegistry<{ name: string }>();
+    const a = win("a");
+    editors.add(a, { draftKey: "untitled:a" });
+    editors.add(win("b"), { draftKey: null });
+
+    expect([...editors.heldDraftKeys()]).toEqual(["untitled:a"]);
+    editors.remove(a);
+    expect(editors.heldDraftKeys().size).toBe(0);
   });
 });

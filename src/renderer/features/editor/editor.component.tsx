@@ -23,7 +23,7 @@ import { useEditorShortcuts } from "./hooks/use-editor-shortcuts.hook";
 /** Full save window: raw markdown left, live preview right, metadata bar and actions below. */
 export function Editor() {
   const [target] = useState(readEditorTarget);
-  const d = useEditorDraft();
+  const d = useEditorDraft(target.draftKey);
   const index = useApp((s) => s.index);
   const config = useApp((s) => s.config);
 
