@@ -25,20 +25,26 @@ import {
   openMainWindow,
   resizeCaptureWindow,
   revealDoc,
+  takeEditorSeed,
 } from "../../windows";
 import { registerHotkey } from "../hotkey/hotkey";
 import { buildAppMenu } from "../menu/menu";
 import { resetApp } from "../session/reset-app";
 import { session } from "../session/session";
 import { confirmPurge } from "./confirm-purge";
-import type { IpcHandler } from "./ipc.types";
+import type { IpcHandler, SenderIpcHandler } from "./ipc.types";
 import { setupVault } from "./setup-vault";
 
 /** Typed `ipcMain.handle` that normalises errors so the renderer sees a plain message. */
 function handle<C extends InvokeChannel>(channel: C, fn: IpcHandler<C>): void {
-  ipcMain.handle(channel, async (_event, ...args: unknown[]) => {
+  handleFrom(channel, (_sender, ...args) => fn(...args));
+}
+
+/** `handle`, for a channel whose answer depends on which window asked. */
+function handleFrom<C extends InvokeChannel>(channel: C, fn: SenderIpcHandler<C>): void {
+  ipcMain.handle(channel, async (event, ...args: unknown[]) => {
     try {
-      return await fn(...(args as Parameters<IpcInvoke[C]>));
+      return await fn(event.sender, ...(args as Parameters<IpcInvoke[C]>));
     } catch (e) {
       if (e instanceof NetworkError && e.isAuth) session.markAuthExpired();
       throw new Error(e instanceof Error ? e.message : String(e), { cause: e });
@@ -228,18 +234,13 @@ export function registerIpcHandlers(): void {
   handle("capture:resize", (height) => resizeCaptureWindow(height));
   handle("capture:openEditor", (draft) => {
     hideCaptureWindow();
-    const win = openEditorWindow();
-    win.webContents.once("did-finish-load", () => win.webContents.send("editor:open", { draft }));
+    openEditorWindow({ draft });
   });
 
   // ---- windows
   handle("window:openMain", (route) => void openMainWindow(route));
   handle("window:revealDoc", (path) => revealDoc(path));
-  handle("window:openEditor", (p) => {
-    const win = openEditorWindow(p ? `?path=${encodeURIComponent(p)}` : "");
-    if (p)
-      win.webContents.once("did-finish-load", () =>
-        win.webContents.send("editor:open", { path: p }),
-      );
-  });
+  // The path travels in the window's hash, which is there before anything has loaded.
+  handle("window:openEditor", (p) => void openEditorWindow(p ? { path: p } : {}));
+  handleFrom("editor:seed", (sender) => takeEditorSeed(sender));
 }

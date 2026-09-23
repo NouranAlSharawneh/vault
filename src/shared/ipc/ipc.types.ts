@@ -110,6 +110,12 @@ export interface IpcInvoke {
   /** Bring the main window forward with this document selected. */
   "window:revealDoc": (path: string) => void;
   "window:openEditor": (path?: string) => void;
+  /**
+   * The text an editor window was opened with (from the capture sheet), handed over once.
+   * The window asks for it when it is ready: an event pushed on did-finish-load could
+   * arrive before the editor was listening, and the text was lost.
+   */
+  "editor:seed": () => EditorDraft | null;
   "app:version": () => string;
   "app:platform": () => NodeJS.Platform;
   "app:openExternal": (url: string) => void;
@@ -129,7 +135,6 @@ export interface IpcEvents {
   "auth:deviceStatus": { status: DevicePollStatus };
   "auth:webStatus": { status: WebFlowStatus; message?: string };
   "capture:shown": ClipboardCapture;
-  "editor:open": { path?: string; draft?: EditorDraft };
   /** Select this document in the main window, clearing filters so it is in the list. */
   "doc:reveal": string;
   shortcut: Shortcut;

@@ -1,4 +1,4 @@
-import { useCallback, useEffect } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { AssetPanel, useAssetPlan } from "@/components/asset-panel";
 import { AuthExpiredBanner } from "@/components/auth-expired-banner/auth-expired-banner.component";
 import { Markdown } from "@/components/markdown";
@@ -16,20 +16,17 @@ import { useUnsavedGuard } from "./components/unsaved-guard/hooks/use-unsaved-gu
 import { UnsavedGuard } from "./components/unsaved-guard/unsaved-guard.component";
 import type { SaveMode } from "./editor.types";
 import { useEditorDraft } from "./hooks/use-editor-draft.hook";
-import { useEditorOpen } from "./hooks/use-editor-open.hook";
+import { readEditorTarget, useEditorOpen } from "./hooks/use-editor-open.hook";
 import { useEditorShortcuts } from "./hooks/use-editor-shortcuts.hook";
 
 /** Full save window: raw markdown left, live preview right, metadata bar and actions below. */
 export function Editor() {
+  const [target] = useState(readEditorTarget);
   const d = useEditorDraft();
   const index = useApp((s) => s.index);
   const config = useApp((s) => s.config);
 
-  useEditorOpen({
-    onDoc: d.loadDoc,
-    onDraft: d.loadDraft,
-    onRecover: (key) => fire(d.recoverDraft(key), "Couldn't recover the draft"),
-  });
+  useEditorOpen(target, { onDoc: d.loadDoc, onDraft: d.loadDraft, onRecover: d.recoverDraft });
   const plan = useAssetPlan({
     body: d.body,
     project: d.meta.project,
