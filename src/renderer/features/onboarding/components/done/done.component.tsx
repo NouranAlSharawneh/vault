@@ -2,7 +2,7 @@ import { Check, RefreshCw } from "lucide-react";
 import { Button, Card, Kbd, SectionLabel } from "@/components/ui";
 import { LEARN_SHORTCUTS } from "@/data/onboarding.data";
 import { plural } from "@/helpers";
-import { api } from "@/lib/api";
+import { api, fire } from "@/lib/api";
 import { useApp } from "@/stores/app";
 
 export function Done() {
@@ -41,11 +41,18 @@ export function Done() {
         <Button variant="outline" onClick={() => (window.location.hash = "main")}>
           Open the vault
         </Button>
-        <Button variant="primary" onClick={() => api("window:openEditor")}>
+        <Button
+          variant="primary"
+          onClick={() => fire(api("window:openEditor"), "Couldn't open the editor")}
+        >
           Save my first document
         </Button>
       </div>
-      <Button variant="subtle" className="mt-4" onClick={() => api("vault:rescan")}>
+      <Button
+        variant="subtle"
+        className="mt-4"
+        onClick={() => fire(api("vault:rescan"), "Couldn't rescan the vault")}
+      >
         <RefreshCw size={10} /> Rescan
       </Button>
     </Card>

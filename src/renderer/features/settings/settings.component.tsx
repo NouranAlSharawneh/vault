@@ -91,10 +91,20 @@ export function Settings() {
               label="Folder"
               description={<span className="font-mono">{shortPath(config.root)}</span>}
             >
-              <Button variant="outline" size="sm" onClick={() => api("vault:revealInFinder")}>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() =>
+                  fire(api("vault:revealInFinder"), "Couldn't show the vault in Finder")
+                }
+              >
                 <FolderOpen size={11} /> Reveal in Finder
               </Button>
-              <Button variant="outline" size="sm" onClick={() => api("vault:rescan")}>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => fire(api("vault:rescan"), "Couldn't rescan the vault")}
+              >
                 <RefreshCw size={11} /> Rescan
               </Button>
             </SettingRow>

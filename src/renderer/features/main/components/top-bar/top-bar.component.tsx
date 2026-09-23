@@ -2,7 +2,7 @@ import { PanelLeft, Plus, Search } from "lucide-react";
 import { SyncBadge } from "@/components/sync-badge/sync-badge.component";
 import { Button } from "@/components/ui";
 import { MOD_KEY } from "@/constants";
-import { api } from "@/lib/api";
+import { api, fire } from "@/lib/api";
 import type { TopBarProps } from "./top-bar.types";
 
 /** Full-width title bar: sidebar toggle · centred search pill (opens ⌘K) · sync · New. */
@@ -34,7 +34,11 @@ export function TopBar({ sidebar, onToggleSidebar, onSearch, onReviewConflicts }
       </Button>
       <div className="flex items-center justify-end gap-2 no-drag">
         <SyncBadge onReviewConflicts={onReviewConflicts} />
-        <Button variant="primary" size="sm" onClick={() => api("window:openEditor")}>
+        <Button
+          variant="primary"
+          size="sm"
+          onClick={() => fire(api("window:openEditor"), "Couldn't open the editor")}
+        >
           <Plus size={11} /> New
         </Button>
       </div>

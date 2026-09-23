@@ -20,7 +20,9 @@ export function TokenForm({ onBack }: TokenFormProps) {
           <Button
             variant="link"
             className="text-sm underline"
-            onClick={() => api("github:openInBrowser", TOKEN_SETTINGS_PATH)}
+            onClick={() =>
+              fire(api("github:openInBrowser", TOKEN_SETTINGS_PATH), "Couldn't open GitHub")
+            }
           >
             github.com/{TOKEN_SETTINGS_PATH}
           </Button>

@@ -147,12 +147,12 @@ export function Main() {
             view={view}
             onView={setView}
             onStar={star}
-            onTrash={trashActions.trash}
+            onTrash={() => fire(trashActions.trash())}
             onHistory={toggleHistory}
             historyOpen={historyOpen}
             trashed={isTrashed(doc?.meta.path ?? null)}
-            onRestore={trashActions.restore}
-            onPurge={trashActions.purge}
+            onRestore={() => fire(trashActions.restore())}
+            onPurge={() => fire(trashActions.purge())}
           />
         }
       />
@@ -204,7 +204,7 @@ export function Main() {
         <CommandPalette
           onClose={() => setPaletteOpen(false)}
           onOpenDoc={setSelected}
-          onTrashDoc={doc && !inTrash ? trashActions.trash : undefined}
+          onTrashDoc={doc && !inTrash ? () => fire(trashActions.trash()) : undefined}
           onReviewConflicts={() => setConflictsOpen(true)}
         />
       )}

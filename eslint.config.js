@@ -60,7 +60,7 @@ export default tseslint.config(
       // reaches no one, a setTimeout that swallows a throw.
       "@typescript-eslint/no-misused-promises": [
         "error",
-        { checksVoidReturn: { attributes: false } },
+        { checksVoidReturn: { attributes: true } },
       ],
       "@typescript-eslint/await-thenable": "error",
       "@typescript-eslint/return-await": ["error", "in-try-catch"],
