@@ -18,4 +18,5 @@ export const DEVICE_FLOW_STATUS_TEXT: Record<DevicePollStatus, string> = {
   expired: "Code expired.",
   denied: "You cancelled on GitHub.",
   ok: "Approved!",
+  error: "Lost touch with GitHub — no longer waiting on this code.",
 };

@@ -14,4 +14,6 @@ export interface DocumentListProps {
   sortable?: boolean;
   /** Shown when the list is empty. */
   emptyHint?: string;
+  /** The time each row shows. Default `created`; Recent passes the time it sorts by. */
+  dateOf?: (d: DocMeta) => string | number;
 }

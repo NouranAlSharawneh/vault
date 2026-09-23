@@ -99,7 +99,11 @@ export interface IpcInvoke {
   "assets:chooseFolder": (defaultPath?: string) => string | null;
 
   "capture:readClipboard": () => ClipboardCapture;
-  /** Hide the sheet and open the just-saved document in the main window. */
+  /**
+   * Hide the sheet and open the just-saved document in the main window (⌥⌘↵). A plain ⌘↵
+   * save uses `capture:hide` instead, so focus goes back to the app the clip came from.
+   * Does nothing once the sheet is already gone: the user has moved on.
+   */
   "capture:reveal": (path: string) => void;
   /** Grow or shrink the capture sheet to the height its content actually needs. */
   "capture:resize": (height: number) => void;
@@ -110,6 +114,8 @@ export interface IpcInvoke {
   /** Bring the main window forward with this document selected. */
   "window:revealDoc": (path: string) => void;
   "window:openEditor": (path?: string) => void;
+  /** macOS: mark the sending window as having unsaved changes (the dot in its close button). */
+  "window:setEdited": (edited: boolean) => void;
   "app:version": () => string;
   "app:platform": () => NodeJS.Platform;
   "app:openExternal": (url: string) => void;
@@ -129,6 +135,8 @@ export interface IpcEvents {
   "auth:deviceStatus": { status: DevicePollStatus };
   "auth:webStatus": { status: WebFlowStatus; message?: string };
   "capture:shown": ClipboardCapture;
+  /** The sheet went away (Esc, blur, save or the hotkey): drop anything still pending. */
+  "capture:hidden": null;
   "editor:open": { path?: string; draft?: EditorDraft };
   /** Select this document in the main window, clearing filters so it is in the list. */
   "doc:reveal": string;

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useAssetPlan } from "@/components/asset-panel";
 import { CAPTURE_SAVED_FLASH_MS } from "@/constants";
 import { errorMessage, parentDir } from "@/helpers";
@@ -11,7 +11,7 @@ import type { CaptureForm, CaptureState } from "../capture.types";
 const EMPTY: CaptureState = {
   clip: null,
   form: { project: "", source: "claude", tags: [] },
-  phase: "empty",
+  phase: "loading",
   error: null,
   savedPath: null,
   pathPreview: "",
@@ -25,27 +25,72 @@ export function useCapture() {
   const config = useApp((s) => s.config);
   const index = useApp((s) => s.index);
   const [state, setState] = useState<CaptureState>(EMPTY);
+  // The "saved" flash that ends in hiding (⌘↵) or revealing (⌥⌘↵). Cancelled if the
+  // sheet goes away first, so a blur mid-flash never drags the main window forward.
+  const pending = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const cancelPending = useCallback(() => {
+    if (pending.current) clearTimeout(pending.current);
+    pending.current = null;
+  }, []);
 
-  const load = useCallback(
-    (clip: ClipboardCapture) => {
-      setState({
-        ...EMPTY,
-        clip,
-        phase: clip.text.trim() ? "ready" : "empty",
-        form: { project: config?.lastProject ?? "", source: clip.detectedSource, tags: [] },
-      });
-    },
-    [config?.lastProject],
-  );
+  // Read through a ref: the long-lived sheet must prefill from the latest save, but config
+  // arriving must not re-run `load` and wipe a form the user is typing into.
+  const lastProject = useRef(config?.lastProject ?? null);
+  useEffect(() => {
+    lastProject.current = config?.lastProject ?? null;
+  }, [config?.lastProject]);
+
+  const load = useCallback((clip: ClipboardCapture) => {
+    setState({
+      ...EMPTY,
+      clip,
+      phase: clip.text.trim() ? "ready" : "empty",
+      form: { project: lastProject.current ?? "", source: clip.detectedSource, tags: [] },
+    });
+  }, []);
+
+  // Bumped on every show and hide, so an answer that arrives after the sheet has moved on
+  // is dropped instead of painting over the newer state.
+  const showing = useRef(0);
 
   // First paint may happen before main sends the event; ask once, then follow events.
   useEffect(() => {
+    const first = showing.current;
     api("capture:readClipboard")
-      .then(load)
+      .then((clip) => {
+        if (showing.current === first) load(clip);
+      })
       .catch(() => undefined);
 
-    return on("capture:shown", load);
-  }, [load]);
+    const offShown = on("capture:shown", (clip) => {
+      const mine = ++showing.current;
+      // The sheet outlives many saves, and every save (here or in the editor) moves
+      // "last project" on in main. Ask again rather than trusting the copy from boot.
+      const refreshed = api("vault:config")
+        .then((fresh) => {
+          if (!fresh) return;
+          lastProject.current = fresh.lastProject ?? null;
+          useApp.getState().setConfig(fresh);
+        })
+        .catch(() => undefined)
+        .then(() => {
+          if (showing.current === mine) load(clip);
+        });
+      fireQuietly(refreshed, "filling the sheet");
+    });
+    const offHidden = on("capture:hidden", () => {
+      showing.current++;
+      cancelPending();
+      // Start the next show blank rather than flashing whatever this one ended on.
+      setState(EMPTY);
+    });
+
+    return () => {
+      offShown();
+      offHidden();
+      cancelPending();
+    };
+  }, [load, cancelPending]);
 
   const title =
     state.clip?.detectedTitle ?? (state.clip ? (inferTitle(state.clip.text) ?? "Untitled") : "");
@@ -67,31 +112,37 @@ export function useCapture() {
 
   const hide = useCallback(() => fireQuietly(api("capture:hide"), "hiding the sheet"), []);
 
-  const save = useCallback(async () => {
-    if (!state.clip || state.phase !== "ready") return;
-    setState((s) => ({ ...s, phase: "saving", error: null }));
-    try {
-      const res = await api("doc:save", {
-        body: state.clip.text,
-        frontmatter: {
-          title,
-          project: state.form.project,
-          tags: state.form.tags,
-          source: state.form.source,
-        },
-        commit: true,
-        assets: assets.request,
-      });
-      setState((s) => ({ ...s, phase: "saved", savedPath: res.path }));
-      // Flash the committed path, then hand the new doc to the main window.
-      setTimeout(
-        () => fire(api("capture:reveal", res.path), "Saved, but couldn't open it"),
-        CAPTURE_SAVED_FLASH_MS,
-      );
-    } catch (e) {
-      setState((s) => ({ ...s, phase: "error", error: errorMessage(e) }));
-    }
-  }, [state.clip, state.phase, state.form, title, assets.request]);
+  /** ⌘↵ saves and hands focus back to the app you were in; ⌥⌘↵ also opens it in Vault. */
+  const save = useCallback(
+    async (reveal = false) => {
+      if (!state.clip || state.phase !== "ready") return;
+      setState((s) => ({ ...s, phase: "saving", error: null }));
+      try {
+        const res = await api("doc:save", {
+          body: state.clip.text,
+          frontmatter: {
+            title,
+            project: state.form.project,
+            tags: state.form.tags,
+            source: state.form.source,
+          },
+          commit: true,
+          assets: assets.request,
+        });
+        setState((s) => ({ ...s, phase: "saved", savedPath: res.path }));
+        // Flash the committed path, then get out of the way.
+        cancelPending();
+        pending.current = setTimeout(() => {
+          pending.current = null;
+          if (reveal) fire(api("capture:reveal", res.path), "Saved, but couldn’t open it");
+          else fireQuietly(api("capture:hide"), "hiding the sheet");
+        }, CAPTURE_SAVED_FLASH_MS);
+      } catch (e) {
+        setState((s) => ({ ...s, phase: "error", error: errorMessage(e) }));
+      }
+    },
+    [state.clip, state.phase, state.form, title, assets.request, cancelPending],
+  );
 
   const openInEditor = useCallback(() => {
     if (!state.clip?.text.trim()) {

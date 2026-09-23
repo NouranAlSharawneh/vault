@@ -1,6 +1,6 @@
 import { homedir } from "node:os";
 import { join } from "node:path";
-import { app, dialog, ipcMain, shell } from "electron";
+import { app, BrowserWindow, dialog, ipcMain, shell } from "electron";
 import type { InvokeChannel, IpcInvoke } from "@shared/ipc";
 import { fire } from "../../lib/fire";
 import { NetworkError } from "../../network/axios";
@@ -20,30 +20,54 @@ import { getSettings, updateSettings } from "../../store/settings.store";
 import { loadCredentials } from "../../store/token.store";
 import {
   broadcast,
+  dialogParent,
   hideCaptureWindow,
+  IS_MAC,
+  isCaptureVisible,
   openEditorWindow,
   openMainWindow,
   resizeCaptureWindow,
   revealDoc,
+  whileCaptureDialogOpen,
 } from "../../windows";
 import { registerHotkey } from "../hotkey/hotkey";
 import { buildAppMenu } from "../menu/menu";
 import { resetApp } from "../session/reset-app";
 import { session } from "../session/session";
 import { confirmPurge } from "./confirm-purge";
-import type { IpcHandler } from "./ipc.types";
+import type { IpcHandler, IpcSenderHandler } from "./ipc.types";
 import { setupVault } from "./setup-vault";
 
 /** Typed `ipcMain.handle` that normalises errors so the renderer sees a plain message. */
 function handle<C extends InvokeChannel>(channel: C, fn: IpcHandler<C>): void {
-  ipcMain.handle(channel, async (_event, ...args: unknown[]) => {
+  handleFrom(channel, (_sender, ...args) => fn(...args));
+}
+
+/** `handle`, for the few handlers that need the window that asked — to parent a dialog to it. */
+function handleFrom<C extends InvokeChannel>(channel: C, fn: IpcSenderHandler<C>): void {
+  ipcMain.handle(channel, async (event, ...args: unknown[]) => {
     try {
-      return await fn(...(args as Parameters<IpcInvoke[C]>));
+      const sender = BrowserWindow.fromWebContents(event.sender);
+
+      return await fn(sender, ...(args as Parameters<IpcInvoke[C]>));
     } catch (e) {
       if (e instanceof NetworkError && e.isAuth) session.markAuthExpired();
       throw new Error(e instanceof Error ? e.message : String(e), { cause: e });
     }
   });
+}
+
+/** Pick a folder, as a sheet on the window that asked when there is one. */
+async function chooseFolder(
+  sender: BrowserWindow | null,
+  options: Electron.OpenDialogOptions,
+): Promise<string | null> {
+  const parent = dialogParent(sender);
+  const r = await (parent
+    ? dialog.showOpenDialog(parent, options)
+    : dialog.showOpenDialog(options));
+
+  return r.canceled ? null : r.filePaths[0];
 }
 
 let deviceAbort: AbortController | null = null;
@@ -52,7 +76,9 @@ export function registerIpcHandlers(): void {
   handle("app:version", () => app.getVersion());
   handle("app:platform", () => process.platform);
   handle("app:openExternal", (url) => {
-    if (/^https?:\/\//.test(url)) fire(shell.openExternal(url), "opening a link");
+    // Web pages and mail drafts only: anything else (file:, custom schemes) could launch
+    // an arbitrary app from a link in a pasted document.
+    if (/^(?:https?:\/\/|mailto:)/i.test(url)) fire(shell.openExternal(url), "opening a link");
   });
 
   // ---- auth
@@ -120,14 +146,12 @@ export function registerIpcHandlers(): void {
   // ---- vault lifecycle
   handle("vault:config", () => getSettings().vault);
   handle("vault:defaultPath", (name) => join(homedir(), "Documents", name));
-  handle("vault:chooseFolder", async () => {
-    const r = await dialog.showOpenDialog({
+  handleFrom("vault:chooseFolder", (sender) =>
+    chooseFolder(sender, {
       properties: ["openDirectory", "createDirectory"],
       defaultPath: join(homedir(), "Documents"),
-    });
-
-    return r.canceled ? null : r.filePaths[0];
-  });
+    }),
+  );
   handle("vault:setup", async ({ repo, localPath }) => {
     const config = await setupVault(session, repo, localPath);
     registerHotkey(config.hotkey);
@@ -151,7 +175,7 @@ export function registerIpcHandlers(): void {
   handle("draft:save", (key, draft) => saveDraft(key, draft));
   handle("draft:load", (key) => loadDraft(key));
   handle("draft:clear", (key) => clearDraft(key));
-  handle("app:reset", () => resetApp());
+  handleFrom("app:reset", (sender) => resetApp(dialogParent(sender)));
   handle("vault:index", () => session.requireVault().index.snapshot());
   handle("vault:rescan", () => session.requireVault().index.rescan());
   handle("vault:revealInFinder", (p) =>
@@ -175,10 +199,11 @@ export function registerIpcHandlers(): void {
   handle("trash:list", () => session.requireVault().listTrash());
   handle("trash:read", (p) => session.requireVault().readTrashed(p));
   handle("trash:restore", (p) => session.requireVault().restoreFromTrash(p));
-  handle("trash:purge", async (p) => {
+  handleFrom("trash:purge", async (sender, p) => {
     const vault = session.requireVault();
     // Asked here so neither the reader nor Settings can skip it.
-    if (!(await confirmPurge(p, await vault.listTrash()))) return { removed: 0, assets: [] };
+    if (!(await confirmPurge(p, await vault.listTrash(), dialogParent(sender))))
+      return { removed: 0, assets: [] };
 
     return vault.purgeTrash(p);
   });
@@ -210,24 +235,29 @@ export function registerIpcHandlers(): void {
   handle("assets:resolve", (baseDir, refs) =>
     resolveAssets(baseDir, refs, Object.values(getSettings().vault?.assetDirs ?? {})),
   );
-  handle("assets:chooseFolder", async (defaultPath) => {
-    const r = await dialog.showOpenDialog({
-      title: "Where are these images relative to?",
-      properties: ["openDirectory"],
-      defaultPath: defaultPath ?? join(homedir(), "Documents"),
-    });
-
-    return r.canceled ? null : r.filePaths[0];
-  });
+  // From the capture sheet this stays parentless: `dialogParent` will not hang a sheet off it.
+  // The hold keeps the sheet from hiding as the dialog takes its focus.
+  handleFrom("assets:chooseFolder", (sender, defaultPath) =>
+    whileCaptureDialogOpen(() =>
+      chooseFolder(sender, {
+        title: "Where are these images relative to?",
+        properties: ["openDirectory"],
+        defaultPath: defaultPath ?? join(homedir(), "Documents"),
+      }),
+    ),
+  );
   handle("capture:readClipboard", () => readClipboard());
-  handle("capture:hide", () => hideCaptureWindow());
+  handle("capture:hide", () => hideCaptureWindow("dismiss"));
   handle("capture:reveal", (path) => {
-    hideCaptureWindow();
+    // The sheet blurred or was dismissed while "saved" was showing: the user is back in
+    // another app, and pulling the main window over it now would be a surprise.
+    if (!isCaptureVisible()) return;
+    hideCaptureWindow("handoff");
     revealDoc(path);
   });
   handle("capture:resize", (height) => resizeCaptureWindow(height));
   handle("capture:openEditor", (draft) => {
-    hideCaptureWindow();
+    hideCaptureWindow("handoff");
     const win = openEditorWindow();
     win.webContents.once("did-finish-load", () => win.webContents.send("editor:open", { draft }));
   });
@@ -235,6 +265,9 @@ export function registerIpcHandlers(): void {
   // ---- windows
   handle("window:openMain", (route) => void openMainWindow(route));
   handle("window:revealDoc", (path) => revealDoc(path));
+  handleFrom("window:setEdited", (sender, edited) => {
+    if (IS_MAC) sender?.setDocumentEdited(edited);
+  });
   handle("window:openEditor", (p) => {
     const win = openEditorWindow(p ? `?path=${encodeURIComponent(p)}` : "");
     if (p)

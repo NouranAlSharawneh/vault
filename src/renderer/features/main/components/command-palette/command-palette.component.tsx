@@ -39,9 +39,10 @@ export function CommandPalette({
   onClose,
   onOpenDoc,
   onTrashDoc,
+  trashTitle,
   onReviewConflicts,
 }: CommandPaletteProps) {
-  const p = useCommandPalette(onOpenDoc, onClose, onTrashDoc, onReviewConflicts);
+  const p = useCommandPalette(onOpenDoc, onClose, onTrashDoc, onReviewConflicts, trashTitle);
   const input = useRef<HTMLInputElement>(null);
 
   // Arrows and Enter are the palette's whole interaction, and they used to live on the
@@ -49,8 +50,8 @@ export function CommandPalette({
   // went keyboard-dead with no way to close it but the mouse.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      // The input's own handler already took it (and prevented it); running it again here
-      // moved the highlight two rows per press.
+      // With the input focused, its own onKeyDown has already handled the key and prevented
+      // default on the way up — handling it again moved two rows and ran Enter twice.
       if (e.defaultPrevented) return;
       if (e.key === "ArrowDown" || e.key === "ArrowUp" || e.key === "Enter") {
         p.onKeyDown(e);

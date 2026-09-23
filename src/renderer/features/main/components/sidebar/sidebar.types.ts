@@ -8,4 +8,6 @@ export interface SidebarProps {
   onCollection: (c: ListFilter["collection"]) => void;
   onProject: (slug: string | null) => void;
   onTag: (tag: string) => void;
+  /** Opens Settings, the same as ⌘, and the palette’s “Settings…”. */
+  onSettings: () => void;
 }
