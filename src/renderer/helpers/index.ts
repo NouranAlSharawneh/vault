@@ -1,5 +1,5 @@
 export { cx } from "./cx";
-export { plural } from "./plural";
+export { plural, pluralWord } from "./plural";
 export { readTime } from "./read-time";
 export { errorMessage } from "./error-message";
 export { isEditableTarget } from "./is-editable-target";
@@ -11,3 +11,5 @@ export { svgIntrinsicWidth } from "./svg-intrinsic-width";
 export { relaxMermaidWidth } from "./relax-mermaid-width";
 export { describeToken } from "./describe-token";
 export { parseUnifiedDiff, diffStat } from "./parse-diff";
+export { classifyHref } from "./classify-href";
+export { scrollToAnchor } from "./scroll-to-anchor";

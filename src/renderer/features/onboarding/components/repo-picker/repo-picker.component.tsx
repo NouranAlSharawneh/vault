@@ -1,11 +1,12 @@
 import { ArrowRight, FolderOpen, Plus, Search } from "lucide-react";
 import { Button, Card, ListRow, Option, SectionLabel, Spinner } from "@/components/ui";
+import { REPO_LIST_LIMIT } from "@/constants";
 import { cx } from "@/helpers";
 import { fire } from "@/lib/api";
 import { useRepoPicker } from "./hooks/use-repo-picker.hook";
 import type { RepoPickerProps } from "./repo-picker.types";
 
-export function RepoPicker({ onDone }: RepoPickerProps) {
+export function RepoPicker({ onDone, onBack }: RepoPickerProps) {
   const p = useRepoPicker(onDone);
 
   return (
@@ -16,11 +17,11 @@ export function RepoPicker({ onDone }: RepoPickerProps) {
       </p>
 
       {p.signedIn ? (
-        <>
+        <div role="radiogroup" aria-label="Vault repository">
           <Option
             selected={p.choice === "new"}
             onClick={() => p.setChoice("new")}
-            badge="recommended"
+            badge={p.tokenUser ? undefined : "recommended"}
           >
             <div className="flex items-center gap-2">
               <Plus size={13} className="text-ink-3" />
@@ -50,7 +51,17 @@ export function RepoPicker({ onDone }: RepoPickerProps) {
             />
           </div>
           <div className="mt-2 max-h-48 divide-y divide-line overflow-y-auto rounded-md border border-line">
-            {p.repos === null && !p.error && (
+            {p.listError && (
+              <div className="flex items-center gap-2 p-3 text-xs">
+                <span className="text-cherry">
+                  Couldn’t load your repos ({p.listError}). You can still create a new one above.
+                </span>
+                <Button variant="link" className="ml-auto shrink-0" onClick={p.retryList}>
+                  Try again
+                </Button>
+              </div>
+            )}
+            {p.repos === null && !p.listError && (
               <div className="flex items-center gap-2 p-3 text-xs text-ink-4">
                 <Spinner /> Loading repos…
               </div>
@@ -62,6 +73,8 @@ export function RepoPicker({ onDone }: RepoPickerProps) {
               <ListRow
                 key={r.fullName}
                 kind="option"
+                role="radio"
+                aria-checked={p.choice === r.fullName}
                 selected={p.choice === r.fullName}
                 onClick={() => p.setChoice(r.fullName)}
               >
@@ -80,7 +93,12 @@ export function RepoPicker({ onDone }: RepoPickerProps) {
               </ListRow>
             ))}
           </div>
-        </>
+          {p.matchCount > REPO_LIST_LIMIT && (
+            <div className="mt-1.5 text-xs text-ink-4">
+              Showing {REPO_LIST_LIMIT} of {p.matchCount.toLocaleString()} — type to filter.
+            </div>
+          )}
+        </div>
       ) : (
         <div className="mt-4 rounded-md border border-line bg-paper-2 p-3 text-sm text-ink-2">
           Not signed in — the vault will be a local git repository. You can connect GitHub any time
@@ -96,8 +114,11 @@ export function RepoPicker({ onDone }: RepoPickerProps) {
           Change
         </Button>
       </div>
-      {p.error && <div className="mt-3 text-xs text-cherry">{p.error}</div>}
-      <div className="mt-5 flex justify-end">
+      {p.submitError && <div className="mt-3 text-xs text-cherry">{p.submitError}</div>}
+      <div className="mt-5 flex items-center justify-between">
+        <Button variant="subtle" onClick={onBack}>
+          Back
+        </Button>
         <Button
           variant="primary"
           loading={p.busy}
