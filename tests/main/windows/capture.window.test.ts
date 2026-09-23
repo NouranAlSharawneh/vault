@@ -27,16 +27,22 @@ class FakeWindow extends EventEmitter {
 const electron = vi.hoisted(() => ({
   windows: [] as unknown[],
   appHide: vi.fn(),
+  /** Whatever Vault window has focus when the hotkey fires; null = another app is in front. */
+  focused: null as unknown,
+  mainOpen: false,
 }));
 
 vi.mock("electron", () => ({
   app: { hide: electron.appHide, dock: undefined },
-  BrowserWindow: vi.fn(function BrowserWindow() {
-    const w = new FakeWindow();
-    electron.windows.push(w);
+  BrowserWindow: Object.assign(
+    vi.fn(function BrowserWindow() {
+      const w = new FakeWindow();
+      electron.windows.push(w);
 
-    return w;
-  }),
+      return w;
+    }),
+    { getFocusedWindow: () => electron.focused },
+  ),
   screen: {
     getCursorScreenPoint: () => ({ x: 0, y: 0 }),
     getDisplayNearestPoint: () => ({ workArea: { x: 0, y: 0, width: 1440, height: 900 } }),
@@ -44,10 +50,12 @@ vi.mock("electron", () => ({
 }));
 vi.mock("@main/windows/load-route", () => ({
   COMMON_WINDOW_OPTIONS: {},
-  IS_MAC: false,
+  IS_MAC: true,
   loadRoute: vi.fn(),
 }));
-vi.mock("@main/windows/main.window", () => ({ getMainWindow: () => null }));
+vi.mock("@main/windows/main.window", () => ({
+  getMainWindow: () => (electron.mainOpen ? {} : null),
+}));
 vi.mock("@main/windows/editor.window", () => ({ editorWindowCount: () => 0 }));
 
 async function sheet() {
@@ -60,11 +68,15 @@ async function sheet() {
 }
 
 describe("capture window", () => {
-  beforeEach(() => electron.appHide.mockClear());
+  beforeEach(() => {
+    electron.appHide.mockClear();
+    electron.focused = null;
+    electron.mainOpen = false;
+  });
 
   it("tells the sheet it was hidden, so a pending save flash can stand down", async () => {
     const { mod, win } = await sheet();
-    mod.hideCaptureWindow();
+    mod.hideCaptureWindow("dismiss");
     expect(win.visible).toBe(false);
     expect(win.sent).toContainEqual(["capture:hidden", null]);
   });
@@ -102,5 +114,38 @@ describe("capture window", () => {
     ).rejects.toThrow("no dialog");
     win.emit("blur");
     expect(win.visible).toBe(false);
+  });
+
+  describe("with the main window open, summoned from another app", () => {
+    beforeEach(() => {
+      electron.mainOpen = true;
+      electron.focused = null;
+    });
+
+    it("hands focus back to that app on Esc or ⌘↵", async () => {
+      const { mod } = await sheet();
+      mod.hideCaptureWindow("dismiss");
+      expect(electron.appHide).toHaveBeenCalled();
+    });
+
+    it("leaves Vault alone when the user has already clicked elsewhere", async () => {
+      const { win } = await sheet();
+      win.emit("blur");
+      expect(electron.appHide).not.toHaveBeenCalled();
+    });
+
+    it("keeps Vault up when ⌥⌘↵ is about to show the doc in it", async () => {
+      const { mod } = await sheet();
+      mod.hideCaptureWindow("handoff");
+      expect(electron.appHide).not.toHaveBeenCalled();
+    });
+  });
+
+  it("just hides the sheet when Vault was already in front", async () => {
+    electron.mainOpen = true;
+    electron.focused = {};
+    const { mod } = await sheet();
+    mod.hideCaptureWindow("dismiss");
+    expect(electron.appHide).not.toHaveBeenCalled();
   });
 });
