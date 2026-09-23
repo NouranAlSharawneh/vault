@@ -1,7 +1,16 @@
+import type * as NodeOs from "node:os";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 
 // Off the real Spotlight index: the temp workspace below is the only folder in play.
 vi.mock("@main/services/assets/spotlight", () => ({ spotlightRoots: async () => [] }));
+// The walk also seeds from the home folder, which would let any matching file on this Mac
+// answer instead of the fixture. Point it somewhere that holds nothing.
+vi.mock("node:os", async (importOriginal) => {
+  const os = await importOriginal<typeof NodeOs>();
+  const homedir = () => `${os.tmpdir()}/vault-test-no-home`;
+
+  return { ...os, homedir, default: { ...os, homedir } };
+});
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
