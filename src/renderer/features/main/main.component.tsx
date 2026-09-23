@@ -151,10 +151,11 @@ export function Main() {
             onSelect={setSelected}
             sort={list.filter.sort}
             onSort={list.setSort}
-            activeTags={list.filter.tags}
+            activeTags={list.activeTags}
             onRemoveTag={list.toggleTag}
             onClearTags={list.clearTags}
             sortable={!inTrash && list.filter.collection !== "recent"}
+            dateOf={list.dateOf}
             emptyHint={inTrash ? "Deleted documents wait here until you purge them." : undefined}
           />
         }

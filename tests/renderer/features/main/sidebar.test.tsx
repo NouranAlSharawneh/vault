@@ -36,3 +36,32 @@ describe("the sidebar footer", () => {
     expect(screen.queryByText("Trash")).toBeNull();
   });
 });
+
+describe("the sidebar tags", () => {
+  it("count in words that agree with the number", () => {
+    mockVaultApi();
+    render(
+      <Sidebar
+        index={{
+          docs: [],
+          projects: [],
+          tags: [
+            { tag: "spec", count: 1 },
+            { tag: "infra", count: 3 },
+          ],
+          orphans: 0,
+          headSha: null,
+          scannedAt: 0,
+        }}
+        config={config}
+        filter={{ collection: "all", project: null, tags: [], sort: "newest" }}
+        onCollection={vi.fn()}
+        onProject={vi.fn()}
+        onTag={vi.fn()}
+        onSettings={vi.fn()}
+      />,
+    );
+    expect(screen.getByText("#spec").closest("[title]")?.getAttribute("title")).toBe("1 doc");
+    expect(screen.getByText("#infra").closest("[title]")?.getAttribute("title")).toBe("3 docs");
+  });
+});
