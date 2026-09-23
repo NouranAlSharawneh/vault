@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 // @vitest-environment jsdom
 import { describe, expect, it, vi } from "vitest";
@@ -58,6 +58,21 @@ describe("SyncBadge", () => {
     // The editor window has nowhere to open a review, so it does not offer one.
     render(<SyncBadge />);
     expect(screen.getAllByText("2 to review")).toHaveLength(1);
+  });
+
+  it("keeps the whole push error a hover away", () => {
+    vi.useFakeTimers();
+    mockVaultApi();
+    const lastError =
+      "remote: Permission to nunu/vault.git denied to someone-else. fatal: unable to access";
+    useApp.setState({ config, sync: { ...status("error", 1), lastError } });
+    render(<SyncBadge />);
+    const button = screen.getByRole("button");
+    expect(button.getAttribute("aria-label")).toContain(lastError);
+    fireEvent.pointerEnter(button.parentElement!);
+    act(() => void vi.advanceTimersByTime(400));
+    expect(screen.getByRole("tooltip").textContent).toContain(lastError);
+    vi.useRealTimers();
   });
 
   it("pushes now when clicked in a pending state, not when already synced", async () => {

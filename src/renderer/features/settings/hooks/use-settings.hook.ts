@@ -69,6 +69,9 @@ export function useSettings() {
     setState((s) => ({ ...s, busy: "trash" }));
     try {
       const { removed, assets } = await api("trash:purge");
+      // Main asks for confirmation first; saying no resolves with nothing removed, and
+      // announcing an emptied trash then would be a lie.
+      if (!removed) return;
       await refreshTrash();
       const images = assets.length ? `, with ${plural(assets.length, "image")}` : "";
       show(`Emptied the trash — ${plural(removed, "doc")} gone for good${images}`);
