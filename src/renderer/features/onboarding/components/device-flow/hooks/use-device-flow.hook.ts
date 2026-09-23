@@ -44,7 +44,7 @@ export function useDeviceFlow() {
     setAttempt((n) => n + 1);
   }, []);
 
-  const terminal = status === "expired" || status === "denied";
+  const terminal = status === "expired" || status === "denied" || status === "error";
 
   return { session, status, error, secondsLeft, terminal, restart };
 }

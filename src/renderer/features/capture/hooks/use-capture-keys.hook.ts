@@ -1,12 +1,13 @@
 import { useEffect } from "react";
 
 interface Handlers {
-  onSave: () => void;
+  /** `reveal` is true for ⌥⌘↵: save, then open the doc in Vault. */
+  onSave: (reveal: boolean) => void;
   onOpenEditor: () => void;
   onHide: () => void;
 }
 
-/** ⌘↵ save · ⌘E open in editor · Esc hide — active anywhere in the sheet. */
+/** ⌘↵ save · ⌥⌘↵ save and open in Vault · ⌘E open in editor · Esc hide — anywhere in the sheet. */
 export function useCaptureKeys({ onSave, onOpenEditor, onHide }: Handlers) {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -18,7 +19,7 @@ export function useCaptureKeys({ onSave, onOpenEditor, onHide }: Handlers) {
         if (!e.defaultPrevented) onHide();
       } else if (mod && e.key === "Enter") {
         e.preventDefault();
-        onSave();
+        onSave(e.altKey);
       } else if (mod && e.key.toLowerCase() === "e") {
         e.preventDefault();
         onOpenEditor();

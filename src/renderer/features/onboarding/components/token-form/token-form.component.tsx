@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 import { Button, Card } from "@/components/ui";
-import { TOKEN_SETTINGS_PATH } from "@/data/onboarding.data";
+import { NEW_REPO_PATH, TOKEN_SETTINGS_PATH } from "@/data/onboarding.data";
 import { api, fire } from "@/lib/api";
 import { useTokenSignIn } from "./hooks/use-token-sign-in.hook";
 import type { TokenFormProps } from "./token-form.types";
@@ -14,7 +14,19 @@ export function TokenForm({ onBack }: TokenFormProps) {
   return (
     <Card className="p-7">
       <h2 className="font-serif text-2xl font-medium text-ink">Paste a fine-grained token</h2>
+      {/* The repo comes first: a token scoped to one repo can't create it afterwards. */}
       <ol className="mt-3 list-decimal space-y-1.5 pl-4 text-sm text-ink-2">
+        <li>
+          Create a private repo for the vault at{" "}
+          <Button
+            variant="link"
+            className="text-sm underline"
+            onClick={() => fire(api("github:openInBrowser", NEW_REPO_PATH), "Couldn't open GitHub")}
+          >
+            github.com/{NEW_REPO_PATH}
+          </Button>
+          . The token below can’t create one for you.
+        </li>
         <li>
           Open{" "}
           <Button
@@ -25,14 +37,12 @@ export function TokenForm({ onBack }: TokenFormProps) {
             }
           >
             github.com/{TOKEN_SETTINGS_PATH}
-          </Button>
+          </Button>{" "}
+          → Repository access: <b>Only select repositories</b> → that repo.
         </li>
         <li>
-          Repository access: <b>Only select repositories</b> → your vault repo (create it first if
-          you need to).
-        </li>
-        <li>
-          Permissions: <b>Contents · Read and write</b>. Everything else stays “No access”.
+          Permissions: <b>Contents · Read and write</b>. GitHub adds Metadata · Read-only on its
+          own; everything else stays “No access”.
         </li>
         <li>
           Generate, copy, paste it below. It is stored encrypted and never written to the repo.

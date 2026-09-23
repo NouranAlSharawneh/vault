@@ -7,7 +7,10 @@ export function CapturePreview({ clip, compact }: CapturePreviewProps) {
 
   return (
     <div>
+      {/* Focusable so a long clip can be scrolled from the keyboard. */}
       <pre
+        tabIndex={0}
+        aria-label="Clipboard preview"
         className={cx(
           "m-0 overflow-auto rounded-md",
           compact ? "max-h-28" : "max-h-52",

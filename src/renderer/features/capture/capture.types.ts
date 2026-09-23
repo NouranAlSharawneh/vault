@@ -1,6 +1,7 @@
 import type { ClipboardCapture, Source } from "@shared/types";
 
-export type CapturePhase = "empty" | "ready" | "saving" | "saved" | "error";
+/** `loading`: the sheet is up but the clipboard hasn't been read yet — show nothing loud. */
+export type CapturePhase = "loading" | "empty" | "ready" | "saving" | "saved" | "error";
 
 export interface CaptureForm {
   project: string;

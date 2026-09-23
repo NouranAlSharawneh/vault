@@ -47,9 +47,9 @@ const pullAnswering = async (result: Partial<PullResult>, onReviewConflicts = vi
   );
   await userEvent.click(screen.getByText("Pull from GitHub"));
   expect(invoke).toHaveBeenCalledWith("sync:pull");
-  await vi.waitFor(() => expect(useToast.getState().toast).not.toBeNull());
+  await vi.waitFor(() => expect(useToast.getState().toasts.length).toBeGreaterThan(0));
 
-  return useToast.getState().toast;
+  return useToast.getState().toasts.at(-1);
 };
 
 describe("palette actions", () => {
@@ -113,7 +113,9 @@ describe("palette actions", () => {
     render(<CommandPalette onClose={vi.fn()} onOpenDoc={vi.fn()} />);
     await userEvent.click(screen.getByText("Rescan vault folder"));
     await vi.waitFor(() =>
-      expect(useToast.getState().toast?.message).toBe("Rescanned the vault folder — 2 docs"),
+      expect(useToast.getState().toasts.at(-1)?.message).toBe(
+        "Rescanned the vault folder — 2 docs",
+      ),
     );
   });
 });

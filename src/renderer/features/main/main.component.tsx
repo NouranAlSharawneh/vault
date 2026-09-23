@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { AuthExpiredBanner } from "@/components/auth-expired-banner/auth-expired-banner.component";
 import { NoWriteAccessBanner } from "@/components/no-write-access-banner/no-write-access-banner.component";
-import { SplitPane, Toast } from "@/components/ui";
+import { SplitPane } from "@/components/ui";
 import { cx } from "@/helpers";
 import { api, fire, on } from "@/lib/api";
 import { useApp } from "@/stores/app";
@@ -32,8 +32,6 @@ export function Main() {
   // A vault that is set up but would not open has nothing to show here either.
   const config = useApp((s) => (s.vaultError ? null : s.config));
   const trash = useApp((s) => s.trash);
-  const toast = useToast((s) => s.toast);
-  const dismissToast = useToast((s) => s.dismiss);
   const show = useToast((s) => s.show);
   const sidebar = useSidebarState();
   const list = useDocumentFilter(index, trash);
@@ -199,11 +197,13 @@ export function Main() {
         <CommandPalette
           onClose={() => setPaletteOpen(false)}
           onOpenDoc={setSelected}
-          onTrashDoc={doc && !inTrash ? () => fire(trashActions.trash()) : undefined}
+          // Trash acts on the doc in the reader, so the action is offered with its title or not at all.
+          {...(doc && !inTrash
+            ? { onTrashDoc: () => fire(trashActions.trash()), trashTitle: doc.meta.title }
+            : {})}
           onReviewConflicts={() => setConflictsOpen(true)}
         />
       )}
-      <Toast toast={toast} onDismiss={dismissToast} />
     </div>
   );
 }

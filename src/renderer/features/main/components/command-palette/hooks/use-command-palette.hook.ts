@@ -15,27 +15,56 @@ import { matchesFilters, parseQuery } from "@shared/query";
 import type { DocMeta, PullResult, SearchHit, SyncStatus } from "@shared/types";
 import type { PaletteGroup, PaletteItem } from "../command-palette.types";
 
+interface ActionContext {
+  sync: SyncStatus | null;
+  hasRemote: boolean;
+  hasDoc: boolean;
+  /** The open document's title, so the trash action says which one it will trash. */
+  trashTitle?: string;
+  /** Lower-cased search text; empty shows everything. */
+  q: string;
+}
+
 /** The actions that apply right now, labelled for the state they would act on. */
-function availableActions(
-  sync: SyncStatus | null,
-  hasRemote: boolean,
-  hasDoc: boolean,
-): PaletteItem[] {
+function availableActions({
+  sync,
+  hasRemote,
+  hasDoc,
+  trashTitle,
+  q,
+}: ActionContext): PaletteItem[] {
   const pending = sync?.ahead ?? 0;
   const conflicts = sync?.conflicts ?? 0;
 
-  return PALETTE_ACTIONS.filter(
-    (a) =>
-      (!a.needsPending || pending > 0) &&
-      (!a.needsDoc || hasDoc) &&
-      (!a.needsConflicts || conflicts > 0) &&
-      (!a.needsRemote || hasRemote),
-  ).map((a) => ({
-    kind: "action",
-    key: a.key,
-    label: a.key === "pushPending" ? `Push ${plural(pending, "pending doc")}` : a.label,
-    shortcut: a.shortcut,
-  }));
+  return (
+    PALETTE_ACTIONS.filter(
+      (a) =>
+        (!a.needsPending || pending > 0) &&
+        (!a.needsDoc || hasDoc) &&
+        (!a.needsConflicts || conflicts > 0) &&
+        (!a.needsRemote || hasRemote),
+    )
+      .map((a) => ({
+        data: a,
+        label:
+          a.key === "pushPending"
+            ? `Push ${plural(pending, "pending doc")}`
+            : a.key === "trashDoc" && trashTitle
+              ? `Move “${trashTitle}” to trash`
+              : a.label,
+      }))
+      // The shown label names the open doc; the generic one keeps "move document" findable.
+      .filter(
+        ({ data, label }) =>
+          !q || label.toLowerCase().includes(q) || data.label.toLowerCase().includes(q),
+      )
+      .map(({ data, label }) => ({
+        kind: "action",
+        key: data.key,
+        label,
+        shortcut: data.shortcut,
+      }))
+  );
 }
 
 /** What a pull asked for by hand did. It used to finish in silence, whatever happened. */
@@ -52,6 +81,7 @@ export function useCommandPalette(
   onClose: () => void,
   onTrashDoc?: () => void,
   onReviewConflicts?: () => void,
+  trashTitle?: string,
 ) {
   const index = useApp((s) => s.index);
   const sync = useApp((s) => s.sync);
@@ -117,15 +147,17 @@ export function useCommandPalette(
         });
     }
 
-    const actions = availableActions(sync, hasRemote, !!onTrashDoc);
-    const q = parsed.text.toLowerCase();
-    const visibleActions = q
-      ? actions.filter((a) => a.kind === "action" && a.label.toLowerCase().includes(q))
-      : actions;
+    const visibleActions = availableActions({
+      sync,
+      hasRemote,
+      hasDoc: !!onTrashDoc,
+      trashTitle,
+      q: parsed.text.toLowerCase(),
+    });
     if (visibleActions.length) out.push({ title: "Actions", items: visibleActions });
 
     return out;
-  }, [index, liveHits, query, sync, hasRemote, onTrashDoc]);
+  }, [index, liveHits, query, sync, hasRemote, onTrashDoc, trashTitle]);
 
   const flat = useMemo(() => groups.flatMap((g) => g.items), [groups]);
   const active = flat[Math.min(cursor, Math.max(0, flat.length - 1))] ?? null;

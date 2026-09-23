@@ -34,5 +34,6 @@ export const LEARN_SHORTCUTS: ShortcutData[] = [
   { keys: `${MOD_KEY} K`, description: "Find anything you've saved." },
 ];
 
+export const NEW_REPO_PATH = "new";
 export const TOKEN_SETTINGS_PATH = "settings/personal-access-tokens/new";
 export const DEVICE_LOGIN_PATH = "login/device";

@@ -1,33 +1,34 @@
 import { electronApp, optimizer } from "@electron-toolkit/utils";
 import { app, dialog, globalShortcut, nativeTheme } from "electron";
 import { APP_ID } from "@shared/constants";
+import { attachContextMenu } from "./app/context-menu/context-menu";
 import { registerHotkey } from "./app/hotkey/hotkey";
 import { registerIpcHandlers } from "./app/ipc/ipc";
 import { buildAppMenu } from "./app/menu/menu";
 import { registerAssetProtocol, registerAssetScheme } from "./app/protocol/protocol";
+import { showMainWindow } from "./app/session/launch-route";
 import { session } from "./app/session/session";
 import { fire } from "./lib/fire";
 import { configureNetwork } from "./network/axios";
 import { getSettings } from "./store/settings.store";
 import { loadToken } from "./store/token.store";
-import {
-  editorWindowCount,
-  getCaptureWindow,
-  getMainWindow,
-  IS_MAC,
-  openMainWindow,
-} from "./windows";
+import { getCaptureWindow, getMainWindow, IS_MAC } from "./windows";
 
 if (!app.requestSingleInstanceLock()) app.quit();
 
 registerAssetScheme();
 
-app.on("second-instance", () => openMainWindow());
+// A second launch can arrive before this one has restored the session; wait for it, or the
+// window would open before the app is ready and on the wrong route.
+app.on("second-instance", () => fire(boot.then(showMainWindow), "showing the main window"));
 
 const boot = app.whenReady().then(async () => {
   electronApp.setAppUserModelId(APP_ID);
   nativeTheme.themeSource = "light";
-  app.on("browser-window-created", (_, w) => optimizer.watchWindowShortcuts(w));
+  app.on("browser-window-created", (_, w) => {
+    optimizer.watchWindowShortcuts(w);
+    attachContextMenu(w.webContents);
+  });
 
   configureNetwork({
     getToken: loadToken,
@@ -41,12 +42,11 @@ const boot = app.whenReady().then(async () => {
   buildAppMenu(settings.vault?.hotkey);
   if (settings.vault && session.vault) registerHotkey(settings.vault.hotkey);
   getCaptureWindow(); // pre-warm so the sheet appears instantly
-  // A vault that is set up but would not open still goes to the library, which says what
-  // went wrong and offers to try again; onboarding would ask to set up from scratch.
-  openMainWindow(settings.onboarded && settings.vault ? "main" : "onboarding");
+  showMainWindow();
 
+  // The dock icon brings the vault back even when only editor windows are open.
   app.on("activate", () => {
-    if (!getMainWindow() && editorWindowCount() === 0) openMainWindow();
+    if (!getMainWindow()) showMainWindow();
   });
 });
 

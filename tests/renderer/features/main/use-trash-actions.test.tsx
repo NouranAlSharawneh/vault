@@ -41,7 +41,7 @@ describe("useTrashActions", () => {
     expect(invoke).toHaveBeenCalledWith("doc:trash", meta.path);
     expect(select).toHaveBeenCalledWith(null);
     expect(useApp.getState().trash).toEqual([trashed]);
-    const toast = useToast.getState().toast;
+    const toast = useToast.getState().toasts.at(-1);
     expect(toast?.message).toBe("Moved “Spec” to trash");
 
     await act(() => toast!.action!.run());
@@ -65,28 +65,28 @@ describe("useTrashActions", () => {
     const inTrash = renderHook(() => useTrashActions(trashed.meta, select));
     await act(() => inTrash.result.current.restore());
     expect(invoke).toHaveBeenCalledWith("trash:restore", trashed.path);
-    expect(useToast.getState().toast?.message).toBe("Restored “Spec”");
+    expect(useToast.getState().toasts.at(-1)?.message).toBe("Restored “Spec”");
     await act(() => inTrash.result.current.purge());
     expect(invoke).toHaveBeenCalledWith("trash:purge", trashed.path);
-    expect(useToast.getState().toast?.message).toBe("Deleted “Spec” and 2 images forever");
+    expect(useToast.getState().toasts.at(-1)?.message).toBe("Deleted “Spec” and 2 images forever");
   });
 
   it("changes nothing when the confirmation is declined", async () => {
     // Main asks before deleting forever; answering no comes back as removed: 0. That has
     // to leave the selection and the toast exactly where they were.
     mockVaultApi({ "trash:purge": { removed: 0, assets: [] } });
-    useToast.setState({ toast: null });
+    useToast.getState().dismiss();
     const select = vi.fn();
     const { result } = renderHook(() => useTrashActions(trashed.meta, select));
     await act(() => result.current.purge());
     expect(select).not.toHaveBeenCalled();
-    expect(useToast.getState().toast).toBeNull();
+    expect(useToast.getState().toasts).toEqual([]);
   });
 
   it("shows the error when main refuses", async () => {
     mockVaultApi({ "doc:trash": new Error("git is busy") });
     const { result } = renderHook(() => useTrashActions(meta, vi.fn()));
     await act(() => result.current.trash());
-    expect(useToast.getState().toast?.message).toBe("git is busy");
+    expect(useToast.getState().toasts.at(-1)?.message).toBe("git is busy");
   });
 });
