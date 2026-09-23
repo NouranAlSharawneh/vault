@@ -1,4 +1,5 @@
 import { ChevronDown } from "lucide-react";
+import { useId } from "react";
 import { Dot, ListRow } from "@/components/ui";
 import { cx } from "@/helpers";
 import { INBOX_COLOR } from "@shared/constants";
@@ -8,6 +9,8 @@ import type { ProjectComboboxProps } from "./project-combobox.types";
 
 export function ProjectCombobox({ value, onChange, projects, dark, hint }: ProjectComboboxProps) {
   const c = useCombobox(value, onChange, projects);
+  const listId = useId();
+  const expanded = c.open && c.matches.length > 0;
   const isNew =
     value.trim() && !projects.some((p) => p.toLowerCase() === value.trim().toLowerCase());
 
@@ -17,8 +20,8 @@ export function ProjectCombobox({ value, onChange, projects, dark, hint }: Proje
         className={cx(
           "flex h-8 items-center gap-2 rounded-sm border px-2",
           dark
-            ? "border-overlay-line bg-overlay-2"
-            : "border-line bg-paper focus-within:ring-2 focus-within:ring-cherry-tint-2",
+            ? "border-overlay-line bg-overlay-2 focus-within:ring-2 focus-within:ring-cherry-3"
+            : "border-line bg-paper focus-within:ring-2 focus-within:ring-cherry",
         )}
       >
         <Dot color={value.trim() ? projectColor(projectSlug(value)) : INBOX_COLOR} />
@@ -36,7 +39,12 @@ export function ProjectCombobox({ value, onChange, projects, dark, hint }: Proje
           onFocus={() => c.setOpen(true)}
           onBlur={() => setTimeout(() => c.setOpen(false), 120)}
           onKeyDown={c.onKeyDown}
-          aria-label="project"
+          aria-label="Project"
+          role="combobox"
+          aria-autocomplete="list"
+          aria-expanded={expanded}
+          aria-controls={expanded ? listId : undefined}
+          aria-activedescendant={expanded ? `${listId}-${c.cursor}` : undefined}
         />
         {isNew ? (
           <span className="text-2xs text-ink-4">new</span>
@@ -45,16 +53,20 @@ export function ProjectCombobox({ value, onChange, projects, dark, hint }: Proje
         ) : null}
         <ChevronDown size={12} className="text-ink-4" />
       </div>
-      {c.open && c.matches.length > 0 && (
+      {expanded && (
         <ul
+          id={listId}
+          role="listbox"
+          aria-label="Projects"
           className={cx(
             "absolute bottom-full left-0 z-10 mb-1 w-full rounded-md border p-1 shadow-pop",
             dark ? "border-overlay-line bg-overlay-2" : "border-line bg-paper",
           )}
         >
           {c.matches.map((m, i) => (
-            <li key={m}>
+            <li key={m} role="presentation">
               <ListRow
+                id={`${listId}-${i}`}
                 kind="menu"
                 dark={dark}
                 selected={i === c.cursor}

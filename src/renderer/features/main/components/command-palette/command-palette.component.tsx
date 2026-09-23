@@ -11,7 +11,7 @@ import {
   Upload,
   type LucideIcon,
 } from "lucide-react";
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useId, useMemo, useRef } from "react";
 import { Chip, DialogShell, Kbd, ListRow } from "@/components/ui";
 import type { PaletteActionKey } from "@/data/palette.data";
 import { PALETTE_HINTS } from "@/data/palette.data";
@@ -64,6 +64,12 @@ export function CommandPalette({
   }, [p]);
 
   const activeDoc = p.active && p.active.kind !== "action" ? p.active.doc : null;
+  // Focus stays in the input; the highlighted row is announced through
+  // aria-activedescendant. Clamped the same way `active` is, so what is announced (and
+  // highlighted) is what Enter opens.
+  const listId = useId();
+  const expanded = p.flat.length > 0;
+  const activeIndex = expanded ? Math.min(p.cursor, p.flat.length - 1) : -1;
   // Flat index of each group's first item, so rows know their position in the keyboard order.
   const starts = useMemo(
     () =>
@@ -92,6 +98,11 @@ export function CommandPalette({
           onChange={(e) => p.setQuery(e.target.value)}
           onKeyDown={p.onKeyDown}
           aria-label="search"
+          role="combobox"
+          aria-autocomplete="list"
+          aria-expanded={expanded}
+          aria-controls={expanded ? listId : undefined}
+          aria-activedescendant={expanded ? `${listId}-${activeIndex}` : undefined}
           spellCheck={false}
         />
         <Kbd dark>esc</Kbd>
@@ -108,62 +119,70 @@ export function CommandPalette({
               ))}
             </div>
           )}
-          {p.groups.map((g, gi) => (
-            <div key={g.title}>
-              <div className="px-4 pt-2 pb-1 text-2xs font-semibold tracking-widest text-overlay-ink-3 uppercase">
-                {g.title}
-              </div>
-              {g.items.map((item, ii) => {
-                const i = starts[gi] + ii;
-                const selected = i === p.cursor;
-                const Icon =
-                  item.kind === "action"
-                    ? ACTION_ICONS[item.key]
-                    : item.kind === "text"
-                      ? Pilcrow
-                      : FileText;
-
-                return (
-                  <ListRow
-                    kind="palette"
-                    key={itemKey(item)}
-                    selected={selected}
-                    onMouseEnter={() => p.setCursor(i)}
-                    onClick={() => p.choose(item)}
+          {expanded && (
+            <div id={listId} role="listbox" aria-label="Results">
+              {p.groups.map((g, gi) => (
+                <div key={g.title} role="group" aria-labelledby={`${listId}-g${gi}`}>
+                  <div
+                    id={`${listId}-g${gi}`}
+                    className="px-4 pt-2 pb-1 text-2xs font-semibold tracking-widest text-overlay-ink-3 uppercase"
                   >
-                    <Icon size={13} className="mt-0.5 shrink-0 text-overlay-ink-3" />
-                    <span className="min-w-0 flex-1">
-                      {item.kind === "action" ? (
-                        <span className="text-base">{item.label}</span>
-                      ) : item.kind === "text" ? (
-                        <>
-                          <span className="line-clamp-1 text-sm text-overlay-ink-2">
-                            {item.snippet}
-                          </span>
-                          <span className="text-xs text-overlay-ink-3">{item.doc.title}</span>
-                        </>
-                      ) : (
-                        <>
-                          <span className="line-clamp-1 text-base">{item.doc.title}</span>
-                          <span className="text-xs text-overlay-ink-3">
-                            {item.doc.project || "Inbox"}
-                            {item.doc.tags.length
-                              ? " · " + item.doc.tags.map((t) => "#" + t).join(" ")
-                              : ""}{" "}
-                            · {relativeTime(item.doc.created)}
-                          </span>
-                        </>
-                      )}
-                    </span>
-                    {item.kind === "action" && item.shortcut && <Kbd dark>{item.shortcut}</Kbd>}
-                    {selected && item.kind !== "action" && (
-                      <span className="text-overlay-ink-3">↵</span>
-                    )}
-                  </ListRow>
-                );
-              })}
+                    {g.title}
+                  </div>
+                  {g.items.map((item, ii) => {
+                    const i = starts[gi] + ii;
+                    const selected = i === activeIndex;
+                    const Icon =
+                      item.kind === "action"
+                        ? ACTION_ICONS[item.key]
+                        : item.kind === "text"
+                          ? Pilcrow
+                          : FileText;
+
+                    return (
+                      <ListRow
+                        id={`${listId}-${i}`}
+                        kind="palette"
+                        key={itemKey(item)}
+                        selected={selected}
+                        onMouseEnter={() => p.setCursor(i)}
+                        onClick={() => p.choose(item)}
+                      >
+                        <Icon size={13} className="mt-0.5 shrink-0 text-overlay-ink-3" />
+                        <span className="min-w-0 flex-1">
+                          {item.kind === "action" ? (
+                            <span className="text-base">{item.label}</span>
+                          ) : item.kind === "text" ? (
+                            <>
+                              <span className="line-clamp-1 text-sm text-overlay-ink-2">
+                                {item.snippet}
+                              </span>
+                              <span className="text-xs text-overlay-ink-3">{item.doc.title}</span>
+                            </>
+                          ) : (
+                            <>
+                              <span className="line-clamp-1 text-base">{item.doc.title}</span>
+                              <span className="text-xs text-overlay-ink-3">
+                                {item.doc.project || "Inbox"}
+                                {item.doc.tags.length
+                                  ? " · " + item.doc.tags.map((t) => "#" + t).join(" ")
+                                  : ""}{" "}
+                                · {relativeTime(item.doc.created)}
+                              </span>
+                            </>
+                          )}
+                        </span>
+                        {item.kind === "action" && item.shortcut && <Kbd dark>{item.shortcut}</Kbd>}
+                        {selected && item.kind !== "action" && (
+                          <span className="text-overlay-ink-3">↵</span>
+                        )}
+                      </ListRow>
+                    );
+                  })}
+                </div>
+              ))}
             </div>
-          ))}
+          )}
         </div>
         <div className="min-h-0 overflow-y-auto border-l border-overlay-line p-4">
           {activeDoc ? (

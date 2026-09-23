@@ -7,6 +7,8 @@ export interface ChipProps {
   selected?: boolean;
   onClick?: () => void;
   onRemove?: () => void;
+  /** Accessible name of the remove button, e.g. "Remove spec" — a bare "remove" says nothing about what goes. */
+  removeLabel?: string;
   title?: string;
   className?: string;
 }

@@ -5,4 +5,6 @@ export interface DotProps {
   tone?: string;
   size?: number;
   className?: string;
+  /** What the dot means, when nothing beside it says so. Unlabelled dots are decorative. */
+  "aria-label"?: string;
 }
