@@ -89,6 +89,33 @@ describe("useEditorDraft", () => {
     expect(result.current.dirty).toBe(true);
   });
 
+  it("saves once when ⌘↵ reaches it twice for one press", async () => {
+    // CodeMirror's Mod-Enter and the menu's accelerator can both fire. For a new document
+    // the second save used to write a second file.
+    let finish: (v: unknown) => void = () => undefined;
+    const { invoke } = mockVaultApi({
+      "doc:pathPreview": () => "",
+      "doc:save": () => new Promise((r) => (finish = r)),
+    });
+    const { result } = renderHook(() => useEditorDraft());
+    act(() => result.current.setBody("# Twice"));
+    let first: Promise<unknown> = Promise.resolve();
+    let second: Promise<unknown> = Promise.resolve();
+    act(() => {
+      first = result.current.save("commit");
+      second = result.current.save("commit");
+    });
+    expect(await second).toBeNull();
+    finish({
+      path: "inbox/twice.md",
+      meta: { path: "inbox/twice.md", title: "Twice" },
+      committed: true,
+    });
+    await act(() => first);
+    expect(invoke.mock.calls.filter((c) => c[0] === "doc:save")).toHaveLength(1);
+    expect(result.current.existingPath).toBe("inbox/twice.md");
+  });
+
   it("loadDraft pre-fills from the capture payload and the last-used project", () => {
     mockVaultApi({ "doc:pathPreview": () => "" });
     useApp.setState({ config });
