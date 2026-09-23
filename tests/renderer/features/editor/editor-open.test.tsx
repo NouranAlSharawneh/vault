@@ -41,8 +41,9 @@ const noop = () => ({
 
 /** The editor's own wiring: the draft state, opened the way the window opens it. */
 function useOpenedEditor() {
-  const d = useEditorDraft();
-  useEditorOpen(readEditorTarget(), {
+  const target = readEditorTarget();
+  const d = useEditorDraft(target.draftKey);
+  useEditorOpen(target, {
     onDoc: d.loadDoc,
     onDraft: d.loadDraft,
     onRecover: d.recoverDraft,
@@ -133,10 +134,22 @@ describe("useEditorOpen", () => {
     expect(invoke).not.toHaveBeenCalledWith("draft:load", expect.anything());
   });
 
-  it("recovers a new window's parked text when nothing was handed to it", async () => {
-    window.location.hash = "#editor";
-    mockVaultApi({ "editor:seed": null, "draft:load": PARKED, "doc:pathPreview": () => "" });
+  it("recovers a new window's parked text under the key main gave it", async () => {
+    window.location.hash = "#editor?draft=untitled%3Aabc";
+    const { invoke } = mockVaultApi({
+      "editor:seed": null,
+      "draft:load": PARKED,
+      "doc:pathPreview": () => "",
+    });
     const { result } = renderHook(() => useOpenedEditor());
     await waitFor(() => expect(result.current.body).toBe(PARKED.body));
+    expect(invoke).toHaveBeenCalledWith("draft:load", "untitled:abc");
+  });
+
+  it("still finds the draft every new window used to share, after an update", async () => {
+    window.location.hash = "#editor";
+    const { invoke } = mockVaultApi({ "editor:seed": null, "draft:load": PARKED });
+    renderHook(() => useOpenedEditor());
+    await waitFor(() => expect(invoke).toHaveBeenCalledWith("draft:load", "new"));
   });
 });

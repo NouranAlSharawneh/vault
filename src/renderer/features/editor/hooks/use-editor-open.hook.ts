@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { errorMessage } from "@/helpers";
 import { api, fire } from "@/lib/api";
+import { LEGACY_UNTITLED_DRAFT_KEY } from "@shared/constants";
 import type { DocContent, EditorDraft } from "@shared/types";
 import type { EditorTarget, OpenStatus } from "../editor.types";
 
@@ -13,11 +14,13 @@ interface Handlers {
 
 const READY: OpenStatus = { kind: "ready" };
 
-/** What main opened this window on: `?path=` in the hash, or nothing for a new document. */
+/** What main opened this window on: `?path=` in the hash, or `?draft=` for a new document. */
 export function readEditorTarget(): EditorTarget {
   const query = new URLSearchParams(window.location.hash.split("?")[1] ?? "");
+  const path = query.get("path");
+  if (path) return { path, draftKey: null };
 
-  return { path: query.get("path") };
+  return { path: null, draftKey: query.get("draft") || LEGACY_UNTITLED_DRAFT_KEY };
 }
 
 /**
@@ -26,7 +29,7 @@ export function readEditorTarget(): EditorTarget {
  * document clean and threw the recovered text away.
  */
 async function open(target: EditorTarget, handlers: { current: Handlers }): Promise<OpenStatus> {
-  if (target.path) {
+  if (target.path !== null) {
     let doc: DocContent;
     try {
       doc = await api("doc:read", target.path);
@@ -44,7 +47,7 @@ async function open(target: EditorTarget, handlers: { current: Handlers }): Prom
   const seed = await api("editor:seed").catch(() => null);
   if (seed) handlers.current.onDraft(seed);
   // A new document has no file to read, but it may still have unsaved text parked.
-  else await handlers.current.onRecover("new");
+  else await handlers.current.onRecover(target.draftKey);
 
   return READY;
 }

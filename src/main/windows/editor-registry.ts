@@ -18,6 +18,13 @@ export function createEditorRegistry<W>() {
     size(): number {
       return entries.size;
     },
+    /** Untitled drafts an open window is still writing to, so none is handed out twice. */
+    heldDraftKeys(): Set<string> {
+      const held = new Set<string>();
+      for (const { draftKey } of entries.values()) if (draftKey) held.add(draftKey);
+
+      return held;
+    },
     /** The window's starting text, once: after a reload its parked draft is newer. */
     takeSeed(win: W): EditorDraft | null {
       const entry = entries.get(win);

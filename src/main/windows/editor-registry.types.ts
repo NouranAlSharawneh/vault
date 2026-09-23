@@ -2,6 +2,8 @@ import type { EditorDraft } from "@shared/types";
 
 /** What main knows about one open editor window. */
 export interface EditorEntry {
+  /** Where an untitled window parks its text; null for a window opened on a document. */
+  draftKey: string | null;
   /** Text it was opened with, until the window asks for it. */
   seed?: EditorDraft | null;
 }

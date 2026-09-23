@@ -14,8 +14,12 @@ import {
   type SaveMode,
 } from "../editor.types";
 
-/** The document being edited: fields, dirtiness, inferred title, path preview, save. */
-export function useEditorDraft() {
+/**
+ * The document being edited: fields, dirtiness, inferred title, path preview, save.
+ * `untitledKey` is where its text is parked until it has a path; null while a document
+ * is still being read.
+ */
+export function useEditorDraft(untitledKey: string | null) {
   const config = useApp((s) => s.config);
   const defaultSource: Source = config?.lastSource ?? "claude";
   const [state, setState] = useState<DraftState>({
@@ -91,9 +95,9 @@ export function useEditorDraft() {
    * this document is opened. Before this, closing the window, quitting or a crash lost it,
    * and Discard in the unsaved prompt was instant and final.
    */
-  const draftKey = state.existingPath ?? "new";
+  const draftKey = state.existingPath ?? untitledKey;
   useEffect(() => {
-    if (!state.dirty) return;
+    if (!state.dirty || !draftKey) return;
     const t = setTimeout(() => {
       void api("draft:save", draftKey, {
         body: state.body,
@@ -157,7 +161,7 @@ export function useEditorDraft() {
         }));
         setLastSaved(res);
         // Saved text is not a draft any more, under either key it might have had.
-        void api("draft:clear", draftKey).catch(() => undefined);
+        if (draftKey) void api("draft:clear", draftKey).catch(() => undefined);
         if (res.path !== draftKey) void api("draft:clear", res.path).catch(() => undefined);
 
         return res;
@@ -187,10 +191,9 @@ export function useEditorDraft() {
     loadDoc,
     loadDraft,
     recoverDraft,
-    discardDraft: useCallback(
-      () => void api("draft:clear", draftKey).catch(() => undefined),
-      [draftKey],
-    ),
+    discardDraft: useCallback(() => {
+      if (draftKey) void api("draft:clear", draftKey).catch(() => undefined);
+    }, [draftKey]),
     save,
   };
 }
