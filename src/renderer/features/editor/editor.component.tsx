@@ -137,6 +137,8 @@ export function Editor() {
           guard.closeNow();
         }}
         onSave={commit}
+        saving={d.saving === "commit"}
+        error={d.error}
       />
     </div>
   );

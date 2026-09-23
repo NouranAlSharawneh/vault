@@ -116,6 +116,17 @@ describe("useEditorDraft", () => {
     expect(result.current.existingPath).toBe("inbox/twice.md");
   });
 
+  it("says why an empty document can't be saved, instead of doing nothing", async () => {
+    const { invoke } = mockVaultApi({ "doc:pathPreview": () => "" });
+    const { result } = renderHook(() => useEditorDraft());
+    act(() => result.current.setBody("   "));
+    await act(async () => {
+      expect(await result.current.save("commit")).toBeNull();
+    });
+    expect(result.current.error).toMatch(/nothing to save/);
+    expect(invoke).not.toHaveBeenCalledWith("doc:save", expect.anything());
+  });
+
   it("loadDraft pre-fills from the capture payload and the last-used project", () => {
     mockVaultApi({ "doc:pathPreview": () => "" });
     useApp.setState({ config });
