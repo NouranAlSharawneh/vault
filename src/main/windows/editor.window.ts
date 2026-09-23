@@ -1,4 +1,4 @@
-import { BrowserWindow, type WebContents } from "electron";
+import { BrowserWindow } from "electron";
 import { EDITOR_WINDOW, PAPER_BG, TRAFFIC_LIGHTS } from "@shared/constants";
 import type { EditorDraft } from "@shared/types";
 import { findOrphanedUntitledDraft, newUntitledDraftKey } from "../store/draft.store";
@@ -66,14 +66,11 @@ export function openEditorWindow({ path, draft }: EditorTarget = {}): BrowserWin
  * on did-finish-load, which fires before the editor has booted and subscribed, so the
  * capture sheet's text often never arrived.
  */
-export function takeEditorSeed(sender: WebContents): EditorDraft | null {
-  const win = BrowserWindow.fromWebContents(sender);
-
+export function takeEditorSeed(win: BrowserWindow | null): EditorDraft | null {
   return win ? editors.takeSeed(win) : null;
 }
 
 /** The asking window's document moved: its first save, or a save that renamed it. */
-export function setEditorPath(sender: WebContents, path: string | null): void {
-  const win = BrowserWindow.fromWebContents(sender);
+export function setEditorPath(win: BrowserWindow | null, path: string | null): void {
   if (win) editors.setPath(win, path);
 }
