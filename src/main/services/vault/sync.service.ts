@@ -11,7 +11,7 @@ import {
 } from "@shared/constants";
 import { composeDoc, parseDoc } from "@shared/frontmatter";
 import { inferTitle } from "@shared/helpers";
-import type { ConflictPair, Frontmatter, SyncStatus } from "@shared/types";
+import type { Frontmatter, PullResult, SyncStatus } from "@shared/types";
 import { fire } from "../../lib/fire";
 import { freeRelPath } from "../fs/paths";
 import { classifyPushError } from "./classify-push-error";
@@ -41,7 +41,7 @@ export class SyncEngine {
   private pushTimer: NodeJS.Timeout | null = null;
   private pullTimer: NodeJS.Timeout | null = null;
   private pushing = false;
-  private pullInFlight: Promise<{ conflicts: ConflictPair[] }> | null = null;
+  private pullInFlight: Promise<PullResult> | null = null;
   /** The tail of the queue every remote operation waits behind. See `queue()`. */
   private remoteWork: Promise<unknown> = Promise.resolve();
   private retryDelay = PUSH_RETRY_MIN_MS;
@@ -113,7 +113,9 @@ export class SyncEngine {
   }
 
   async refreshSyncStatus(): Promise<SyncStatus> {
-    const ab = await this.v.git.aheadBehind();
+    // With no upstream, `aheadBehind` counts every commit as unpushed — right for a repo
+    // about to make its first push, nonsense for a vault that never pushes at all.
+    const ab = this.v.config.remote ? await this.v.git.aheadBehind() : { ahead: 0, behind: 0 };
     await this.v.index.markUnpushed(await this.v.git.unpushedPaths());
     // Counted off the documents themselves rather than remembered, so it survives a
     // restart with a pair still unanswered and clears itself the moment the last one is
@@ -221,8 +223,8 @@ export class SyncEngine {
    * are kept, committed, and the copy is stamped so it can be found again — so the repo
    * is clean by the time this returns and nothing downstream has to know what a rebase is.
    */
-  async pull(): Promise<{ conflicts: ConflictPair[] }> {
-    if (!this.v.config.remote) return { conflicts: [] };
+  async pull(): Promise<PullResult> {
+    if (!this.v.config.remote) return { conflicts: [], pulled: 0, failure: null };
     // Asking for a pull while one is already running joins it rather than being told
     // "nothing happened" — the timer and a button press land on the same answer.
     if (!this.pullInFlight) {
@@ -238,10 +240,11 @@ export class SyncEngine {
     return this.pullInFlight;
   }
 
-  private async runPull(): Promise<{ conflicts: ConflictPair[] }> {
+  private async runPull(): Promise<PullResult> {
     try {
       await this.freshenToken();
       await this.ensureRemote();
+      const before = await this.remoteHead();
       // A rebase left over from a crash has to finish before a new one can start.
       if (this.v.git.rebaseInProgress()) await this.settleRebase();
       else {
@@ -252,7 +255,11 @@ export class SyncEngine {
       this.v.emit("index", this.v.index.snapshot());
       await this.refreshSyncStatus();
 
-      return { conflicts: await this.v.conflicts() };
+      return {
+        conflicts: await this.v.conflicts(),
+        pulled: await this.countSince(before),
+        failure: null,
+      };
     } catch (e) {
       // Whatever went wrong, do not leave the vault half-rebased: the next save would
       // commit onto a detached HEAD and the user would have no way to see why.
@@ -262,7 +269,31 @@ export class SyncEngine {
       if (failure === "bad-credentials" || failure === "no-permission") this.v.emit("auth-suspect");
       this.setSync({ state: failure === "offline" ? "offline" : "error", lastError: msg, failure });
 
-      return { conflicts: [] };
+      return { conflicts: [], pulled: 0, failure };
+    }
+  }
+
+  /** Where this machine last saw GitHub's branch, or null before it has seen it at all. */
+  private async remoteHead(): Promise<string | null> {
+    try {
+      const ref = `origin/${this.sync.branch}`;
+
+      return (await this.v.git.git.raw(["rev-parse", "--verify", "--quiet", ref])).trim() || null;
+    } catch {
+      return null;
+    }
+  }
+
+  /** Commits GitHub's branch gained since `before`, i.e. what the pull brought down. */
+  private async countSince(before: string | null): Promise<number> {
+    const after = await this.remoteHead();
+    if (!after || after === before) return 0;
+    try {
+      const range = before ? `${before}..${after}` : after;
+
+      return Number((await this.v.git.git.raw(["rev-list", "--count", range])).trim()) || 0;
+    } catch {
+      return 0;
     }
   }
 

@@ -184,6 +184,49 @@ describe("sync", () => {
   }, 60_000);
 });
 
+describe("a pull asked for by hand", () => {
+  it("says how much came down, and nothing the second time", async () => {
+    const other = mkdtempSync(join(tmpdir(), "sync-other-"));
+    rmSync(other, { recursive: true, force: true });
+    await simpleGit().clone(origin, other);
+    await simpleGit({ baseDir: other }).addConfig("user.name", "Other");
+    await simpleGit({ baseDir: other }).addConfig("user.email", "other@example.com");
+    temps.push(other);
+    for (const name of ["one", "two"]) {
+      writeFileSync(join(other, "atlas-api", `${name}.md`), doc(name, "From elsewhere."));
+      await simpleGit({ baseDir: other }).add(["-A"]);
+      await simpleGit({ baseDir: other }).commit(name);
+    }
+    await simpleGit({ baseDir: other }).push("origin", "main");
+
+    // Opening starts a pull of its own; asking now joins it rather than finding nothing.
+    const v = await openVault(mine);
+    expect(await v.pull()).toMatchObject({ pulled: 2, failure: null, conflicts: [] });
+    expect(await v.pull()).toMatchObject({ pulled: 0, failure: null });
+    await v.close();
+  }, 60_000);
+});
+
+describe("a vault with no GitHub repo", () => {
+  it("never reports its commits as waiting to be pushed", async () => {
+    // With no upstream, every commit used to count as "ahead", so a local-only vault
+    // offered to "Push 12 pending docs" to a remote it does not have.
+    const root = mkdtempSync(join(tmpdir(), "sync-local-"));
+    const cache = mkdtempSync(join(tmpdir(), "sync-cache-"));
+    temps.push(root, cache);
+    const v = new VaultService({ ...config(root), remote: null }, cache, () => null);
+    await v.open();
+    await v.save({
+      body: "Only ever here.",
+      frontmatter: { title: "Local", project: "Atlas API", tags: [], source: "manual" },
+      commit: true,
+    });
+
+    expect((await v.refreshSyncStatus()).ahead).toBe(0);
+    await v.close();
+  }, 60_000);
+});
+
 describe("paths from the renderer", () => {
   it("cannot reach outside the vault", async () => {
     const outside = mkdtempSync(join(tmpdir(), "sync-outside-"));
