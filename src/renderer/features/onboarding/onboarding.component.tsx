@@ -31,7 +31,9 @@ export function Onboarding() {
             <SignIn onBack={() => setStep("welcome")} onLocal={() => setStep("repo")} />
           )}
           {step === "repo" && <RepoPicker onDone={() => setStep("scan")} />}
-          {step === "scan" && <FirstScan onDone={() => setStep("done")} />}
+          {step === "scan" && (
+            <FirstScan onDone={() => setStep("done")} onBack={() => setStep("repo")} />
+          )}
           {step === "done" && <Done />}
         </div>
       </div>
