@@ -75,3 +75,11 @@ export function freeRelPath(root: string, relPath: string, keep?: string): strin
 
   return dir ? `${dir}/${free}` : free;
 }
+
+/** An absolute path under the vault as the repo spells it: relative, forward slashes. */
+export function vaultPath(root: string, abs: string): string {
+  return abs
+    .slice(root.length + 1)
+    .split(sep)
+    .join("/");
+}

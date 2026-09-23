@@ -1,11 +1,13 @@
 import { promises as fs, existsSync } from "node:fs";
-import { basename, dirname, join, sep } from "node:path";
-import { ASSETS_DIR, INBOX_SLUG, README_FILE, TRASH_DIR } from "@shared/constants";
+import { basename, dirname, join } from "node:path";
+import { ASSETS_DIR, INBOX_SLUG, TRASH_DIR } from "@shared/constants";
 import { parseDoc } from "@shared/frontmatter";
 import { projectSlug, unslug } from "@shared/helpers";
 import type { DocContent, SaveResult, TrashedDoc } from "@shared/types";
 import { orphanedAssets } from "../assets";
-import { assertInTrash } from "../fs/paths";
+import { assertInTrash, vaultPath } from "../fs/paths";
+import { walkMarkdown } from "../fs/walk-markdown";
+import { commitWithReadme } from "./readme";
 import type { VaultContext } from "./vault.types";
 
 /** Everything under `.trash/`, newest first. Read from disk — the index skips it. */
@@ -14,10 +16,7 @@ export async function listTrash(ctx: VaultContext): Promise<TrashedDoc[]> {
   if (!existsSync(dir)) return [];
   const out: TrashedDoc[] = [];
   for (const abs of await walkMarkdown(dir)) {
-    const path = abs
-      .slice(ctx.root.length + 1)
-      .split(sep)
-      .join("/");
+    const path = vaultPath(ctx.root, abs);
     const meta = await ctx.index.readMeta(path);
     if (!meta) continue;
     const originalPath = path.slice(TRASH_DIR.length + 1);
@@ -54,9 +53,7 @@ export async function restoreFromTrash(ctx: VaultContext, path: string): Promise
   await ctx.git.mv(path, target);
   const meta = await ctx.index.refreshFile(target);
   if (!meta) throw new Error(`Could not index ${target}`);
-  await ctx.git.commitPaths([target], `restore: ${meta.title}`);
-  await ctx.writeReadme();
-  await ctx.git.commitPaths([README_FILE], "", { amend: true });
+  await commitWithReadme(ctx, [target], `restore: ${meta.title}`);
   ctx.schedulePush();
   ctx.emit("index", ctx.index.snapshot());
 
@@ -106,15 +103,4 @@ async function removeAll(ctx: VaultContext, paths: string[]): Promise<void> {
   for (const dir of new Set(paths.map(dirname).filter((d) => basename(d) === ASSETS_DIR))) {
     await fs.rmdir(join(ctx.root, dir)).catch(() => undefined);
   }
-}
-
-async function walkMarkdown(dir: string): Promise<string[]> {
-  const out: string[] = [];
-  for (const e of await fs.readdir(dir, { withFileTypes: true })) {
-    const abs = join(dir, e.name);
-    if (e.isDirectory()) out.push(...(await walkMarkdown(abs)));
-    else if (e.isFile() && e.name.endsWith(".md")) out.push(abs);
-  }
-
-  return out;
 }

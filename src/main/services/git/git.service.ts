@@ -121,19 +121,23 @@ export class GitService {
       });
   }
 
-  async commitPaths(
-    paths: string[],
-    message: string,
-    opts: { amend?: boolean } = {},
-  ): Promise<string> {
+  async commitPaths(paths: string[], message: string): Promise<string> {
     if (paths.length) await this.git.add(paths);
-    if (opts.amend) {
-      await this.git.raw(["commit", "--amend", "--no-edit", "--quiet"]);
-
-      return (await this.headSha()) ?? "";
-    }
 
     return (await this.git.commit(message)).commit;
+  }
+
+  /**
+   * Fold more paths into the commit that was just made, keeping its message. Used for
+   * the regenerated README, which belongs to the change that caused it rather than to a
+   * commit of its own — a vault's history should read as the documents, not as the
+   * index being rewritten after every one of them.
+   */
+  async amendPaths(paths: string[]): Promise<string> {
+    if (paths.length) await this.git.add(paths);
+    await this.git.raw(["commit", "--amend", "--no-edit", "--quiet"]);
+
+    return (await this.headSha()) ?? "";
   }
 
   async commitAll(message: string): Promise<string> {
