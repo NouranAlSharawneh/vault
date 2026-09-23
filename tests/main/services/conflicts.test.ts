@@ -89,7 +89,11 @@ beforeEach(async () => {
 
 afterEach(async () => {
   await vault.close();
-  for (const d of [origin, mine, other, cache]) rmSync(d, { recursive: true, force: true });
+  // `close` stops the push timer but not a push already under way, which can still be
+  // writing into `origin` here. Retrying outlasts it.
+  for (const d of [origin, mine, other, cache]) {
+    rmSync(d, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
+  }
 });
 
 describe("sync conflicts", () => {
