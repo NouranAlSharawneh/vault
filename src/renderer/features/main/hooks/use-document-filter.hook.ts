@@ -63,15 +63,39 @@ function sorter(sort: ListFilter["sort"]): (a: DocMeta, b: DocMeta) => number {
   }
 }
 
-/** Sidebar selection + tag chips + sort → the visible document list. */
-export function useDocumentFilter(index: IndexSnapshot | null, trash: TrashedDoc[] = []) {
+/**
+ * What stays selected once the list has changed underneath it: the same document if it is
+ * still in the list, else the list's first, else nothing.
+ */
+export function reconcileSelection(selected: string | null, docs: DocMeta[]): string | null {
+  if (selected && docs.some((d) => d.path === selected)) return selected;
+
+  return docs[0]?.path ?? null;
+}
+
+/**
+ * Sidebar selection + tag chips + sort → the visible document list.
+ * `onSwitch` hears the new list whenever a collection or project is picked, so the reader
+ * never keeps showing a document the list no longer has (a live doc inside Trash, say).
+ */
+export function useDocumentFilter(
+  index: IndexSnapshot | null,
+  trash: TrashedDoc[] = [],
+  onSwitch?: (docs: DocMeta[]) => void,
+) {
   const [filter, setFilter] = useState<ListFilter>(initialFilter);
   const result = useMemo(() => applyFilter(index, filter, trash), [index, filter, trash]);
 
+  // Worked out from the filter this render sees rather than in a state updater: it runs on a
+  // click, and the caller needs the list it is about to show, not the one on screen.
+  const switchTo = (next: ListFilter) => {
+    setFilter(next);
+    onSwitch?.(applyFilter(index, next, trash).docs);
+  };
   const selectProject = (slug: string | null) =>
-    setFilter((f) => ({ ...f, project: slug, collection: "all" }));
+    switchTo({ ...filter, project: slug, collection: "all" });
   const selectCollection = (c: ListFilter["collection"]) =>
-    setFilter((f) => ({ ...f, collection: c, project: null }));
+    switchTo({ ...filter, collection: c, project: null });
   const toggleTag = (tag: string) =>
     setFilter((f) => ({
       ...f,
