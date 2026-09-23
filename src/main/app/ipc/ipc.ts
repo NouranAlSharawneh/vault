@@ -245,17 +245,17 @@ export function registerIpcHandlers(): void {
     ),
   );
   handle("capture:readClipboard", () => readClipboard());
-  handle("capture:hide", () => hideCaptureWindow());
+  handle("capture:hide", () => hideCaptureWindow("dismiss"));
   handle("capture:reveal", (path) => {
     // The sheet blurred or was dismissed while "saved" was showing: the user is back in
     // another app, and pulling the main window over it now would be a surprise.
     if (!isCaptureVisible()) return;
-    hideCaptureWindow();
+    hideCaptureWindow("handoff");
     revealDoc(path);
   });
   handle("capture:resize", (height) => resizeCaptureWindow(height));
   handle("capture:openEditor", (draft) => {
-    hideCaptureWindow();
+    hideCaptureWindow("handoff");
     const win = openEditorWindow();
     win.webContents.once("did-finish-load", () => win.webContents.send("editor:open", { draft }));
   });

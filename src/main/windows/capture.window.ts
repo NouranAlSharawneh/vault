@@ -6,13 +6,17 @@ import {
   OVERLAY_BG,
 } from "@shared/constants";
 import { fire } from "../lib/fire";
+import type { CaptureHideReason } from "./capture.window.types";
 import { editorWindowCount } from "./editor.window";
 import { COMMON_WINDOW_OPTIONS, IS_MAC, loadRoute } from "./load-route";
 import { getMainWindow } from "./main.window";
+import { shouldHideApp } from "./should-hide-app";
 
 let captureWin: BrowserWindow | null = null;
 /** Dialogs opened from the sheet that are still up. While any is, losing focus is expected. */
 let dialogsOpen = 0;
+/** Another app was in front when the hotkey fired, so dismissing should return to it. */
+let summonedFromAnotherApp = false;
 
 /** Frameless sheet that floats over whatever app is in front. Hidden, never destroyed. */
 export function getCaptureWindow(): BrowserWindow {
@@ -37,7 +41,8 @@ export function getCaptureWindow(): BrowserWindow {
   captureWin.setAlwaysOnTop(true, "floating");
   captureWin.on("blur", () => {
     if (dialogsOpen > 0) return;
-    if (captureWin?.isVisible() && !captureWin.webContents.isDevToolsOpened()) hideCaptureWindow();
+    if (captureWin?.isVisible() && !captureWin.webContents.isDevToolsOpened())
+      hideCaptureWindow("blur");
   });
   captureWin.on("closed", () => (captureWin = null));
   loadRoute(captureWin, "capture");
@@ -51,6 +56,8 @@ export function showCaptureWindow(): BrowserWindow {
   const { x, y, width, height } = display.workArea;
   const [w] = win.getSize();
   win.setPosition(Math.round(x + (width - w) / 2), Math.round(y + height * 0.18), false);
+  // Read before showing: once the sheet has focus, Vault is always the frontmost app.
+  summonedFromAnotherApp = BrowserWindow.getFocusedWindow() === null;
   if (IS_MAC && app.dock) fire(app.dock.show(), "showing the dock icon");
   win.show();
   win.focus();
@@ -58,13 +65,13 @@ export function showCaptureWindow(): BrowserWindow {
   return win;
 }
 
-export function hideCaptureWindow(): void {
+export function hideCaptureWindow(reason: CaptureHideReason): void {
   const win = captureWin;
-  if (win && !win.isDestroyed() && win.isVisible()) {
-    win.webContents.send("capture:hidden", null);
-    win.hide();
-    if (IS_MAC && !getMainWindow() && editorWindowCount() === 0) app.hide();
-  }
+  if (!win || win.isDestroyed() || !win.isVisible()) return;
+  win.webContents.send("capture:hidden", null);
+  win.hide();
+  const otherWindows = !!getMainWindow() || editorWindowCount() > 0;
+  if (IS_MAC && shouldHideApp({ reason, summonedFromAnotherApp, otherWindows })) app.hide();
 }
 
 /**
