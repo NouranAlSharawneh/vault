@@ -14,6 +14,6 @@ export default defineConfig({
   test: {
     include: ["tests/**/*.test.{ts,tsx}"],
     environment: "node",
-    setupFiles: ["tests/renderer/setup.ts"],
+    setupFiles: ["tests/setup/hermetic-git.ts", "tests/renderer/setup.ts"],
   },
 });
