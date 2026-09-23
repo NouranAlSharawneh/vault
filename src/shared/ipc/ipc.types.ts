@@ -116,6 +116,8 @@ export interface IpcInvoke {
    * arrive before the editor was listening, and the text was lost.
    */
   "editor:seed": () => EditorDraft | null;
+  /** The asking editor window now holds this document, so opening it again focuses it. */
+  "editor:setPath": (path: string | null) => void;
   "app:version": () => string;
   "app:platform": () => NodeJS.Platform;
   "app:openExternal": (url: string) => void;

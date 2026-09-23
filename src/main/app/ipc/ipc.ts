@@ -25,6 +25,7 @@ import {
   openMainWindow,
   resizeCaptureWindow,
   revealDoc,
+  setEditorPath,
   takeEditorSeed,
 } from "../../windows";
 import { registerHotkey } from "../hotkey/hotkey";
@@ -243,4 +244,5 @@ export function registerIpcHandlers(): void {
   // The path travels in the window's hash, which is there before anything has loaded.
   handle("window:openEditor", (p) => void openEditorWindow(p ? { path: p } : {}));
   handleFrom("editor:seed", (sender) => takeEditorSeed(sender));
+  handleFrom("editor:setPath", (sender, p) => setEditorPath(sender, p));
 }

@@ -34,6 +34,15 @@ function untitledDraftKey(seeded: boolean): string {
  * a reload opens the same thing; text from the capture sheet is asked for separately.
  */
 export function openEditorWindow({ path, draft }: EditorTarget = {}): BrowserWindow {
+  // A document already open is brought forward, never opened a second time.
+  const open = path ? editors.windowFor(path) : null;
+  if (open && !open.isDestroyed()) {
+    if (open.isMinimized()) open.restore();
+    open.show();
+    open.focus();
+
+    return open;
+  }
   const draftKey = path ? null : untitledDraftKey(!!draft);
   const query: Record<string, string> = draftKey ? { draft: draftKey } : { path: path ?? "" };
   const win = new BrowserWindow({
@@ -46,7 +55,7 @@ export function openEditorWindow({ path, draft }: EditorTarget = {}): BrowserWin
   });
   win.once("ready-to-show", () => win.show());
   win.on("closed", () => editors.remove(win));
-  editors.add(win, { draftKey, seed: draft ?? null });
+  editors.add(win, { path: path ?? null, draftKey, seed: draft ?? null });
   loadRoute(win, `editor?${new URLSearchParams(query).toString()}`);
 
   return win;
@@ -61,4 +70,10 @@ export function takeEditorSeed(sender: WebContents): EditorDraft | null {
   const win = BrowserWindow.fromWebContents(sender);
 
   return win ? editors.takeSeed(win) : null;
+}
+
+/** The asking window's document moved: its first save, or a save that renamed it. */
+export function setEditorPath(sender: WebContents, path: string | null): void {
+  const win = BrowserWindow.fromWebContents(sender);
+  if (win) editors.setPath(win, path);
 }

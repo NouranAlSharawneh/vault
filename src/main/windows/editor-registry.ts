@@ -4,6 +4,9 @@ import type { EditorEntry } from "./editor-registry.types";
 /**
  * The open editor windows and what each one holds. Kept free of Electron so it can be
  * tested on its own; `W` is a BrowserWindow in the app.
+ *
+ * Opening a document always made a new window, so the same file could be open in two
+ * editors at once, and whichever saved second wrote over the other.
  */
 export function createEditorRegistry<W>() {
   const entries = new Map<W, EditorEntry>();
@@ -17,6 +20,17 @@ export function createEditorRegistry<W>() {
     },
     size(): number {
       return entries.size;
+    },
+    /** The window already holding this document, if any. */
+    windowFor(path: string): W | null {
+      for (const [win, entry] of entries) if (entry.path === path) return win;
+
+      return null;
+    },
+    /** A new document's first save, or a save that moved it, gives it a new path. */
+    setPath(win: W, path: string | null): void {
+      const entry = entries.get(win);
+      if (entry) entry.path = path;
     },
     /** Untitled drafts an open window is still writing to, so none is handed out twice. */
     heldDraftKeys(): Set<string> {
