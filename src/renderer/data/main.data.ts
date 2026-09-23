@@ -1,6 +1,9 @@
 import type { Collection, ReaderView, SortOrder } from "@/features/main/main.types";
 
-/** Rows at the top of the sidebar. Trash lives at the bottom and is handled on its own. */
+/**
+ * Rows at the top of the sidebar. Trash is deliberately not one of them: it is reached from
+ * Settings › Vault › Trash (`#main?trash`), so the sidebar stays about what you keep.
+ */
 export interface CollectionData {
   key: Exclude<Collection, "trash">;
   label: string;

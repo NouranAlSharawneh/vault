@@ -1,6 +1,7 @@
-import { Clock, Layers, RefreshCw, Star } from "lucide-react";
+import { Clock, Layers, RefreshCw, Settings, Star } from "lucide-react";
 import { useState } from "react";
 import { Button, Chip, Dot, ListRow, Logo, SectionLabel } from "@/components/ui";
+import { MOD_KEY } from "@/constants";
 import { COLLECTIONS } from "@/data/main.data";
 import { api, fire } from "@/lib/api";
 import { INBOX_COLOR, INBOX_SLUG } from "@shared/constants";
@@ -10,7 +11,15 @@ import type { SidebarProps } from "./sidebar.types";
 const ICONS = { all: Layers, recent: Clock, starred: Star } as const;
 
 /** Full sidebar: collections · projects · tags (with its own filter box once there are many). */
-export function Sidebar({ index, config, filter, onCollection, onProject, onTag }: SidebarProps) {
+export function Sidebar({
+  index,
+  config,
+  filter,
+  onCollection,
+  onProject,
+  onTag,
+  onSettings,
+}: SidebarProps) {
   const [tagQuery, setTagQuery] = useState("");
   const tags = (index?.tags ?? [])
     .filter((t) => !tagQuery || t.tag.includes(tagQuery.toLowerCase()))
@@ -77,15 +86,30 @@ export function Sidebar({ index, config, filter, onCollection, onProject, onTag 
       </div>
       <div className="flex items-center justify-between px-3 pb-3 text-xs text-ink-4">
         <span className="truncate font-mono">{config.remote ?? "local"}</span>
-        <Button
-          variant="ghost"
-          size="sm"
-          className="w-6 px-0"
-          onClick={() => fire(api("vault:rescan"), "Couldn't rescan the vault")}
-          title="Rescan vault folder"
-        >
-          <RefreshCw size={11} />
-        </Button>
+        <div className="flex shrink-0 items-center">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="w-6 px-0"
+            onClick={() => fire(api("vault:rescan"), "Couldn't rescan the vault")}
+            title="Rescan vault folder"
+          >
+            <RefreshCw size={11} />
+          </Button>
+          {/* ⌘, and the palette reach Settings too, but neither is something you can see. */}
+          <Button
+            variant="ghost"
+            size="sm"
+            className="w-6 px-0"
+            onClick={onSettings}
+            tooltip="Settings"
+            tooltipKeys={`${MOD_KEY},`}
+            tooltipSide="top"
+            aria-label="settings"
+          >
+            <Settings size={11} />
+          </Button>
+        </div>
       </div>
     </aside>
   );
