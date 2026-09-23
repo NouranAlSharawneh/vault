@@ -15,7 +15,7 @@ import { SidebarRail } from "./components/sidebar-rail/sidebar-rail.component";
 import { Sidebar } from "./components/sidebar/sidebar.component";
 import { TopBar } from "./components/top-bar/top-bar.component";
 import { VaultUnavailable } from "./components/vault-unavailable/vault-unavailable.component";
-import { useDocumentFilter } from "./hooks/use-document-filter.hook";
+import { reconcileSelection, useDocumentFilter } from "./hooks/use-document-filter.hook";
 import { isTrashed, useDocument } from "./hooks/use-document.hook";
 import { useHotkeyWarning } from "./hooks/use-hotkey-warning.hook";
 import { useMainShortcuts } from "./hooks/use-main-shortcuts.hook";
@@ -34,9 +34,11 @@ export function Main() {
   const trash = useApp((s) => s.trash);
   const show = useToast((s) => s.show);
   const sidebar = useSidebarState();
-  const list = useDocumentFilter(index, trash);
-  const { showAll, filtered } = list;
   const [selected, setSelected] = useState<string | null>(null);
+  const list = useDocumentFilter(index, trash, (docs) =>
+    setSelected((s) => reconcileSelection(s, docs)),
+  );
+  const { showAll, filtered } = list;
   const [view, setView] = useState<ReaderView>("preview");
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
@@ -57,6 +59,21 @@ export function Main() {
         setSelected(path);
       }),
     [showAll, filtered, show],
+  );
+
+  // A relative `.md` link in the reader. Checked against the index so a broken link says so
+  // instead of blanking the reader; from Trash, back to All documents, where live docs are.
+  const openLinkedDoc = useCallback(
+    (path: string) => {
+      if (!index?.docs.some((d) => d.path === path)) {
+        show("That link points to a document that isn’t in the vault");
+
+        return;
+      }
+      if (inTrash) showAll();
+      setSelected(path);
+    },
+    [index, inTrash, showAll, show],
   );
 
   const openPalette = useCallback(() => setPaletteOpen(true), []);
@@ -126,10 +143,11 @@ export function Main() {
             onSelect={setSelected}
             sort={list.filter.sort}
             onSort={list.setSort}
-            activeTags={list.filter.tags}
+            activeTags={list.activeTags}
             onRemoveTag={list.toggleTag}
             onClearTags={list.clearTags}
             sortable={!inTrash && list.filter.collection !== "recent"}
+            dateOf={list.dateOf}
             emptyHint={inTrash ? "Deleted documents wait here until you purge them." : undefined}
           />
         }
@@ -145,6 +163,7 @@ export function Main() {
             trashed={isTrashed(doc?.meta.path ?? null)}
             onRestore={() => fire(trashActions.restore())}
             onPurge={() => fire(trashActions.purge())}
+            onOpenDoc={openLinkedDoc}
           />
         }
       />
@@ -179,6 +198,7 @@ export function Main() {
             onCollection={list.selectCollection}
             onProject={list.selectProject}
             onTag={list.toggleTag}
+            onSettings={openSettings}
           />
         )}
         {content}

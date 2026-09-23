@@ -4,6 +4,9 @@ import type { DialogShellProps } from "./dialog-shell.types";
 
 const FOCUSABLE =
   'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+// Tab stops only: a listbox option is a button taken out of the Tab order (tabindex -1),
+// and counting it as the last stop would let Tab walk out of the dialog.
+const TAB_STOP = `:is(${FOCUSABLE}):not([tabindex="-1"])`;
 
 /**
  * What every overlay in the app needs and each one used to do differently, or not at all.
@@ -28,7 +31,7 @@ export function DialogShell({
     const returnTo = document.activeElement as HTMLElement | null;
     const first = initialFocus
       ? panel.current?.querySelector<HTMLElement>(initialFocus)
-      : panel.current?.querySelector<HTMLElement>(FOCUSABLE);
+      : panel.current?.querySelector<HTMLElement>(TAB_STOP);
     (first ?? panel.current)?.focus();
 
     return () => returnTo?.focus?.();
@@ -43,7 +46,7 @@ export function DialogShell({
         return;
       }
       if (e.key !== "Tab" || !panel.current) return;
-      const stops = [...panel.current.querySelectorAll<HTMLElement>(FOCUSABLE)];
+      const stops = [...panel.current.querySelectorAll<HTMLElement>(TAB_STOP)];
       if (!stops.length) return;
       const edge = e.shiftKey ? stops[0] : stops[stops.length - 1];
       if (document.activeElement === edge || !panel.current.contains(document.activeElement)) {

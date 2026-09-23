@@ -94,14 +94,19 @@ export interface SaveRequest {
 
 /**
  * Text typed in the editor and not yet saved, parked in app data so a closed window, a
- * quit or a crash does not take it. `key` is the document's path, or "new" for one that
- * has never been saved.
+ * quit or a crash does not take it. `key` is the document's path, or `untitled:<id>` for
+ * one that has never been saved.
  */
 export interface StoredDraft {
   body: string;
   meta: Omit<Frontmatter, "created">;
   /** ISO time of the last keystroke, so a stale draft can be recognised. */
   at: string;
+  /**
+   * Written by the store, so main can list what was left behind. Missing on drafts
+   * parked before it was recorded.
+   */
+  key?: string;
 }
 
 export interface SaveResult {

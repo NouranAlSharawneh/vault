@@ -12,7 +12,7 @@ const KIND_CLASS = {
 
 const SELECTED_CLASS = {
   nav: ["bg-paper-3 font-medium", "hover:bg-paper-3"],
-  item: ["bg-paper-2", "hover:bg-paper-2/60"],
+  item: ["bg-paper-2", "hover:bg-paper-2"],
   option: ["bg-cherry-tint", "hover:bg-paper-2"],
   menu: ["bg-cherry-tint text-cherry-2", "hover:bg-paper-2"],
   palette: ["bg-cherry/25 text-overlay-ink", "hover:bg-overlay-2"],
@@ -22,6 +22,21 @@ const SELECTED_CLASS = {
 const DARK_OFF = { menu: "text-overlay-ink-2 hover:bg-overlay-3" } as Partial<
   Record<ListRowProps["kind"] & string, string>
 >;
+
+/**
+ * How each kind says it is the chosen one. A dropdown or palette row is an option of a
+ * listbox whose focus stays in its input (the input points at it with
+ * aria-activedescendant), so it is out of the Tab order. The repo picker's rows are a
+ * pressed-or-not choice. Everything else — sidebar, rail, lists — marks the current one.
+ * `aria-selected` on a plain button, which is what every kind used to get, means nothing.
+ */
+function selectionProps(kind: NonNullable<ListRowProps["kind"]>, selected: boolean) {
+  if (kind === "menu" || kind === "palette")
+    return { role: "option", "aria-selected": selected, tabIndex: -1 } as const;
+  if (kind === "option") return { "aria-pressed": selected } as const;
+
+  return { "aria-current": selected ? ("true" as const) : undefined };
+}
 
 /** A selectable row or slot (sidebar entries, lists, pickers, dropdowns, palette results). */
 export function ListRow({
@@ -38,7 +53,7 @@ export function ListRow({
   return (
     <button
       type={type}
-      aria-selected={selected}
+      {...selectionProps(kind, selected)}
       className={cx(
         full && "w-full text-left",
         KIND_CLASS[kind],
