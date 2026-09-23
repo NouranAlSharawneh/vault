@@ -184,7 +184,7 @@ describe("Editor", () => {
       });
       render(<Editor />);
       // Only the metadata changed: dirty, but there is no text to write.
-      fireEvent.change(screen.getByLabelText("title"), { target: { value: "Later" } });
+      fireEvent.change(screen.getByLabelText("Title"), { target: { value: "Later" } });
       const dialog = await openPrompt();
 
       fireEvent.click(saveButton(dialog));
