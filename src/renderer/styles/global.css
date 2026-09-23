@@ -517,16 +517,12 @@ input {
 }
 .cm-editor .cm-content {
   padding: 0 24px;
-  caret-color: var(--color-cherry);
 }
 .cm-editor .cm-line {
   padding: 0;
 }
 .cm-gutters {
   display: none;
-}
-.cm-activeLine {
-  background: transparent;
 }
 .cm-selectionBackground,
 .cm-editor ::selection {

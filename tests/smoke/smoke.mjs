@@ -118,6 +118,9 @@ await editor.waitForLoadState("domcontentloaded");
 editor.on("console", (m) => m.type() === "error" && errors.push("editor: " + m.text()));
 editor.on("pageerror", (e) => errors.push("editor PAGEERROR: " + e.message));
 await editor.waitForSelector(".cm-content");
+// CodeMirror's base theme sets `monospace` on the scroller; the brand face has to win.
+const cmFont = await editor.$eval(".cm-content", (el) => getComputedStyle(el).fontFamily);
+if (!cmFont.includes("Geist Mono")) throw new Error(`editor font is ${cmFont}, not Geist Mono`);
 await editor.click(".cm-content");
 await editor.keyboard.type(
   "# Rate limiting at the edge\n\nWe currently rate-limit inside the application layer.\n\n```mermaid\nflowchart LR\n  A[Client] --> B[Edge POP]\n```\n",
