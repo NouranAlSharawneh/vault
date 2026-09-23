@@ -31,7 +31,7 @@ export function applyFilter(
     docs = docs.filter((d) => d.projectSlug === f.project);
     title = index.projects.find((p) => p.slug === f.project)?.name ?? f.project;
   } else if (f.collection === "recent") {
-    docs = docs.filter((d) => Math.max(Date.parse(d.created), d.mtime) >= cutoff);
+    docs = docs.filter((d) => touchedAt(d) >= cutoff);
 
     // Recent is an ordering, not just a window: sorted by when you last touched a doc,
     // which is also why it offers no sort control. A stored "title" order from another
@@ -50,16 +50,44 @@ export function applyFilter(
   return { docs, title };
 }
 
-const touchedAt = (d: DocMeta) => Math.max(Date.parse(d.created), d.mtime);
+/** `created` as epoch ms, or null when the frontmatter date doesn't parse. */
+function createdAt(d: DocMeta): number | null {
+  const t = Date.parse(d.created);
+
+  return Number.isNaN(t) ? null : t;
+}
+
+/**
+ * When a document was last touched: saved or edited, whichever is later. This is what
+ * Recent sorts by, so it is also the time Recent shows. A `created` that doesn't parse
+ * falls back to the file's mtime rather than poisoning the max with NaN.
+ */
+export function touchedAt(d: DocMeta): number {
+  return Math.max(createdAt(d) ?? 0, Number.isFinite(d.mtime) ? d.mtime : 0);
+}
+
+/**
+ * By `created` as an instant, not as a string: `2026-09-01` and `2026-09-01T09:00:00+03:00`
+ * don't compare correctly as text. Documents with no usable date go last either way.
+ */
+const byCreated =
+  (dir: 1 | -1) =>
+  (a: DocMeta, b: DocMeta): number => {
+    const x = createdAt(a);
+    const y = createdAt(b);
+    if (x === null || y === null) return x === y ? 0 : x === null ? 1 : -1;
+
+    return dir * (x - y);
+  };
 
 function sorter(sort: ListFilter["sort"]): (a: DocMeta, b: DocMeta) => number {
   switch (sort) {
     case "oldest":
-      return (a, b) => a.created.localeCompare(b.created);
+      return byCreated(1);
     case "title":
       return (a, b) => a.title.localeCompare(b.title);
     default:
-      return (a, b) => b.created.localeCompare(a.created);
+      return byCreated(-1);
   }
 }
 
@@ -110,9 +138,16 @@ export function useDocumentFilter(
   const filtered =
     filter.collection !== DEFAULT.collection || !!filter.project || filter.tags.length > 0;
 
+  // Trash ignores tags, so chips there would be inert and "Clear tags" a lie.
+  const activeTags = filter.collection === "trash" ? [] : filter.tags;
+  // Recent is ordered by last touch, so its rows show that time rather than `created`.
+  const dateOf = filter.collection === "recent" ? touchedAt : undefined;
+
   return {
     filter,
     filtered,
+    activeTags,
+    dateOf,
     ...result,
     selectProject,
     selectCollection,

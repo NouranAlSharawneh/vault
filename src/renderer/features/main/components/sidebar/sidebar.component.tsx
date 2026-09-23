@@ -3,6 +3,7 @@ import { useState } from "react";
 import { Button, Chip, Dot, ListRow, Logo, SectionLabel } from "@/components/ui";
 import { MOD_KEY } from "@/constants";
 import { COLLECTIONS } from "@/data/main.data";
+import { plural } from "@/helpers";
 import { api, fire } from "@/lib/api";
 import { INBOX_COLOR, INBOX_SLUG } from "@shared/constants";
 import { projectColor } from "@shared/helpers";
@@ -77,7 +78,7 @@ export function Sidebar({
               key={t.tag}
               selected={filter.tags.includes(t.tag)}
               onClick={() => onTag(t.tag)}
-              title={`${t.count} docs`}
+              title={plural(t.count, "doc")}
             >
               #{t.tag}
             </Chip>

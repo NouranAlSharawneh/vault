@@ -3,6 +3,7 @@ import { act, renderHook } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import {
   reconcileSelection,
+  touchedAt,
   useDocumentFilter,
 } from "@/features/main/hooks/use-document-filter.hook";
 import type { DocMeta, IndexSnapshot, TrashedDoc } from "@shared/types";
@@ -88,5 +89,24 @@ describe("switching collection or project", () => {
     act(() => hook.result.current.toggleTag("spec"));
     act(() => hook.result.current.setSort("title"));
     expect(onSwitch).not.toHaveBeenCalled();
+  });
+});
+
+describe("what the list shows alongside the docs", () => {
+  it("offers no tag chips in Trash, where tags don't apply, and keeps them for later", () => {
+    const hook = renderHook(() => useDocumentFilter(index, trash));
+    act(() => hook.result.current.toggleTag("spec"));
+    expect(hook.result.current.activeTags).toEqual(["spec"]);
+    act(() => hook.result.current.selectCollection("trash"));
+    expect(hook.result.current.activeTags).toEqual([]);
+    act(() => hook.result.current.selectCollection("all"));
+    expect(hook.result.current.activeTags).toEqual(["spec"]);
+  });
+
+  it("dates Recent's rows by last touch, and nothing else's", () => {
+    const hook = renderHook(() => useDocumentFilter(index, trash));
+    expect(hook.result.current.dateOf).toBeUndefined();
+    act(() => hook.result.current.selectCollection("recent"));
+    expect(hook.result.current.dateOf).toBe(touchedAt);
   });
 });
