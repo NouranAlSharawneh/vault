@@ -18,6 +18,7 @@ export function DocumentList({
   onClearTags,
   sortable,
   emptyHint,
+  dateOf = (d) => d.created,
 }: DocumentListProps) {
   return (
     <section className="flex h-full flex-col">
@@ -64,7 +65,7 @@ export function DocumentList({
               </span>
               <span className="flex shrink-0 items-center gap-1.5 text-2xs text-ink-4">
                 {d.unpushed && <Dot tone="bg-warn" size={6} aria-label="not pushed yet" />}
-                {relativeTime(d.created)}
+                {relativeTime(dateOf(d))}
               </span>
             </div>
             <div className="mt-0.5 line-clamp-2 text-xs text-ink-3">{d.excerpt}</div>
