@@ -19,6 +19,7 @@ export function SplitPane({
     maxRatio,
     storageKey,
   });
+
   return (
     <div
       ref={container}

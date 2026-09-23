@@ -1,4 +1,4 @@
-import type { Source } from "../types";
+import { isSource } from "../helpers/source";
 import { parseDateish } from "./parse-dateish";
 import type { ParsedQuery } from "./query.types";
 
@@ -13,6 +13,7 @@ export function parseQuery(input: string, now = Date.now()): ParsedQuery {
     else words.push(quotedWord ?? word ?? "");
   }
   q.text = [q.text, ...words].join(" ").trim();
+
   return q;
 }
 
@@ -30,7 +31,11 @@ function applyOperator(q: ParsedQuery, key: string, val: string, now: number): v
       break;
     case "source":
     case "from":
-      if (val) q.source.push(val.toLowerCase() as Source);
+      {
+        // `from:banana` filters by nothing rather than quietly by `other`.
+        const source = val.toLowerCase();
+        if (isSource(source)) q.source.push(source);
+      }
       break;
     case "is": {
       const v = val.toLowerCase();

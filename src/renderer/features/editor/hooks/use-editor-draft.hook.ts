@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { DRAFT_DEBOUNCE_MS } from "@shared/constants";
-import { inferTitle } from "@shared/helpers";
-import type { AssetImport, DocContent, EditorDraft, SaveResult, Source } from "@shared/types";
 import { errorMessage } from "@/helpers";
 import { api } from "@/lib/api";
 import { useApp } from "@/stores/app";
+import { DRAFT_DEBOUNCE_MS } from "@shared/constants";
+import { inferTitle } from "@shared/helpers";
+import type { AssetImport, DocContent, EditorDraft, SaveResult, Source } from "@shared/types";
 import {
   emptyMeta,
   metaFromDoc,
@@ -100,6 +100,7 @@ export function useEditorDraft() {
         at: new Date().toISOString(),
       }).catch(() => undefined);
     }, DRAFT_DEBOUNCE_MS);
+
     return () => clearTimeout(t);
   }, [draftKey, state.body, state.meta, state.dirty]);
 
@@ -144,9 +145,11 @@ export function useEditorDraft() {
         // Saved text is not a draft any more, under either key it might have had.
         void api("draft:clear", draftKey).catch(() => undefined);
         if (res.path !== draftKey) void api("draft:clear", res.path).catch(() => undefined);
+
         return res;
       } catch (e) {
         setError(errorMessage(e));
+
         return null;
       } finally {
         setSaving(null);

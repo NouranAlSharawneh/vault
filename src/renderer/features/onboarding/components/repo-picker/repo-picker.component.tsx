@@ -1,6 +1,7 @@
 import { ArrowRight, FolderOpen, Plus, Search } from "lucide-react";
 import { Button, Card, ListRow, Option, SectionLabel, Spinner } from "@/components/ui";
 import { cx } from "@/helpers";
+import { fire } from "@/lib/api";
 import { useRepoPicker } from "./hooks/use-repo-picker.hook";
 import type { RepoPickerProps } from "./repo-picker.types";
 
@@ -91,7 +92,7 @@ export function RepoPicker({ onDone }: RepoPickerProps) {
         <FolderOpen size={12} />
         <span>clones to</span>
         <span className="truncate font-mono text-ink-2">{p.localPath}</span>
-        <Button variant="link" className="ml-auto shrink-0" onClick={() => void p.chooseFolder()}>
+        <Button variant="link" className="ml-auto shrink-0" onClick={() => fire(p.chooseFolder())}>
           Change
         </Button>
       </div>
@@ -101,7 +102,7 @@ export function RepoPicker({ onDone }: RepoPickerProps) {
           variant="primary"
           loading={p.busy}
           disabled={!p.canSubmit}
-          onClick={() => void p.submit()}
+          onClick={() => fire(p.submit())}
         >
           Continue <ArrowRight size={13} />
         </Button>

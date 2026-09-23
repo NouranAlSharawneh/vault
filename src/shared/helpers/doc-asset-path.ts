@@ -14,5 +14,6 @@ export function docAssetPath(src: string, docPath: string): string | null {
     if (seg === "..") out.pop();
     else out.push(seg);
   }
+
   return out.length ? out.join("/") : null;
 }

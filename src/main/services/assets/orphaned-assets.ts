@@ -1,7 +1,12 @@
 import { promises as fs, existsSync } from "node:fs";
-import { join, sep } from "node:path";
+import { join } from "node:path";
 import { ASSETS_DIR, TRASH_DIR } from "@shared/constants";
 import { docAssetPath, findAssetRefs } from "@shared/helpers";
+import { vaultPath } from "../fs/paths";
+import { walkMarkdown } from "../fs/walk-markdown";
+
+/** A restore can revive a trashed doc, so the trash counts as a reference too. */
+const GIT_DIR = new Set([".git"]);
 
 /**
  * Files under `assets/` that only the documents being deleted were pointing at.
@@ -24,11 +29,13 @@ export async function orphanedAssets(root: string, purged: string[]): Promise<st
   if (!doomed.size) return [];
 
   const purgedSet = new Set(purged);
-  for (const path of await markdownFiles(root)) {
+  for (const abs of await walkMarkdown(root, GIT_DIR)) {
+    const path = vaultPath(root, abs);
     if (purgedSet.has(path)) continue;
     for (const asset of await assetsOf(root, path)) doomed.delete(asset);
     if (!doomed.size) return [];
   }
+
   return [...doomed];
 }
 
@@ -52,34 +59,10 @@ async function assetsOf(root: string, docPath: string): Promise<string[]> {
       if (existsSync(join(root, candidate))) out.push(candidate);
     }
   }
+
   return out;
 }
 
 function untrashed(path: string): string | null {
   return path.startsWith(`${TRASH_DIR}/`) ? path.slice(TRASH_DIR.length + 1) : null;
-}
-
-/** Every `.md` in the vault, `.git` aside — the trash included, since a restore can revive it. */
-async function markdownFiles(root: string, dir = root): Promise<string[]> {
-  const out: string[] = [];
-  let entries;
-  try {
-    entries = await fs.readdir(dir, { withFileTypes: true });
-  } catch {
-    return out;
-  }
-  for (const e of entries) {
-    const abs = join(dir, e.name);
-    if (e.isDirectory()) {
-      if (e.name !== ".git") out.push(...(await markdownFiles(root, abs)));
-    } else if (e.name.toLowerCase().endsWith(".md")) {
-      out.push(
-        abs
-          .slice(root.length + 1)
-          .split(sep)
-          .join("/"),
-      );
-    }
-  }
-  return out;
 }

@@ -1,9 +1,9 @@
+import { act, render } from "@testing-library/react";
+import { useRef } from "react";
 // @vitest-environment jsdom
 import { describe, expect, it } from "vitest";
-import { useRef } from "react";
-import { act, render } from "@testing-library/react";
-import { MERMAID_ZOOM_MAX, MERMAID_ZOOM_MIN } from "@/constants";
 import { useDiagramZoom } from "@/components/markdown/mermaid-block/hooks/use-diagram-zoom.hook";
+import { MERMAID_ZOOM_MAX, MERMAID_ZOOM_MIN } from "@/constants";
 import { relaxMermaidWidth, svgIntrinsicWidth } from "@/helpers";
 
 const SVG = '<svg id="d" width="800" viewBox="0 0 800 400" style="max-width: 800px;"></svg>';
@@ -17,6 +17,7 @@ class NoopResizeObserver {
   unobserve() {}
   disconnect() {}
 }
+
 globalThis.ResizeObserver ??= NoopResizeObserver as unknown as typeof ResizeObserver;
 
 function withPane(width: number) {
@@ -25,12 +26,16 @@ function withPane(width: number) {
     configurable: true,
   });
   const captured: { current: ReturnType<typeof useDiagramZoom> } = { current: null! };
+
   function Harness() {
     const paneRef = useRef<HTMLDivElement>(null);
     captured.current = useDiagramZoom(SVG, paneRef);
+
     return <div ref={paneRef} />;
   }
+
   render(<Harness />);
+
   return captured;
 }
 

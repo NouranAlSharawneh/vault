@@ -1,4 +1,4 @@
-import { on } from "@/lib/api";
+import { fire, on } from "@/lib/api";
 import { useApp } from "./app.store";
 
 let subscribed = false;
@@ -9,7 +9,7 @@ export function subscribeToMain(): void {
   subscribed = true;
   on("index:changed", (index) => {
     useApp.setState({ index });
-    void useApp.getState().refreshTrash();
+    fire(useApp.getState().refreshTrash(), "Couldn't refresh the trash");
   });
   on("index:progress", (progress) => useApp.setState({ progress }));
   on("sync:status", (sync) => useApp.setState({ sync }));

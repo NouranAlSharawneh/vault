@@ -12,6 +12,7 @@ export function createRequestInterceptor(getToken: TokenProvider) {
     config.headers.set("Accept", "application/vnd.github+json");
     config.headers.set("X-GitHub-Api-Version", GITHUB_API_VERSION);
     config.headers.set("User-Agent", USER_AGENT);
+
     return config;
   };
 }

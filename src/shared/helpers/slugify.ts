@@ -8,5 +8,6 @@ export function slugify(input: string): string {
     .replace(/[^a-z0-9؀-ۿ]+/g, "-") // keep arabic letters
     .replace(/^-+|-+$/g, "")
     .replace(/-{2,}/g, "-");
+
   return s.slice(0, 80).replace(/-+$/, "") || "untitled";
 }

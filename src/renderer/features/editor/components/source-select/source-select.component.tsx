@@ -1,7 +1,7 @@
 import { ChevronDown } from "lucide-react";
-import type { Source } from "@shared/types";
 import { SOURCE_OPTIONS } from "@/data/editor.data";
 import { cx } from "@/helpers";
+import { toSource } from "@shared/helpers";
 import type { SourceSelectProps } from "./source-select.types";
 
 export function SourceSelect({ value, onChange, dark, hint }: SourceSelectProps) {
@@ -23,7 +23,7 @@ export function SourceSelect({ value, onChange, dark, hint }: SourceSelectProps)
           dark && "text-overlay-ink",
         )}
         value={value}
-        onChange={(e) => onChange(e.target.value as Source)}
+        onChange={(e) => onChange(toSource(e.target.value))}
         aria-label="source"
       >
         {SOURCE_OPTIONS.map((o) => (

@@ -3,6 +3,7 @@ import type { UnsavedGuardProps } from "./unsaved-guard.types";
 
 export function UnsavedGuard({ open, onKeepEditing, onDiscard, onSave }: UnsavedGuardProps) {
   if (!open) return null;
+
   return (
     <DialogShell
       label="Unsaved changes"

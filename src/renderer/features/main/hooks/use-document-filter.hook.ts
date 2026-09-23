@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useState } from "react";
-import type { DocMeta, IndexSnapshot, TrashedDoc } from "@shared/types";
 import { RECENT_DAYS } from "@/constants";
+import type { DocMeta, IndexSnapshot, TrashedDoc } from "@shared/types";
 import type { FilteredDocs, ListFilter } from "../main.types";
 
 const DEFAULT: ListFilter = { collection: "all", project: null, tags: [], sort: "newest" };
@@ -9,6 +9,7 @@ const DEFAULT: ListFilter = { collection: "all", project: null, tags: [], sort: 
 function initialFilter(): ListFilter {
   if (!window.location.hash.includes("?trash")) return DEFAULT;
   window.history.replaceState(null, "", "#main");
+
   return { ...DEFAULT, collection: "trash" };
 }
 
@@ -31,6 +32,7 @@ export function applyFilter(
     title = index.projects.find((p) => p.slug === f.project)?.name ?? f.project;
   } else if (f.collection === "recent") {
     docs = docs.filter((d) => Math.max(Date.parse(d.created), d.mtime) >= cutoff);
+
     // Recent is an ordering, not just a window: sorted by when you last touched a doc,
     // which is also why it offers no sort control. A stored "title" order from another
     // collection must not silently reorder it.
@@ -44,6 +46,7 @@ export function applyFilter(
   }
   if (f.tags.length) docs = docs.filter((d) => f.tags.every((t) => d.tags.includes(t)));
   docs = [...docs].sort(sorter(f.sort));
+
   return { docs, title };
 }
 

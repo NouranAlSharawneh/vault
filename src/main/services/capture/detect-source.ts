@@ -11,5 +11,6 @@ export function detectSource(text: string, html: string): Source {
   const head = text.slice(0, 400);
   if (/\bclaude\b/i.test(head)) return "claude";
   if (/\bchatgpt\b/i.test(head)) return "chatgpt";
+
   return "manual";
 }

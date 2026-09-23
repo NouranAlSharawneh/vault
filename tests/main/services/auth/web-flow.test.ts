@@ -1,5 +1,5 @@
-import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { createServer, type Server } from "node:http";
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 
 // `electron` can't load under vitest; the "browser" here just follows the authorize
 // URL like a user clicking Authorize, then GitHub redirecting back to 127.0.0.1.

@@ -1,11 +1,17 @@
 import { Button, Kbd } from "@/components/ui";
 import { acceleratorLabel, cx } from "@/helpers";
+import { fire } from "@/lib/api";
 import { useHotkeyRecorder } from "./hooks/use-hotkey-recorder.hook";
 import type { HotkeyRecorderProps } from "./hotkey-recorder.types";
 
 /** Click, press the combination you want, done. */
 export function HotkeyRecorder({ value, onChange, busy }: HotkeyRecorderProps) {
-  const r = useHotkeyRecorder((a) => void onChange(a));
+  const r = useHotkeyRecorder((a) => {
+    const saved = onChange(a);
+
+    if (saved) fire(saved);
+  });
+
   return (
     <Button
       variant="outline"

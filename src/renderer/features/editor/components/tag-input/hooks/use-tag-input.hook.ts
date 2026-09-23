@@ -14,6 +14,7 @@ export function useTagInput(
   const matches = useMemo(() => {
     const q = clean(text);
     if (!q) return [];
+
     return suggestions
       .filter((s) => s.toLowerCase().startsWith(q) && !value.includes(s))
       .slice(0, 6);

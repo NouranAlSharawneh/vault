@@ -11,5 +11,6 @@ export function inferTitle(body: string): string | null {
       return t.replace(/^[-*>\d.\s]+/, "").slice(0, 120);
     }
   }
+
   return null;
 }

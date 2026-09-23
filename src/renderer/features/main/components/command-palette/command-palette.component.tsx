@@ -1,4 +1,3 @@
-import { useEffect, useMemo, useRef } from "react";
 import {
   ChevronRight,
   Download,
@@ -12,12 +11,13 @@ import {
   Upload,
   type LucideIcon,
 } from "lucide-react";
-import type { PaletteActionKey } from "@/data/palette.data";
-import { relativeTime } from "@shared/helpers";
+import { useEffect, useMemo, useRef } from "react";
 import { Chip, DialogShell, Kbd, ListRow } from "@/components/ui";
+import type { PaletteActionKey } from "@/data/palette.data";
 import { PALETTE_HINTS } from "@/data/palette.data";
-import { useCommandPalette } from "./hooks/use-command-palette.hook";
+import { relativeTime } from "@shared/helpers";
 import type { CommandPaletteProps, PaletteItem } from "./command-palette.types";
+import { useCommandPalette } from "./hooks/use-command-palette.hook";
 
 const ACTION_ICONS: Record<PaletteActionKey, LucideIcon> = {
   newFromClipboard: Plus,
@@ -55,6 +55,7 @@ export function CommandPalette({
       }
     };
     window.addEventListener("keydown", onKey);
+
     return () => window.removeEventListener("keydown", onKey);
   }, [p]);
 
@@ -117,6 +118,7 @@ export function CommandPalette({
                     : item.kind === "text"
                       ? Pilcrow
                       : FileText;
+
                 return (
                   <ListRow
                     kind="palette"

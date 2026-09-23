@@ -29,6 +29,7 @@ export function useMermaid(code: string): MermaidResult {
         (e: unknown) =>
           !cancelled && setResult({ svg: null, error: e instanceof Error ? e.message : String(e) }),
       );
+
     return () => {
       cancelled = true;
     };

@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import { DONE_SCREEN_DELAY_MS } from "@/constants";
+import { fire } from "@/lib/api";
 import { useApp } from "@/stores/app";
 
 /** Tracks scan progress from the store and advances once the index is usable. */
@@ -9,7 +10,7 @@ export function useFirstScan(onDone: () => void) {
   const refreshIndex = useApp((s) => s.refreshIndex);
 
   useEffect(() => {
-    void refreshIndex();
+    fire(refreshIndex(), "Couldn't read the vault folder");
   }, [refreshIndex]);
 
   const finished =
@@ -21,6 +22,7 @@ export function useFirstScan(onDone: () => void) {
   useEffect(() => {
     if (!finished) return;
     const t = setTimeout(onDone, DONE_SCREEN_DELAY_MS);
+
     return () => clearTimeout(t);
   }, [finished, onDone]);
 
@@ -29,5 +31,6 @@ export function useFirstScan(onDone: () => void) {
     : finished
       ? 100
       : 10;
+
   return { index, percent };
 }

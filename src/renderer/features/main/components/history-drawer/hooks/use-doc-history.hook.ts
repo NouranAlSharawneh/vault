@@ -35,6 +35,7 @@ export function useDocHistory(path: string, onRestored: (path: string) => void) 
       .catch((e: unknown) => {
         if (!cancelled) setState((s) => ({ ...s, loading: false, error: errorMessage(e) }));
       });
+
     return () => {
       cancelled = true;
     };
@@ -47,6 +48,7 @@ export function useDocHistory(path: string, onRestored: (path: string) => void) 
     api("doc:diff", path, selected)
       .then((diff) => !cancelled && setState((s) => ({ ...s, diff, diffFor: selected })))
       .catch((e: unknown) => !cancelled && setState((s) => ({ ...s, error: errorMessage(e) })));
+
     return () => {
       cancelled = true;
     };

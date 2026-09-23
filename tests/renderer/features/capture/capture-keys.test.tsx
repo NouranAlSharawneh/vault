@@ -1,6 +1,6 @@
+import { renderHook } from "@testing-library/react";
 // @vitest-environment jsdom
 import { describe, expect, it, vi } from "vitest";
-import { renderHook } from "@testing-library/react";
 import { useCaptureKeys } from "@/features/capture/hooks/use-capture-keys.hook";
 
 const press = (init: KeyboardEventInit & { consumed?: boolean }) => {

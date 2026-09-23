@@ -2,6 +2,7 @@ import { GitMerge } from "lucide-react";
 import { Button, Dot, Spinner } from "@/components/ui";
 import { SYNC_PRESENTATION } from "@/data/sync.data";
 import { cx } from "@/helpers";
+import { fire } from "@/lib/api";
 import { useSync } from "./hooks/use-sync.hook";
 import type { SyncBadgeProps } from "./sync-badge.types";
 
@@ -26,6 +27,7 @@ export function SyncBadge({ className, onReviewConflicts }: SyncBadgeProps) {
   const state = sync?.state ?? "synced";
   const p = SYNC_PRESENTATION[state];
   const canPush = state === "pending" || state === "offline" || state === "error";
+
   return (
     <span className={cx("flex items-center gap-1", className)}>
       {hasRemote && (
@@ -33,7 +35,7 @@ export function SyncBadge({ className, onReviewConflicts }: SyncBadgeProps) {
           variant="ghost"
           size="sm"
           className="gap-1.5 font-normal"
-          onClick={canPush ? () => void pushNow() : undefined}
+          onClick={canPush ? () => fire(pushNow()) : undefined}
           tooltip={canPush ? "Push now" : undefined}
           aria-label={`sync: ${p.label(sync?.ahead ?? 0)}`}
         >

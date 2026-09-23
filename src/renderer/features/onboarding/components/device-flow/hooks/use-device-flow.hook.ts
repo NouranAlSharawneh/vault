@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
-import type { DeviceCodeSession, DevicePollStatus } from "@shared/types";
 import { errorMessage } from "@/helpers";
-import { api, on } from "@/lib/api";
+import { api, fireQuietly, on } from "@/lib/api";
+import type { DeviceCodeSession, DevicePollStatus } from "@shared/types";
 
 /** Starts the OAuth device flow on mount, tracks poll status and the expiry countdown. */
 export function useDeviceFlow() {
@@ -22,16 +22,18 @@ export function useDeviceFlow() {
       })
       .catch((e: unknown) => !cancelled && setError(errorMessage(e)));
     const off = on("auth:deviceStatus", ({ status }) => setStatus(status));
+
     return () => {
       cancelled = true;
       off();
-      void api("auth:deviceCancel");
+      fireQuietly(api("auth:deviceCancel"), "cancelling the device flow");
     };
   }, [attempt]);
 
   useEffect(() => {
     if (!session) return;
     const t = setInterval(() => setSecondsLeft((l) => Math.max(0, l - 1)), 1000);
+
     return () => clearInterval(t);
   }, [session]);
 
@@ -43,5 +45,6 @@ export function useDeviceFlow() {
   }, []);
 
   const terminal = status === "expired" || status === "denied";
+
   return { session, status, error, secondsLeft, terminal, restart };
 }

@@ -9,5 +9,6 @@ import { docAssetPath } from "./doc-asset-path";
 export function resolveAssetUrl(src: string, docPath: string): string {
   const path = docAssetPath(src, docPath);
   if (path === null) return src;
+
   return `${ASSET_SCHEME}://${ASSET_HOST}/${path.split("/").map(encodeURIComponent).join("/")}`;
 }

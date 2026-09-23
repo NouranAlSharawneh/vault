@@ -1,8 +1,8 @@
 import { ChevronDown } from "lucide-react";
-import { INBOX_COLOR } from "@shared/constants";
-import { projectColor, projectSlug } from "@shared/helpers";
 import { Dot, ListRow } from "@/components/ui";
 import { cx } from "@/helpers";
+import { INBOX_COLOR } from "@shared/constants";
+import { projectColor, projectSlug } from "@shared/helpers";
 import { useCombobox } from "./hooks/use-combobox.hook";
 import type { ProjectComboboxProps } from "./project-combobox.types";
 
@@ -10,6 +10,7 @@ export function ProjectCombobox({ value, onChange, projects, dark, hint }: Proje
   const c = useCombobox(value, onChange, projects);
   const isNew =
     value.trim() && !projects.some((p) => p.toLowerCase() === value.trim().toLowerCase());
+
   return (
     <div className="relative">
       <div

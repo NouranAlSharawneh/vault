@@ -1,13 +1,22 @@
-import { describe, expect, it, beforeAll, afterAll, vi } from "vitest";
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import type * as NodeOs from "node:os";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { describe, expect, it, beforeAll, afterAll, vi } from "vitest";
 import { findAssetRoot } from "@main/services/assets";
 
 // Spotlight answers from the real disk, which would make these non-hermetic on any Mac that
 // happens to hold a matching file. The walk is what's under test here; the filter Spotlight
 // hits go through is covered in spotlight.test.ts.
 vi.mock("@main/services/assets/spotlight", () => ({ spotlightRoots: async () => [] }));
+// The walk also seeds from the home folder, which would let any matching file on this Mac
+// answer instead of the fixture. Point it somewhere that holds nothing.
+vi.mock("node:os", async (importOriginal) => {
+  const os = await importOriginal<typeof NodeOs>();
+  const homedir = () => `${os.tmpdir()}/vault-test-no-home`;
+
+  return { ...os, homedir, default: { ...os, homedir } };
+});
 
 /**
  * What matters is not that a file with the right name exists somewhere, but that the folder

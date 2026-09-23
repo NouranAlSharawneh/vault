@@ -1,10 +1,12 @@
 import { X } from "lucide-react";
+import { fire } from "@/lib/api";
 import { Button } from "../button/button.component";
 import type { ToastProps } from "./toast.types";
 
 /** Dark pill at the bottom of the window with an optional action ("Undo"). */
 export function Toast({ toast, onDismiss }: ToastProps) {
   if (!toast) return null;
+
   return (
     <div
       role="status"
@@ -18,7 +20,8 @@ export function Toast({ toast, onDismiss }: ToastProps) {
             size="sm"
             className="text-cherry-3 hover:bg-ink-2 hover:text-white"
             onClick={() => {
-              void toast.action?.run();
+              const undo = toast.action?.run();
+              if (undo) fire(undo, "Couldn't undo that");
               onDismiss();
             }}
           >

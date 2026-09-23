@@ -30,6 +30,7 @@ export function DialogShell({
       ? panel.current?.querySelector<HTMLElement>(initialFocus)
       : panel.current?.querySelector<HTMLElement>(FOCUSABLE);
     (first ?? panel.current)?.focus();
+
     return () => returnTo?.focus?.();
   }, [initialFocus]);
 
@@ -38,6 +39,7 @@ export function DialogShell({
       if (e.key === "Escape" && !e.defaultPrevented) {
         e.preventDefault();
         onClose();
+
         return;
       }
       if (e.key !== "Tab" || !panel.current) return;
@@ -50,6 +52,7 @@ export function DialogShell({
       }
     };
     window.addEventListener("keydown", onKey);
+
     return () => window.removeEventListener("keydown", onKey);
   }, [onClose]);
 

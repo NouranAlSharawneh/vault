@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
-import type { WebFlowStatus } from "@shared/types";
 import { errorMessage } from "@/helpers";
-import { api, on } from "@/lib/api";
+import { api, fireQuietly, on } from "@/lib/api";
+import type { WebFlowStatus } from "@shared/types";
 import type { WebFlowState } from "../web-flow.types";
 
 const FAILED_STATUSES: WebFlowStatus[] = ["error", "timeout", "cancelled", "denied"];
@@ -17,10 +17,11 @@ export function useWebFlow() {
       (e: unknown) => !cancelled && setState({ status: "error", message: errorMessage(e) }),
     );
     const off = on("auth:webStatus", (s) => setState(s));
+
     return () => {
       cancelled = true;
       off();
-      void api("auth:webCancel");
+      fireQuietly(api("auth:webCancel"), "cancelling the sign-in");
     };
   }, [attempt]);
 
@@ -30,5 +31,6 @@ export function useWebFlow() {
   }, []);
 
   const failed = FAILED_STATUSES.includes(state.status);
+
   return { ...state, failed, retry };
 }

@@ -13,6 +13,7 @@ function readStored(key: string | undefined, fallback: number): number {
   if (!key) return fallback;
   try {
     const v = Number(localStorage.getItem(key));
+
     return Number.isFinite(v) && v > 0 && v < 1 ? v : fallback;
   } catch {
     return fallback;
@@ -46,6 +47,7 @@ export function useSplitDrag({ defaultRatio, minRatio, maxRatio, storageKey }: O
               /* storage unavailable */
             }
           }
+
           return r;
         });
       };

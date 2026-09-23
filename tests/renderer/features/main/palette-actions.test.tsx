@@ -1,10 +1,10 @@
+import { render, screen } from "@testing-library/react";
 // @vitest-environment jsdom
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
 import { CommandPalette } from "@/features/main/components/command-palette/command-palette.component";
 import { useApp } from "@/stores/app";
-import { mockVaultApi } from "../../helpers/mock-vault-api";
 import type { SyncStatus } from "@shared/types";
+import { mockVaultApi } from "../../helpers/mock-vault-api";
 
 const sync = (patch: Partial<SyncStatus> = {}): SyncStatus => ({
   state: "synced",
@@ -45,9 +45,7 @@ describe("palette actions", () => {
     expect(screen.queryByText("Review versions of a document")).toBeNull();
     unmount();
     useApp.setState({ sync: sync({ conflicts: 2 }) } as never);
-    render(
-      <CommandPalette onClose={vi.fn()} onOpenDoc={vi.fn()} onReviewConflicts={vi.fn()} />,
-    );
+    render(<CommandPalette onClose={vi.fn()} onOpenDoc={vi.fn()} onReviewConflicts={vi.fn()} />);
     expect(screen.getByText("Review versions of a document")).toBeTruthy();
   });
 });

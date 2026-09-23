@@ -6,8 +6,8 @@ import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "no
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { simpleGit } from "simple-git";
-import { VaultService } from "@main/services/vault/vault.service";
 import { GitService } from "@main/services/git/git.service";
+import { VaultService } from "@main/services/vault/vault.service";
 import type { VaultConfig } from "@shared/types";
 
 const DOC = "atlas-api/rate-limiting.md";
@@ -89,7 +89,11 @@ beforeEach(async () => {
 
 afterEach(async () => {
   await vault.close();
-  for (const d of [origin, mine, other, cache]) rmSync(d, { recursive: true, force: true });
+  // `close` stops the push timer but not a push already under way, which can still be
+  // writing into `origin` here. Retrying outlasts it.
+  for (const d of [origin, mine, other, cache]) {
+    rmSync(d, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
+  }
 });
 
 describe("sync conflicts", () => {
@@ -124,7 +128,10 @@ describe("sync conflicts", () => {
   it("finds the pair again from the documents alone, with no state on the side", async () => {
     await raceOnTheSameDoc(doc("Rate limiting", "Mine."), doc("Rate limiting", "Theirs."));
     await vault.pull();
-    // A second service over the same folder — as if the app had been restarted.
+    // As if the app had been restarted: the first service is stopped first, so its
+    // watcher and its quiet pull loop are not still working the same folder while the
+    // second one indexes it.
+    await vault.close();
     const fresh = new VaultService(config(mine), cache, () => null);
     await fresh.open();
     const pairs = await fresh.conflicts();

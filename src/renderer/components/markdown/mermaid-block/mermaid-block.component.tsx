@@ -1,9 +1,9 @@
-import { useRef, useState } from "react";
 import { Minus, Plus } from "lucide-react";
+import { useRef, useState } from "react";
 import { Button } from "@/components/ui";
 import { cx } from "@/helpers";
-import { useMermaid } from "./hooks/use-mermaid.hook";
 import { useDiagramZoom } from "./hooks/use-diagram-zoom.hook";
+import { useMermaid } from "./hooks/use-mermaid.hook";
 import type { MermaidBlockProps, MermaidView } from "./mermaid-block.types";
 
 /** A ```mermaid fence: rendered diagram with zoom, and a toggle back to the source. */

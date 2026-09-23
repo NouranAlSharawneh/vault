@@ -1,8 +1,8 @@
 import { Clock, Hash, Layers, Star } from "lucide-react";
-import { INBOX_COLOR, INBOX_SLUG } from "@shared/constants";
-import { projectColor } from "@shared/helpers";
 import { Dot, ListRow, Logo } from "@/components/ui";
 import { COLLECTIONS } from "@/data/main.data";
+import { INBOX_COLOR, INBOX_SLUG } from "@shared/constants";
+import { projectColor } from "@shared/helpers";
 import type { SidebarRailProps } from "./sidebar-rail.types";
 
 const ICONS = { all: Layers, recent: Clock, starred: Star } as const;
@@ -20,6 +20,7 @@ export function SidebarRail({
       {COLLECTIONS.map((c) => {
         const Icon = ICONS[c.key];
         const active = !filter.project && filter.collection === c.key;
+
         return (
           <ListRow
             kind="rail"
