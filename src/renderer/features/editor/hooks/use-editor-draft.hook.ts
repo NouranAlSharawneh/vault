@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { NOTHING_TO_SAVE } from "@/data/editor.data";
 import { errorMessage } from "@/helpers";
 import { api } from "@/lib/api";
 import { useApp } from "@/stores/app";
@@ -13,8 +14,12 @@ import {
   type SaveMode,
 } from "../editor.types";
 
-/** The document being edited: fields, dirtiness, inferred title, path preview, save. */
-export function useEditorDraft() {
+/**
+ * The document being edited: fields, dirtiness, inferred title, path preview, save.
+ * `untitledKey` is where its text is parked until it has a path; null while a document
+ * is still being read.
+ */
+export function useEditorDraft(untitledKey: string | null) {
   const config = useApp((s) => s.config);
   const defaultSource: Source = config?.lastSource ?? "claude";
   const [state, setState] = useState<DraftState>({
@@ -90,9 +95,9 @@ export function useEditorDraft() {
    * this document is opened. Before this, closing the window, quitting or a crash lost it,
    * and Discard in the unsaved prompt was instant and final.
    */
-  const draftKey = state.existingPath ?? "new";
+  const draftKey = state.existingPath ?? untitledKey;
   useEffect(() => {
-    if (!state.dirty) return;
+    if (!state.dirty || !draftKey) return;
     const t = setTimeout(() => {
       void api("draft:save", draftKey, {
         body: state.body,
@@ -114,9 +119,22 @@ export function useEditorDraft() {
     );
   }, []);
 
+  /**
+   * One save at a time. ⌘↵ reaches the editor twice for one press — CodeMirror's own
+   * Mod-Enter and the menu accelerator — and both calls saw no path yet, so a new
+   * document was written out as two files. `saving` is state and lags a render behind.
+   */
+  const inFlight = useRef(false);
   const save = useCallback(
     async (mode: SaveMode, assets?: AssetImport) => {
-      if (!state.body.trim()) return null;
+      if (inFlight.current) return null;
+      if (!state.body.trim()) {
+        // Say so: from the unsaved prompt this used to be a Save button that did nothing.
+        setError(NOTHING_TO_SAVE);
+
+        return null;
+      }
+      inFlight.current = true;
       setSaving(mode);
       setError(null);
       try {
@@ -143,7 +161,7 @@ export function useEditorDraft() {
         }));
         setLastSaved(res);
         // Saved text is not a draft any more, under either key it might have had.
-        void api("draft:clear", draftKey).catch(() => undefined);
+        if (draftKey) void api("draft:clear", draftKey).catch(() => undefined);
         if (res.path !== draftKey) void api("draft:clear", res.path).catch(() => undefined);
 
         return res;
@@ -152,6 +170,7 @@ export function useEditorDraft() {
 
         return null;
       } finally {
+        inFlight.current = false;
         setSaving(null);
       }
     },
@@ -172,10 +191,9 @@ export function useEditorDraft() {
     loadDoc,
     loadDraft,
     recoverDraft,
-    discardDraft: useCallback(
-      () => void api("draft:clear", draftKey).catch(() => undefined),
-      [draftKey],
-    ),
+    discardDraft: useCallback(() => {
+      if (draftKey) void api("draft:clear", draftKey).catch(() => undefined);
+    }, [draftKey]),
     save,
   };
 }

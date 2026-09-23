@@ -207,3 +207,12 @@ export const MTIME_SLACK_MS = 1_000;
 
 /** How long the editor waits after the last keystroke before parking the draft. */
 export const DRAFT_DEBOUNCE_MS = 500;
+
+/**
+ * Untitled editor windows park their text under `untitled:<id>`, one key per window.
+ * Every new window used to share "new", so a second one opened with the first one's
+ * text and saving either cleared the other's.
+ */
+export const UNTITLED_DRAFT_PREFIX = "untitled:";
+/** The key every untitled window shared before that; still read, so no text is stranded. */
+export const LEGACY_UNTITLED_DRAFT_KEY = "new";
