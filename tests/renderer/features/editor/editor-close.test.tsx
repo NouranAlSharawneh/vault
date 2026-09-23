@@ -68,4 +68,29 @@ describe("useEditorShortcuts", () => {
     press("a");
     expect(onEscape).not.toHaveBeenCalled();
   });
+
+  /** Escape as it really arrives: on a focused element, bubbling up to the window. */
+  const pressIn = (el: Element) =>
+    el.dispatchEvent(
+      new KeyboardEvent("keydown", { key: "Escape", bubbles: true, cancelable: true }),
+    );
+
+  it("leaves an Escape inside the markdown editor to CodeMirror", () => {
+    // Tab indents there, so Escape-then-Tab is the only keyboard way out. Closing the
+    // window on that Escape is what used to make it unreachable.
+    const onEscape = vi.fn();
+    renderHook(() => useEditorShortcuts({ onSave: vi.fn(), onEscape }));
+    document.body.innerHTML =
+      '<div class="cm-editor"><div class="cm-scroller"><div class="cm-content" contenteditable="true"></div></div></div>';
+    pressIn(document.querySelector(".cm-content")!);
+    expect(onEscape).not.toHaveBeenCalled();
+  });
+
+  it("still closes on Escape from the title field", () => {
+    const onEscape = vi.fn();
+    renderHook(() => useEditorShortcuts({ onSave: vi.fn(), onEscape }));
+    document.body.innerHTML = '<label><input aria-label="Title" /></label>';
+    pressIn(document.querySelector("input")!);
+    expect(onEscape).toHaveBeenCalledTimes(1);
+  });
 });

@@ -151,7 +151,16 @@ const [blank] = await Promise.all([
 ]);
 await blank.waitForLoadState("domcontentloaded");
 await blank.waitForSelector(".cm-content");
-// Escape closes the window, which can tear the page down while `press` is still in
+// Inside the markdown pane Escape belongs to CodeMirror: Tab indents there, and Escape
+// then Tab is the keyboard way out. It must not close the window on the way.
+await blank.keyboard.press("Escape");
+await blank.keyboard.press("Tab");
+if (blank.isClosed()) throw new Error("Escape inside the editor closed the window");
+if (await blank.evaluate(() => !!document.activeElement?.closest(".cm-editor")))
+  throw new Error("Escape then Tab did not move focus out of the editor");
+console.log("Escape then Tab leaves the markdown editor");
+await blank.focus('input[aria-label="title"]');
+// Escape from a field closes the window, which can tear the page down while `press` is still in
 // flight — so the press rejecting here means it worked. The close event is the result.
 await Promise.all([
   blank.waitForEvent("close", { timeout: 5000 }),

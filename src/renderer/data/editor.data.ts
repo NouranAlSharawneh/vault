@@ -14,3 +14,6 @@ export const SOURCE_OPTIONS: SourceOption[] = [
 ];
 
 export const EDITOR_PLACEHOLDER = "# Title\n\nPaste or write markdown…";
+
+/** Tab indents in the markdown pane, so this is the way out of it by keyboard. */
+export const EDITOR_LEAVE_HINT = "Esc then Tab to leave the editor";
