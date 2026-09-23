@@ -30,7 +30,10 @@ export function Onboarding() {
           {step === "signin" && (
             <SignIn onBack={() => setStep("welcome")} onLocal={() => setStep("repo")} />
           )}
-          {step === "repo" && <RepoPicker onDone={() => setStep("scan")} />}
+          {/* Back goes to welcome, not sign-in: signed in, sign-in would bounce straight here. */}
+          {step === "repo" && (
+            <RepoPicker onDone={() => setStep("scan")} onBack={() => setStep("welcome")} />
+          )}
           {step === "scan" && (
             <FirstScan onDone={() => setStep("done")} onBack={() => setStep("repo")} />
           )}

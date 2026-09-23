@@ -29,7 +29,7 @@ beforeEach(() => signIn());
 describe("RepoPicker — when the repo list fails", () => {
   it("says so inside the list box, with Try again", async () => {
     mockVaultApi({ ...base, "github:listRepos": new Error("Network unreachable") });
-    render(<RepoPicker onDone={noop} />);
+    render(<RepoPicker onDone={noop} onBack={noop} />);
     expect(await screen.findByText(/Couldn’t load your repos \(Network unreachable\)/)).toBeTruthy();
     expect(screen.getByRole("button", { name: "Try again" })).toBeTruthy();
     expect(screen.queryByText("Loading repos…")).toBeNull();
@@ -45,7 +45,7 @@ describe("RepoPicker — when the repo list fails", () => {
         return [repo("nunu/notes")];
       },
     });
-    render(<RepoPicker onDone={noop} />);
+    render(<RepoPicker onDone={noop} onBack={noop} />);
     await screen.findByText(/Couldn’t load your repos/);
     fail = false;
     await userEvent.click(screen.getByRole("button", { name: "Try again" }));
@@ -60,7 +60,7 @@ describe("RepoPicker — when the repo list fails", () => {
       "github:listRepos": new Error("Network unreachable"),
       "github:createRepo": new Error("name already exists on this account"),
     });
-    render(<RepoPicker onDone={onDone} />);
+    render(<RepoPicker onDone={onDone} onBack={noop} />);
     await screen.findByText(/Couldn’t load your repos/);
     await userEvent.click(screen.getByRole("button", { name: /Continue/ }));
     expect(invoke).toHaveBeenCalledWith("github:createRepo", "vault", true);
@@ -75,7 +75,7 @@ describe("RepoPicker — long lists", () => {
 
   it("says the list is cut short and how to find the rest", async () => {
     mockVaultApi({ ...base, "github:listRepos": many });
-    render(<RepoPicker onDone={noop} />);
+    render(<RepoPicker onDone={noop} onBack={noop} />);
     expect(
       await screen.findByText(`Showing ${REPO_LIST_LIMIT} of 120 — type to filter.`),
     ).toBeTruthy();
@@ -83,7 +83,7 @@ describe("RepoPicker — long lists", () => {
 
   it("counts what the filter matches, and goes quiet once it all fits", async () => {
     mockVaultApi({ ...base, "github:listRepos": many });
-    render(<RepoPicker onDone={noop} />);
+    render(<RepoPicker onDone={noop} onBack={noop} />);
     await screen.findByText("nunu/repo-0");
     await userEvent.type(screen.getByPlaceholderText("Filter your repos…"), "repo-1");
     // repo-1, repo-10…19, repo-100…119
