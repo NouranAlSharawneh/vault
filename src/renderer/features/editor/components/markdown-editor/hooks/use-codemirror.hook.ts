@@ -3,13 +3,7 @@ import { markdown, markdownLanguage } from "@codemirror/lang-markdown";
 import { HighlightStyle, syntaxHighlighting } from "@codemirror/language";
 import { languages } from "@codemirror/language-data";
 import { EditorState, Compartment } from "@codemirror/state";
-import {
-  EditorView,
-  keymap,
-  placeholder as placeholderExt,
-  drawSelection,
-  highlightActiveLine,
-} from "@codemirror/view";
+import { EditorView, keymap, placeholder as placeholderExt, drawSelection } from "@codemirror/view";
 import { tags } from "@lezer/highlight";
 import { useEffect, useRef } from "react";
 import type { MarkdownEditorProps } from "../markdown-editor.types";
@@ -22,6 +16,17 @@ const mdHighlight = HighlightStyle.define([
   { tag: tags.url, class: "cm-md-url" },
   { tag: tags.link, class: "cm-md-link" },
 ]);
+
+/**
+ * Rules CodeMirror's base theme would otherwise win: it scopes its own under a generated
+ * class, so the same selectors in global.css lose on specificity. The scroller sets
+ * `font-family: monospace` (the content inherits it, not the brand mono), and
+ * drawSelection() hides the native caret and draws `.cm-cursor`, black by default.
+ */
+const vaultTheme = EditorView.theme({
+  ".cm-content": { fontFamily: "var(--font-mono)" },
+  ".cm-cursor, .cm-dropCursor": { borderLeftColor: "var(--color-cherry)" },
+});
 
 type Options = Pick<
   MarkdownEditorProps,
@@ -47,7 +52,15 @@ export function useCodeMirror({ value, onChange, onSubmit, placeholder, autoFocu
       extensions: [
         history(),
         drawSelection(),
-        highlightActiveLine(),
+        vaultTheme,
+        // CodeMirror turns spellcheck off on its content; this is prose, so turn it back
+        // on (Electron's checker is on for every window). The OS's autocorrect and
+        // auto-capitalisation would rewrite markdown syntax, so those stay off.
+        EditorView.contentAttributes.of({
+          spellcheck: "true",
+          autocorrect: "off",
+          autocapitalize: "off",
+        }),
         EditorView.lineWrapping,
         markdown({ base: markdownLanguage, codeLanguages: languages }),
         syntaxHighlighting(mdHighlight),

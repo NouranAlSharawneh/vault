@@ -6,11 +6,17 @@ import {
   OVERLAY_BG,
 } from "@shared/constants";
 import { fire } from "../lib/fire";
+import type { CaptureHideReason } from "./capture.window.types";
 import { editorWindowCount } from "./editor.window";
 import { COMMON_WINDOW_OPTIONS, IS_MAC, loadRoute } from "./load-route";
 import { getMainWindow } from "./main.window";
+import { shouldHideApp } from "./should-hide-app";
 
 let captureWin: BrowserWindow | null = null;
+/** Dialogs opened from the sheet that are still up. While any is, losing focus is expected. */
+let dialogsOpen = 0;
+/** Another app was in front when the hotkey fired, so dismissing should return to it. */
+let summonedFromAnotherApp = false;
 
 /** Frameless sheet that floats over whatever app is in front. Hidden, never destroyed. */
 export function getCaptureWindow(): BrowserWindow {
@@ -34,7 +40,9 @@ export function getCaptureWindow(): BrowserWindow {
   captureWin.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
   captureWin.setAlwaysOnTop(true, "floating");
   captureWin.on("blur", () => {
-    if (captureWin?.isVisible() && !captureWin.webContents.isDevToolsOpened()) hideCaptureWindow();
+    if (dialogsOpen > 0) return;
+    if (captureWin?.isVisible() && !captureWin.webContents.isDevToolsOpened())
+      hideCaptureWindow("blur");
   });
   captureWin.on("closed", () => (captureWin = null));
   loadRoute(captureWin, "capture");
@@ -48,6 +56,8 @@ export function showCaptureWindow(): BrowserWindow {
   const { x, y, width, height } = display.workArea;
   const [w] = win.getSize();
   win.setPosition(Math.round(x + (width - w) / 2), Math.round(y + height * 0.18), false);
+  // Read before showing: once the sheet has focus, Vault is always the frontmost app.
+  summonedFromAnotherApp = BrowserWindow.getFocusedWindow() === null;
   if (IS_MAC && app.dock) fire(app.dock.show(), "showing the dock icon");
   win.show();
   win.focus();
@@ -55,11 +65,29 @@ export function showCaptureWindow(): BrowserWindow {
   return win;
 }
 
-export function hideCaptureWindow(): void {
+export function hideCaptureWindow(reason: CaptureHideReason): void {
   const win = captureWin;
-  if (win && !win.isDestroyed() && win.isVisible()) {
-    win.hide();
-    if (IS_MAC && !getMainWindow() && editorWindowCount() === 0) app.hide();
+  if (!win || win.isDestroyed() || !win.isVisible()) return;
+  win.webContents.send("capture:hidden", null);
+  win.hide();
+  const otherWindows = !!getMainWindow() || editorWindowCount() > 0;
+  if (IS_MAC && shouldHideApp({ reason, summonedFromAnotherApp, otherWindows })) app.hide();
+}
+
+/**
+ * Run a native dialog without the sheet hiding under it. The dialog takes focus, and the
+ * sheet hides on blur — so choosing an image folder used to throw the whole capture away.
+ * Focus goes back to the sheet afterwards if it was the one that asked.
+ */
+export async function whileCaptureDialogOpen<T>(open: () => Promise<T>): Promise<T> {
+  const win = captureWin && !captureWin.isDestroyed() ? captureWin : null;
+  const fromSheet = !!win?.isVisible() && win.isFocused();
+  dialogsOpen += 1;
+  try {
+    return await open();
+  } finally {
+    dialogsOpen -= 1;
+    if (fromSheet && win && !win.isDestroyed() && win.isVisible()) win.focus();
   }
 }
 
@@ -77,4 +105,8 @@ export function resizeCaptureWindow(height: number): void {
   const wanted = Math.round(Math.min(Math.max(height, CAPTURE_MIN_HEIGHT), CAPTURE_MAX_HEIGHT));
   const [w, h] = win.getContentSize();
   if (Math.abs(h - wanted) > 1) win.setContentSize(w, wanted, false);
+}
+
+export function isCaptureWindow(win: BrowserWindow): boolean {
+  return win === captureWin;
 }

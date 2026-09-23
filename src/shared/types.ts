@@ -239,7 +239,7 @@ export interface DeviceCodeSession {
   interval: number;
 }
 
-export type DevicePollStatus = "pending" | "slow_down" | "expired" | "denied" | "ok";
+export type DevicePollStatus = "pending" | "slow_down" | "expired" | "denied" | "ok" | "error";
 
 export type AuthMethod = "pat" | "device" | "oauth";
 

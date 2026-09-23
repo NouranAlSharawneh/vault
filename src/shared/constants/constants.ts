@@ -137,6 +137,13 @@ export const OAUTH_DEVICE_GRANT = "urn:ietf:params:oauth:grant-type:device_code"
 export const OAUTH_SCOPE = "repo";
 export const REPO_PAGE_SIZE = 100;
 export const REPO_MAX_PAGES = 5;
+/**
+ * What `github:createRepo` rejects with when the token isn't allowed to create repos (a
+ * fine-grained token scoped to one repo). Only the message survives IPC, so the repo
+ * picker recognises the case by this exact text.
+ */
+export const CREATE_REPO_FORBIDDEN =
+  "This token can’t create repositories. Make one on GitHub, then pick it here.";
 
 // ---- windows ------------------------------------------------------------------------
 export const MAIN_WINDOW = { width: 1280, height: 820, minWidth: 860, minHeight: 560 } as const;
