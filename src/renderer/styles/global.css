@@ -44,11 +44,13 @@
   --color-line-2: #d9d4ca;
   --color-ink: #1e1d1b;
   --color-ink-2: #4b4844;
-  /* Contrast against paper: 5.6:1 and 4.8:1. ink-4 carries every section label, timestamp
+  /* Contrast against paper: 6.1:1 and 5.2:1. ink-4 carries every section label, timestamp
      and count in the app, mostly at 10.5px, and used to sit at 2.4:1 — quiet to the point
-     of not reliably existing. Both moved together so the two tiers stay distinct. */
-  --color-ink-3: #6b665e;
-  --color-ink-4: #767066;
+     of not reliably existing. It also sits on paper-3 (hover fills, the tag filter box,
+     the search pill), where it has to clear 4.5:1 too; ink-3 stepped down with it so the
+     two tiers stay as far apart as they were. */
+  --color-ink-3: #656058;
+  --color-ink-4: #706a60;
 
   --color-cherry: #b4232f;
   --color-cherry-2: #8f1a25;
@@ -61,8 +63,9 @@
      This is the one to use when a word or a number has to be green. */
   --color-ok-2: #33774e;
   --color-warn: #e4b04a;
-  /* `warn` is a dot, a star fill and a spinner — 1.9:1, fine as a shape and unreadable
-     as a word. This is the one to use when the warning is text on a light ground. */
+  /* `warn` is a dot and a spinner — 1.9:1, fine as a shape beside a word and unreadable
+     as a word. This is the one to use when the warning is text on a light ground, or a
+     shape that has to be seen on its own (the star: 3:1 is the floor for that). */
   --color-warn-2: #856a20;
 
   /* GitHub alert accents. Their own ramp, so ok/warn stay reserved for sync status. */
@@ -78,7 +81,9 @@
   --color-overlay-line: #3f3c38;
   --color-overlay-ink: #f3f0ea;
   --color-overlay-ink-2: #b8b3aa;
-  --color-overlay-ink-3: #7d786f;
+  /* The quiet tier on the dark surfaces (palette hints, capture labels, placeholders).
+     Readable on overlay-2 as well as overlay, since the capture fields sit on overlay-2. */
+  --color-overlay-ink-3: #938e85;
 
   --radius-xs: 5px;
   --radius-sm: 6px;
@@ -209,6 +214,43 @@ input {
   user-select: text;
 }
 
+/* Keyboard focus. One authored ring for everything that can take focus, in the brand
+   colour (6.4:1 on paper, 5:1 for cherry-3 on the overlays). It sits in the base layer
+   on purpose: a component that draws its own focus state (an input's ring, a wrapper's
+   focus-within) opts out with `outline-none`, and that utility has to win. The editor's
+   text surface and the containers that only hold focus for a script (tabindex -1) are
+   excluded outright — the caret is their indicator. */
+@layer base {
+  :focus-visible:where(:not(.cm-content, [tabindex="-1"])) {
+    outline: 2px solid var(--color-cherry);
+    outline-offset: 2px;
+  }
+  .dark :focus-visible:where(:not(.cm-content, [tabindex="-1"])) {
+    outline-color: var(--color-cherry-3);
+  }
+}
+
+/* Reduced motion. Sheets, popovers and toasts still fade in — a plain opacity change is
+   not motion — but without the rise, the overshoot or the scale. The spinner keeps
+   turning so it still reads as busy, at a third of the speed. */
+@keyframes fade-in-still {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .animate-fade-in,
+  .animate-pop-in {
+    animation: fade-in-still 140ms ease-out both;
+  }
+  .animate-spin-fast {
+    animation-duration: 2.7s;
+  }
+}
+
 /* ---- component layer ---------------------------------------------- */
 @layer components {
   .btn {
@@ -242,7 +284,7 @@ input {
 
   .input {
     @apply h-8 w-full rounded-sm border border-line bg-paper px-2.5 text-base text-ink outline-none;
-    @apply transition placeholder:text-ink-4 focus:border-line-2 focus:ring-2 focus:ring-cherry-tint-2;
+    @apply transition placeholder:text-ink-4 focus:border-line-2 focus:ring-2 focus:ring-cherry;
     user-select: text;
   }
   .input-sm {
@@ -485,7 +527,7 @@ input {
 }
 .hljs-comment,
 .hljs-quote {
-  color: #7d786f;
+  color: var(--color-overlay-ink-3);
   font-style: italic;
 }
 .hljs-title,

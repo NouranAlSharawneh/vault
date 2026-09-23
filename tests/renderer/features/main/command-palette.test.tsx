@@ -104,6 +104,23 @@ describe("CommandPalette", () => {
     });
   });
 
+  it("is a combobox over a listbox of grouped options, focus staying in the input", async () => {
+    mockVaultApi();
+    setIndex();
+    render(<CommandPalette onClose={() => undefined} onOpenDoc={() => undefined} />);
+    const input = screen.getByRole("combobox", { name: "search" });
+    const list = screen.getByRole("listbox", { name: "Results" });
+    expect(input.getAttribute("aria-expanded")).toBe("true");
+    expect(input.getAttribute("aria-controls")).toBe(list.id);
+    expect(screen.getByRole("group", { name: "Recent" })).toBeTruthy();
+    const options = screen.getAllByRole("option");
+    expect(input.getAttribute("aria-activedescendant")).toBe(options[0].id);
+    expect(options[0].getAttribute("aria-selected")).toBe("true");
+    await userEvent.keyboard("{ArrowDown}");
+    expect(input.getAttribute("aria-activedescendant")).toBe(options[1].id);
+    expect(document.activeElement).toBe(input);
+  });
+
   it("Escape closes; actions run their IPC", async () => {
     const onClose = vi.fn();
     const { invoke } = mockVaultApi();
