@@ -209,6 +209,22 @@ input {
   user-select: text;
 }
 
+/* Keyboard focus. One authored ring for everything that can take focus, in the brand
+   colour (6.4:1 on paper, 5:1 for cherry-3 on the overlays). It sits in the base layer
+   on purpose: a component that draws its own focus state (an input's ring, a wrapper's
+   focus-within) opts out with `outline-none`, and that utility has to win. The editor's
+   text surface and the containers that only hold focus for a script (tabindex -1) are
+   excluded outright — the caret is their indicator. */
+@layer base {
+  :focus-visible:where(:not(.cm-content, [tabindex="-1"])) {
+    outline: 2px solid var(--color-cherry);
+    outline-offset: 2px;
+  }
+  .dark :focus-visible:where(:not(.cm-content, [tabindex="-1"])) {
+    outline-color: var(--color-cherry-3);
+  }
+}
+
 /* ---- component layer ---------------------------------------------- */
 @layer components {
   .btn {
@@ -242,7 +258,7 @@ input {
 
   .input {
     @apply h-8 w-full rounded-sm border border-line bg-paper px-2.5 text-base text-ink outline-none;
-    @apply transition placeholder:text-ink-4 focus:border-line-2 focus:ring-2 focus:ring-cherry-tint-2;
+    @apply transition placeholder:text-ink-4 focus:border-line-2 focus:ring-2 focus:ring-cherry;
     user-select: text;
   }
   .input-sm {

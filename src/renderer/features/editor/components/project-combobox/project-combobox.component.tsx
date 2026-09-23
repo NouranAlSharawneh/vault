@@ -17,8 +17,8 @@ export function ProjectCombobox({ value, onChange, projects, dark, hint }: Proje
         className={cx(
           "flex h-8 items-center gap-2 rounded-sm border px-2",
           dark
-            ? "border-overlay-line bg-overlay-2"
-            : "border-line bg-paper focus-within:ring-2 focus-within:ring-cherry-tint-2",
+            ? "border-overlay-line bg-overlay-2 focus-within:ring-2 focus-within:ring-cherry-3"
+            : "border-line bg-paper focus-within:ring-2 focus-within:ring-cherry",
         )}
       >
         <Dot color={value.trim() ? projectColor(projectSlug(value)) : INBOX_COLOR} />

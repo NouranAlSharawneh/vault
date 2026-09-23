@@ -18,8 +18,8 @@ export function TagInput({
         className={cx(
           "flex min-h-8 flex-wrap items-center gap-1 rounded-sm border px-1.5 py-1",
           dark
-            ? "border-overlay-line bg-overlay-2"
-            : "border-line bg-paper focus-within:ring-2 focus-within:ring-cherry-tint-2",
+            ? "border-overlay-line bg-overlay-2 focus-within:ring-2 focus-within:ring-cherry-3"
+            : "border-line bg-paper focus-within:ring-2 focus-within:ring-cherry",
         )}
       >
         {value.map((tag) => (
