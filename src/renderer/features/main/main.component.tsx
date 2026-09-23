@@ -204,7 +204,10 @@ export function Main() {
         <CommandPalette
           onClose={() => setPaletteOpen(false)}
           onOpenDoc={setSelected}
-          onTrashDoc={doc && !inTrash ? () => fire(trashActions.trash()) : undefined}
+          // Trash acts on the doc in the reader, so the action is offered with its title or not at all.
+          {...(doc && !inTrash
+            ? { onTrashDoc: () => fire(trashActions.trash()), trashTitle: doc.meta.title }
+            : {})}
           onReviewConflicts={() => setConflictsOpen(true)}
         />
       )}
