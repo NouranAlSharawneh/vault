@@ -24,6 +24,7 @@ const status = (state: "synced" | "pending" | "pushing" | "offline" | "error", a
   lastError: state === "error" ? "401 Bad credentials" : null,
   remote: "nunu/vault",
   conflicts: 0,
+  failure: null,
 });
 
 describe("SyncBadge", () => {
@@ -45,6 +46,45 @@ describe("SyncBadge", () => {
     useApp.setState({ config, sync: status(state, ahead) });
     render(<SyncBadge />);
     expect(screen.getByText(label)).toBeTruthy();
+  });
+
+  it("says it is checking, not that everything is pushed, before it knows", async () => {
+    const { invoke } = mockVaultApi();
+    useApp.setState({ config, sync: null });
+    render(<SyncBadge />);
+    expect(screen.getByText("checking…")).toBeTruthy();
+    expect(screen.queryByText("pushed")).toBeNull();
+    // Nothing is known to be waiting, so there is nothing to push either.
+    await userEvent.click(screen.getByRole("button"));
+    expect(invoke).not.toHaveBeenCalledWith("sync:pushNow");
+  });
+
+  it("says what is waiting on GitHub beside the push state", () => {
+    mockVaultApi();
+    useApp.setState({ config, sync: { ...status("synced"), behind: 1 } });
+    const { unmount } = render(<SyncBadge />);
+    expect(screen.getByText("pushed · 1 change on GitHub")).toBeTruthy();
+    unmount();
+    useApp.setState({ sync: { ...status("pending", 2), behind: 3 } });
+    render(<SyncBadge />);
+    expect(screen.getByText("2 not pushed · 3 changes on GitHub")).toBeTruthy();
+  });
+
+  it("says a read-only repo is a missing permission, not something a retry fixes", () => {
+    mockVaultApi();
+    useApp.setState({
+      config,
+      sync: {
+        ...status("error"),
+        failure: "no-permission",
+        lastError: "remote: Permission to nunu/vault.git denied",
+      },
+    });
+    render(<SyncBadge />);
+    expect(screen.getByText("can’t push — no write access")).toBeTruthy();
+    expect(screen.queryByText("couldn't push — retry")).toBeNull();
+    // The raw error is not what the user needs to read here.
+    expect(screen.queryByText(/Permission to/)).toBeNull();
   });
 
   it("asks for a review only when something is waiting, and only where it can show one", () => {

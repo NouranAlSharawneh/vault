@@ -1,4 +1,6 @@
-export type PushFailure = "offline" | "bad-credentials" | "no-permission" | "other";
+import type { PushFailure } from "@shared/types";
+
+export type { PushFailure };
 
 /**
  * What a failed `git push` actually means. These used to be one bucket, so a rate limit

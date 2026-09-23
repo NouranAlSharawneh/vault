@@ -32,7 +32,7 @@ import {
   takeEditorSeed,
   whileCaptureDialogOpen,
 } from "../../windows";
-import { registerHotkey } from "../hotkey/hotkey";
+import { hotkeyStatus, registerHotkey } from "../hotkey/hotkey";
 import { buildAppMenu } from "../menu/menu";
 import { resetApp } from "../session/reset-app";
 import { session } from "../session/session";
@@ -77,6 +77,7 @@ let deviceAbort: AbortController | null = null;
 export function registerIpcHandlers(): void {
   handle("app:version", () => app.getVersion());
   handle("app:platform", () => process.platform);
+  handle("hotkey:status", () => hotkeyStatus());
   handle("app:openExternal", (url) => {
     // Web pages and mail drafts only: anything else (file:, custom schemes) could launch
     // an arbitrary app from a link in a pasted document.
@@ -180,9 +181,18 @@ export function registerIpcHandlers(): void {
   handleFrom("app:reset", (sender) => resetApp(dialogParent(sender)));
   handle("vault:index", () => session.requireVault().index.snapshot());
   handle("vault:rescan", () => session.requireVault().index.rescan());
-  handle("vault:revealInFinder", (p) =>
-    shell.showItemInFolder(join(session.requireVault().root, p ?? "")),
-  );
+  handle("vault:revealInFinder", (p) => {
+    // The folder is worth showing most when the vault inside it would not open.
+    const root = session.vault?.root ?? getSettings().vault?.root;
+    if (!root) throw new Error("No vault is set up");
+    shell.showItemInFolder(join(root, p ?? ""));
+  });
+  handle("vault:reopen", async () => {
+    const vault = await session.reopenVault();
+    registerHotkey(vault.config.hotkey);
+
+    return vault.index.snapshot();
+  });
 
   // ---- docs
   handle("doc:read", (p) => session.requireVault().read(p));

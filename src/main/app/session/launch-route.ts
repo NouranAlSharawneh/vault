@@ -3,9 +3,15 @@ import { getMainWindow, openMainWindow } from "../../windows";
 import { session } from "./session";
 import type { LaunchRoute } from "./session.types";
 
-/** Where a fresh main window starts: Main once a vault is set up and open, onboarding otherwise. */
+/**
+ * Where a fresh main window starts: Main once a vault is set up, onboarding otherwise. A
+ * vault that is set up but would not open still goes to Main, which says what went wrong
+ * and offers to try again; onboarding would ask to set up from scratch.
+ */
 export function launchRoute(): LaunchRoute {
-  return getSettings().onboarded && session.vault ? "main" : "onboarding";
+  const { onboarded, vault } = getSettings();
+
+  return onboarded && (session.vault || vault) ? "main" : "onboarding";
 }
 
 /**

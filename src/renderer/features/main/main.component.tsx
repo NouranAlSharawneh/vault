@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { AuthExpiredBanner } from "@/components/auth-expired-banner/auth-expired-banner.component";
-import { Button, Empty, SplitPane } from "@/components/ui";
+import { NoWriteAccessBanner } from "@/components/no-write-access-banner/no-write-access-banner.component";
+import { SplitPane } from "@/components/ui";
 import { cx } from "@/helpers";
 import { api, fire, on } from "@/lib/api";
 import { useApp } from "@/stores/app";
@@ -13,8 +14,10 @@ import { HistoryDrawer } from "./components/history-drawer/history-drawer.compon
 import { SidebarRail } from "./components/sidebar-rail/sidebar-rail.component";
 import { Sidebar } from "./components/sidebar/sidebar.component";
 import { TopBar } from "./components/top-bar/top-bar.component";
+import { VaultUnavailable } from "./components/vault-unavailable/vault-unavailable.component";
 import { reconcileSelection, useDocumentFilter } from "./hooks/use-document-filter.hook";
 import { isTrashed, useDocument } from "./hooks/use-document.hook";
+import { useHotkeyWarning } from "./hooks/use-hotkey-warning.hook";
 import { useMainShortcuts } from "./hooks/use-main-shortcuts.hook";
 import { useSidebarState } from "./hooks/use-sidebar-state.hook";
 import { useTrashActions } from "./hooks/use-trash-actions.hook";
@@ -26,7 +29,8 @@ import type { ReaderView } from "./main.types";
  */
 export function Main() {
   const index = useApp((s) => s.index);
-  const config = useApp((s) => s.config);
+  // A vault that is set up but would not open has nothing to show here either.
+  const config = useApp((s) => (s.vaultError ? null : s.config));
   const trash = useApp((s) => s.trash);
   const show = useToast((s) => s.show);
   const sidebar = useSidebarState();
@@ -76,6 +80,7 @@ export function Main() {
   // History is about one document, so it is meaningless with nothing selected.
   const toggleHistory = useCallback(() => setHistoryOpen((open) => !open), []);
   const openSettings = useCallback(() => (window.location.hash = "settings"), []);
+  useHotkeyWarning(openSettings);
   useMainShortcuts({
     onSearch: openPalette,
     onTrash: () => fire(trashActions.trash()),
@@ -114,18 +119,7 @@ export function Main() {
     if (doc) fire(api("doc:setStarred", doc.meta.path, !doc.meta.starred));
   }, [doc]);
 
-  if (!config) {
-    return (
-      <Empty
-        title="No vault connected"
-        action={
-          <Button variant="primary" onClick={() => (window.location.hash = "onboarding")}>
-            Set up Vault
-          </Button>
-        }
-      />
-    );
-  }
+  if (!config) return <VaultUnavailable />;
 
   const content = (
     <div
@@ -185,6 +179,7 @@ export function Main() {
         onReviewConflicts={() => setConflictsOpen(true)}
       />
       <AuthExpiredBanner />
+      <NoWriteAccessBanner />
       <div className="flex min-h-0 flex-1">
         {sidebar.state === "rail" && (
           <SidebarRail

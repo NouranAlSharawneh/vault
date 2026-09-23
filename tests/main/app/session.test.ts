@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 // The session is the only place that decides "signed in", "expired" or "leave it alone",
 // and every input it reads is a module: the stored credentials, the settings, and two
@@ -15,12 +15,35 @@ const oauth = vi.hoisted(() => ({
   config: null as null | { clientId: string; clientSecret: string },
 }));
 const settings = vi.hoisted(() => ({
-  value: { vault: null, authMethod: "pat", githubClientId: null, onboarded: true },
+  value: {
+    vault: null as null | { root: string; hotkey: string },
+    authMethod: "pat",
+    githubClientId: null,
+    onboarded: true,
+  },
 }));
+// The vault itself is not what is under test here, only what the session does when it
+// will not open; so opening either works or fails with whatever the test says.
+const vaults = vi.hoisted(() => ({ openFails: null as Error | null, opened: 0 }));
 
 vi.mock("electron", () => ({ app: { getPath: () => "/tmp" } }));
 vi.mock("@main/network/github", () => github);
 vi.mock("@main/windows", () => ({ broadcast: vi.fn() }));
+vi.mock("@main/services/vault/vault.service", () => ({
+  VaultService: class {
+    constructor(readonly config: unknown) {}
+    on(): this {
+      return this;
+    }
+
+    async open(): Promise<void> {
+      vaults.opened += 1;
+      if (vaults.openFails) throw vaults.openFails;
+    }
+
+    async close(): Promise<void> {}
+  },
+}));
 vi.mock("@main/store/oauth-config", () => ({ getOAuthConfig: () => oauth.config }));
 vi.mock("@main/store/settings.store", () => ({
   getSettings: () => settings.value,
@@ -39,6 +62,8 @@ vi.mock("@main/store/token.store", () => ({
   },
 }));
 
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { session } from "@main/app/session/session";
 import { NetworkError } from "@main/network/axios";
 import { TOKEN_REFRESH_SKEW_MS } from "@shared/constants";
@@ -255,6 +280,48 @@ describe("session", () => {
 
       expect(store.cleared).toBe(1);
       expect(session.auth).toEqual({ status: "signed-out", user: null, method: null });
+    });
+  });
+
+  describe("a vault that will not open", () => {
+    let quiet: ReturnType<typeof vi.spyOn>;
+    afterEach(() => quiet.mockRestore());
+
+    beforeEach(async () => {
+      // The failure is logged on purpose; here it would only bury the results.
+      quiet = vi.spyOn(console, "error").mockImplementation(() => undefined);
+      await session.closeVault();
+      vaults.openFails = null;
+      vaults.opened = 0;
+    });
+
+    it("is not left half-open, and says why to whoever asks for it", async () => {
+      settings.value.vault = { root: tmpdir(), hotkey: "Control+Alt+V" };
+      vaults.openFails = new Error("EACCES: permission denied");
+      await freshSession().restore();
+
+      // Half-open, it used to answer with an empty index: an empty library, a green badge.
+      expect(session.vault).toBeNull();
+      expect(() => session.requireVault()).toThrow("EACCES: permission denied");
+    });
+
+    it("opens on a second try once whatever was wrong is fixed", async () => {
+      settings.value.vault = { root: tmpdir(), hotkey: "Control+Alt+V" };
+      vaults.openFails = new Error("EACCES: permission denied");
+      await freshSession().restore();
+      vaults.openFails = null;
+
+      await expect(session.reopenVault()).resolves.toBeTruthy();
+      expect(session.requireVault()).toBe(session.vault);
+    });
+
+    it("never recreates a folder that has gone missing as an empty vault", async () => {
+      settings.value.vault = { root: join(tmpdir(), "vault-that-was-moved"), hotkey: "x" };
+      await freshSession().restore();
+
+      expect(() => session.requireVault()).toThrow(/isn’t there any more/);
+      await expect(session.reopenVault()).rejects.toThrow(/isn’t there any more/);
+      expect(vaults.opened).toBe(0);
     });
   });
 });

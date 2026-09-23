@@ -22,6 +22,7 @@ export const INVOKE_CHANNELS = [
   "vault:index",
   "vault:updateConfig",
   "vault:revealInFinder",
+  "vault:reopen",
   "doc:read",
   "doc:save",
   "doc:trash",
@@ -64,6 +65,7 @@ export const INVOKE_CHANNELS = [
   "window:setEdited",
   "app:version",
   "app:platform",
+  "hotkey:status",
   "app:openExternal",
   "app:reset",
 ] as const satisfies readonly InvokeChannel[];

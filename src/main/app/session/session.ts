@@ -13,12 +13,16 @@ import { userDataDir } from "../../store/user-data-dir";
 import { broadcast } from "../../windows";
 import type { AuthListener } from "./session.types";
 
+const MISSING_ROOT = "The folder isn’t there any more. It may have been moved, renamed or deleted.";
+
 /**
  * Process-wide state: who is signed in and which vault is open.
  * Everything else (IPC, menu) reads through here.
  */
 class Session {
   private vaultService: VaultService | null = null;
+  /** Why the configured vault is not open, when it should be. Cleared by the next open. */
+  private openFailure: string | null = null;
   private authState: AuthState = { status: "signed-out", user: null, method: null };
   private listeners = new Set<AuthListener>();
 
@@ -31,7 +35,7 @@ class Session {
   }
 
   requireVault(): VaultService {
-    if (!this.vaultService) throw new Error("No vault is open");
+    if (!this.vaultService) throw new Error(this.openFailure ?? "No vault is open");
 
     return this.vaultService;
   }
@@ -179,14 +183,39 @@ class Session {
     vault.on("auth-suspect", () => fire(this.onAuthSuspect(vault), "checking the token"));
     vault.on("auth-ok", () => fire(this.markAuthOk(), "confirming the token"));
     this.vaultService = vault;
-    await vault.open();
+    this.openFailure = null;
+    try {
+      await vault.open();
+    } catch (e) {
+      // A half-open vault answered with an empty index, so the window showed an empty
+      // library and a green badge. Nothing is open; say so, and why, to whoever asks.
+      this.vaultService = null;
+      this.openFailure = e instanceof Error ? e.message : String(e);
+      await vault.close().catch(() => undefined);
+      throw e;
+    }
 
     return vault;
+  }
+
+  /** Try the configured vault again, after a failed open at launch. */
+  async reopenVault(): Promise<VaultService> {
+    const config = getSettings().vault;
+    if (!config) throw new Error("No vault is set up");
+    // `open()` creates a missing root, which would quietly replace a moved vault with an
+    // empty one. A folder that is gone has to stay a failure until the user decides.
+    if (!existsSync(config.root)) {
+      this.openFailure = MISSING_ROOT;
+      throw new Error(MISSING_ROOT);
+    }
+
+    return this.openVault(config);
   }
 
   async closeVault(): Promise<void> {
     await this.vaultService?.close();
     this.vaultService = null;
+    this.openFailure = null;
   }
 
   /** Restore token + vault from a previous run. Never throws. */
@@ -209,7 +238,8 @@ class Session {
         };
       }
     }
-    if (s.vault && existsSync(s.vault.root)) {
+    if (s.vault && !existsSync(s.vault.root)) this.openFailure = MISSING_ROOT;
+    else if (s.vault) {
       try {
         await this.openVault(s.vault);
       } catch (e) {

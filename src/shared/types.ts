@@ -171,6 +171,13 @@ export interface SearchHit {
   snippet: string | null;
 }
 
+/**
+ * Why the last push or pull failed. Carried on the status because two of these need a
+ * different answer from the user: a token that is gone, and a repo that is readable but
+ * not writable. As a bare message they both read "couldn't push — retry", forever.
+ */
+export type PushFailure = "offline" | "bad-credentials" | "no-permission" | "other";
+
 /** Only ever about pushing. Two versions of a document is a separate fact — see `conflicts`. */
 export type SyncState = "synced" | "pending" | "pushing" | "offline" | "error";
 
@@ -188,6 +195,8 @@ export interface SyncStatus {
    * state it vanished the moment you typed anything.
    */
   conflicts: number;
+  /** What the last failure was, so the UI can say what to do; null once a push lands. */
+  failure: PushFailure | null;
 }
 
 /**
@@ -211,6 +220,16 @@ export interface ConflictPair {
   /** The copy that came down from GitHub, saved beside it. */
   theirs: DocMeta;
   mark: ConflictMark;
+}
+
+/** What a pull did, so whoever asked for it can be told. */
+export interface PullResult {
+  /** Every pair still waiting on a decision, including any this pull left. */
+  conflicts: ConflictPair[];
+  /** Commits that came down from GitHub. */
+  pulled: number;
+  /** Set when the pull failed; the sync status carries the message. */
+  failure: PushFailure | null;
 }
 
 export type ConflictChoice = "mine" | "theirs" | "both";
@@ -303,6 +322,14 @@ export interface EditorDraft {
 }
 
 export type AppRoute = (typeof APP_ROUTES)[number];
+
+/** Whether the capture shortcut is actually bound, which the OS may refuse at any launch. */
+export interface HotkeyStatus {
+  /** The shortcut last asked for, or null before one has been. */
+  accelerator: string | null;
+  /** False when another app holds it (or it isn't a shortcut the OS accepts). */
+  active: boolean;
+}
 
 /** Enough about the stored credential to explain a sign-out, with no secret in it. */
 export interface TokenStatus {

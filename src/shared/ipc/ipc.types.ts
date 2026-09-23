@@ -13,6 +13,8 @@ import type {
   EditorDraft,
   GitHubRepo,
   GitHubUser,
+  PullResult,
+  HotkeyStatus,
   IndexSnapshot,
   SaveRequest,
   SaveResult,
@@ -56,6 +58,8 @@ export interface IpcInvoke {
   "vault:index": () => IndexSnapshot;
   "vault:updateConfig": (patch: Partial<VaultConfig>) => VaultConfig;
   "vault:revealInFinder": (path?: string) => void;
+  /** Open the configured vault again after it failed to open at launch. */
+  "vault:reopen": () => IndexSnapshot;
 
   "doc:read": (path: string) => DocContent;
   "doc:save": (req: SaveRequest) => SaveResult;
@@ -83,7 +87,7 @@ export interface IpcInvoke {
   "sync:status": () => SyncStatus;
   "sync:pushNow": () => SyncStatus;
   /** Fetch and rebase. Conflicts are kept as pairs, never left in the working tree. */
-  "sync:pull": () => { conflicts: ConflictPair[] };
+  "sync:pull": () => PullResult;
   "conflicts:list": () => ConflictPair[];
   /** `copyPath` is the stamped copy; the choice decides what ends up at the original path. */
   "conflicts:resolve": (copyPath: string, choice: ConflictChoice) => void;
@@ -126,6 +130,8 @@ export interface IpcInvoke {
   "window:setEdited": (edited: boolean) => void;
   "app:version": () => string;
   "app:platform": () => NodeJS.Platform;
+  /** Whether the capture shortcut is really bound, or another app is holding it. */
+  "hotkey:status": () => HotkeyStatus;
   "app:openExternal": (url: string) => void;
   "app:reset": () => void;
 }
