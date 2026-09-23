@@ -14,7 +14,7 @@ export function ListHeader({ title, count, sort, onSort, sortable = true }: List
           {sortable && <ArrowUpDown size={10} />}
           <select
             hidden={!sortable}
-            className="cursor-pointer appearance-none bg-transparent text-xs text-ink-3 outline-none hover:text-ink"
+            className="cursor-pointer appearance-none rounded-xs bg-transparent text-xs text-ink-3 hover:text-ink"
             value={sort}
             onChange={(e) => onSort(e.target.value as SortOrder)}
             aria-label="sort"

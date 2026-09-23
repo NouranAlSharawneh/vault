@@ -18,6 +18,8 @@ export interface VersionCardProps {
   fallback: string;
   /** The primary action on this card: keep this version. */
   action: string;
+  /** What the action does, said in full: the two cards share the same visible label. */
+  actionLabel: string;
   onKeep: () => void;
   busy?: boolean;
   /** Dims the card while the other one is being kept. */
