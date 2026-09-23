@@ -63,7 +63,9 @@ sh(
 );
 const out = process.env.SMOKE_OUT ?? "/tmp";
 const app = await electron.launch({
-  args: ["."],
+  // HOME alone isn't enough on macOS: Electron still resolves userData to the real
+  // ~/Library/Application Support/Vault, and the run would drive the owner's own vault.
+  args: [".", `--user-data-dir=${join(home, "userdata")}`],
   env: {
     ...process.env,
     HOME: home,
