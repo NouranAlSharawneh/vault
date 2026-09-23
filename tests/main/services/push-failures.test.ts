@@ -70,11 +70,13 @@ describe("a push that fails", () => {
     expect(sync.status().state).toBe("error");
   });
 
-  it("asks the same question when the repo is readable but not writable", async () => {
+  it("does not ask about the token when the repo is readable but not writable", async () => {
+    // The token passes that check, and the session answered by pushing again — which
+    // failed again and asked again, in a loop that never ended.
     const { sync, said } = engine(boom("remote: Permission to nunu/vault.git denied to nunu"));
     await sync.pushNow();
 
-    expect(said("auth-suspect")).toBe(true);
+    expect(said("auth-suspect")).toBe(false);
   });
 
   it("says on the status that the repo is read-only, and does not retry it", async () => {

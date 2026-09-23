@@ -201,9 +201,10 @@ export class SyncEngine {
       this.setSync({ state: failure === "offline" ? "offline" : "error", lastError: msg, failure });
       // Neither a dead token nor a read-only repo is fixed by asking again, so neither is
       // retried; the status carries which one it was, so the user is told the right fix.
-      if (failure === "bad-credentials" || failure === "no-permission") {
-        this.v.emit("auth-suspect");
-      } else {
+      // Only a dead token is worth the session's check: a read-only repo passes it, and
+      // the session then pushed again, failed again and checked again, for ever.
+      if (failure === "bad-credentials") this.v.emit("auth-suspect");
+      else if (failure !== "no-permission") {
         // back off and retry; the commit is safe on disk
         this.pushTimer = setTimeout(
           () => fire(this.pushNow(), "the retried push"),
@@ -266,7 +267,7 @@ export class SyncEngine {
       await this.v.git.abortRebase();
       const msg = redact(String((e as Error).message ?? e), this.tokenProvider());
       const failure = classifyPushError(msg);
-      if (failure === "bad-credentials" || failure === "no-permission") this.v.emit("auth-suspect");
+      if (failure === "bad-credentials") this.v.emit("auth-suspect");
       this.setSync({ state: failure === "offline" ? "offline" : "error", lastError: msg, failure });
 
       return { conflicts: [], pulled: 0, failure };
