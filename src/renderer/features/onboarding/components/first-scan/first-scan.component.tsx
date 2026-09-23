@@ -1,10 +1,13 @@
 import { Card, Stat } from "@/components/ui";
-import { plural } from "@/helpers";
+import { plural, pluralWord } from "@/helpers";
 import type { FirstScanProps } from "./first-scan.types";
 import { useFirstScan } from "./hooks/use-first-scan.hook";
 
 export function FirstScan({ onDone }: FirstScanProps) {
   const { index, percent } = useFirstScan(onDone);
+  const docs = index?.docs.length ?? 0;
+  const projects = index?.projects.length ?? 0;
+  const tags = index?.tags.length ?? 0;
 
   return (
     <Card className="p-7">
@@ -19,9 +22,9 @@ export function FirstScan({ onDone }: FirstScanProps) {
         />
       </div>
       <div className="mt-4 grid grid-cols-3 gap-3 text-center">
-        <Stat value={index?.docs.length ?? 0} label="documents" />
-        <Stat value={index?.projects.length ?? 0} label="projects" />
-        <Stat value={index?.tags.length ?? 0} label="tags" />
+        <Stat value={docs} label={pluralWord(docs, "document")} />
+        <Stat value={projects} label={pluralWord(projects, "project")} />
+        <Stat value={tags} label={pluralWord(tags, "tag")} />
       </div>
       {!!index?.orphans && (
         <div className="mt-3 text-center text-xs text-ink-3">
