@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { act, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 // @vitest-environment jsdom
 import { describe, expect, it } from "vitest";
@@ -29,6 +29,22 @@ describe("SignIn — which methods are offered", () => {
     render(<SignIn onBack={noop} onLocal={noop} />);
     expect(await screen.findByRole("button", { name: /Use a device code/ })).toBeTruthy();
     expect(screen.queryByRole("button", { name: /Continue with GitHub/ })).toBeNull();
+  });
+
+  it("offers no primary button until main answers, so it never swaps one for another", async () => {
+    let answer: (m: { oauth: boolean; device: boolean }) => void = noop;
+    mockVaultApi({ "auth:methods": () => new Promise((r) => (answer = r)) });
+    render(<SignIn onBack={noop} onLocal={noop} />);
+    expect(screen.queryByRole("button", { name: /Paste a token/ })).toBeNull();
+    expect(screen.queryByRole("button", { name: /Continue with GitHub/ })).toBeNull();
+    act(() => answer({ oauth: true, device: false }));
+    expect(await screen.findByRole("button", { name: /Continue with GitHub/ })).toBeTruthy();
+  });
+
+  it("falls back to paste-a-token when main can’t say", async () => {
+    mockVaultApi({ "auth:methods": new Error("no handler") });
+    render(<SignIn onBack={noop} onLocal={noop} />);
+    expect(await screen.findByRole("button", { name: /Paste a token/ })).toBeTruthy();
   });
 
   it("Continue with GitHub opens the web-flow card; Use another method returns", async () => {

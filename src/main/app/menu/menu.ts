@@ -1,10 +1,12 @@
+import { is } from "@electron-toolkit/utils";
 import { BrowserWindow, Menu } from "electron";
 import { DEFAULT_HOTKEY } from "@shared/constants";
 import { appMenu, VAULT_REPO } from "../../data/menu.data";
 import { fire } from "../../lib/fire";
 import { openOnGitHub } from "../../network/github";
-import { IS_MAC, openEditorWindow, openMainWindow } from "../../windows";
+import { IS_MAC, openEditorWindow } from "../../windows";
 import { toggleCapture } from "../hotkey/hotkey";
+import { showMainWindow } from "../session/launch-route";
 import { resetApp } from "../session/reset-app";
 import type { MenuAction, MenuItemData, MenuSectionData } from "./menu.types";
 
@@ -18,7 +20,7 @@ function run(action: MenuAction): () => void {
     case "capture":
       return toggleCapture;
     case "openMain":
-      return () => openMainWindow();
+      return showMainWindow;
     case "openOnGitHub":
       return () => openOnGitHub(VAULT_REPO);
     case "resetApp":
@@ -41,9 +43,6 @@ function toSection(section: MenuSectionData): Electron.MenuItemConstructorOption
 
 /** (Re)build the menu; called at launch and whenever the capture hotkey changes. */
 export function buildAppMenu(captureHotkey = DEFAULT_HOTKEY): void {
-  const template = [
-    ...(IS_MAC ? [{ role: "appMenu" as const }] : []),
-    ...appMenu(captureHotkey).map(toSection),
-  ];
+  const template = appMenu(captureHotkey, { mac: IS_MAC, dev: is.dev }).map(toSection);
   Menu.setApplicationMenu(Menu.buildFromTemplate(template));
 }

@@ -1,9 +1,9 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { REPO_LIST_LIMIT, REPO_NAME_PATTERN } from "@/constants";
 import { errorMessage } from "@/helpers";
 import { api, fire } from "@/lib/api";
 import { useApp } from "@/stores/app";
-import { DEFAULT_VAULT_NAME } from "@shared/constants";
+import { CREATE_REPO_FORBIDDEN, DEFAULT_VAULT_NAME } from "@shared/constants";
 import type { GitHubRepo } from "@shared/types";
 import type { RepoChoice } from "../repo-picker.types";
 
@@ -13,39 +13,68 @@ export function useRepoPicker(onDone: () => void) {
   const config = useApp((s) => s.config);
   const setConfig = useApp((s) => s.setConfig);
   const signedIn = auth.status === "signed-in";
+  // The token form has people make a fine-grained token scoped to one repo, which can't
+  // create another — so for them the list is the way in, not "Create a new private repo".
+  const tokenUser = auth.method === "pat";
   // Attaching a repo to a vault that already exists: the folder is settled, and
   // suggesting a fresh one would quietly set up a second, empty vault instead.
   const existingRoot = config?.root ?? null;
 
   const [repos, setRepos] = useState<GitHubRepo[] | null>(null);
   const [filter, setFilter] = useState("");
-  const [choice, setChoice] = useState<RepoChoice>(signedIn ? "new" : "local");
+  const [choice, setChoice] = useState<RepoChoice | null>(
+    !signedIn ? "local" : tokenUser ? null : "new",
+  );
   const [newName, setNewName] = useState(DEFAULT_VAULT_NAME);
   const [localPath, setLocalPath] = useState(existingRoot ?? "");
   const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  // Kept apart: a failed list load belongs in the list box, a failed Continue under the
+  // button — and a new attempt at one must not wipe the other.
+  const [listError, setListError] = useState<string | null>(null);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [listAttempt, setListAttempt] = useState(0);
 
   useEffect(() => {
-    if (signedIn)
-      api("github:listRepos")
-        .then(setRepos)
-        .catch((e: unknown) => setError(errorMessage(e)));
-  }, [signedIn]);
+    if (!signedIn) return;
+    let cancelled = false;
+    api("github:listRepos")
+      .then((r) => {
+        if (cancelled) return;
+        setRepos(r);
+        // A token scoped to one repo lists exactly that repo: nothing else to pick.
+        const [only] = r;
+        if (only && r.length === 1) setChoice((c) => c ?? only.fullName);
+      })
+      .catch((e: unknown) => !cancelled && setListError(errorMessage(e)));
+
+    return () => {
+      cancelled = true;
+    };
+  }, [signedIn, listAttempt]);
+
+  const retryList = useCallback(() => {
+    setListError(null);
+    setRepos(null);
+    setListAttempt((n) => n + 1);
+  }, []);
 
   useEffect(() => {
     if (existingRoot) return;
     const name =
-      choice === "new" ? newName : choice === "local" ? DEFAULT_VAULT_NAME : choice.split("/")[1];
+      choice === "new"
+        ? newName
+        : choice === "local" || choice === null
+          ? DEFAULT_VAULT_NAME
+          : choice.split("/")[1];
     fire(api("vault:defaultPath", name || DEFAULT_VAULT_NAME).then(setLocalPath));
   }, [choice, newName, existingRoot]);
 
-  const filtered = useMemo(() => {
+  const matching = useMemo(() => {
     const f = filter.trim().toLowerCase();
 
-    return (repos ?? [])
-      .filter((r) => !f || r.fullName.toLowerCase().includes(f))
-      .slice(0, REPO_LIST_LIMIT);
+    return (repos ?? []).filter((r) => !f || r.fullName.toLowerCase().includes(f));
   }, [repos, filter]);
+  const filtered = matching.slice(0, REPO_LIST_LIMIT);
 
   const nameError =
     choice === "new" && !REPO_NAME_PATTERN.test(newName)
@@ -59,7 +88,7 @@ export function useRepoPicker(onDone: () => void) {
 
   const submit = async () => {
     setBusy(true);
-    setError(null);
+    setSubmitError(null);
     try {
       let repo: GitHubRepo | null = null;
       if (choice === "new") repo = await api("github:createRepo", newName.trim(), true);
@@ -67,16 +96,25 @@ export function useRepoPicker(onDone: () => void) {
       setConfig(await api("vault:setup", { repo, localPath }));
       onDone();
     } catch (e) {
-      setError(errorMessage(e));
+      const message = errorMessage(e);
+      // The token can't create repos: point at the list, fresh, so the one they make
+      // on GitHub shows up in it.
+      if (message === CREATE_REPO_FORBIDDEN) {
+        setChoice(null);
+        retryList();
+      }
+      setSubmitError(message);
       setBusy(false);
     }
   };
 
   return {
     signedIn,
+    tokenUser,
     login: auth.user?.login ?? "",
     repos,
     filtered,
+    matchCount: matching.length,
     filter,
     setFilter,
     choice,
@@ -87,8 +125,10 @@ export function useRepoPicker(onDone: () => void) {
     localPath,
     chooseFolder,
     busy,
-    error,
+    listError,
+    retryList,
+    submitError,
     submit,
-    canSubmit: !nameError && !!localPath,
+    canSubmit: choice !== null && !nameError && !!localPath,
   };
 }

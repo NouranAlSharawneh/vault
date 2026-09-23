@@ -1,8 +1,9 @@
 import { ArrowDownToLine } from "lucide-react";
+import { useEffect } from "react";
 import { AssetPanel } from "@/components/asset-panel";
 import { Kbd } from "@/components/ui";
 import { plural } from "@/helpers";
-import { fire } from "@/lib/api";
+import { fire, on } from "@/lib/api";
 import { CaptureEmpty } from "./components/capture-empty/capture-empty.component";
 import { CaptureFields } from "./components/capture-fields/capture-fields.component";
 import { CaptureFooter } from "./components/capture-footer/capture-footer.component";
@@ -11,37 +12,53 @@ import { useCaptureKeys } from "./hooks/use-capture-keys.hook";
 import { useCapture } from "./hooks/use-capture.hook";
 import { useFitWindow } from "./hooks/use-fit-window.hook";
 
-/** ⌃⌥V sheet: clipboard → two tabs → ⌘↵. The main window never opens. */
+/**
+ * ⌃⌥V sheet: clipboard → two tabs → ⌘↵, and you are back in the app you copied from.
+ * The main window opens only when asked for, with ⌥⌘↵.
+ */
 export function Capture() {
   const c = useCapture();
   const fit = useFitWindow<HTMLDivElement>();
+  // Something worth saving is on the clipboard (not still being read, not blank).
+  const clip = c.phase === "empty" || c.phase === "loading" ? null : c.clip;
   useCaptureKeys({
-    onSave: () => fire(c.save()),
+    onSave: (reveal) => fire(c.save(reveal)),
     onOpenEditor: c.openInEditor,
     onHide: c.hide,
   });
+  // Each show lands focus on the sheet itself — not a field, so a stray keystroke doesn't
+  // end up in an input — and screen readers announce the dialog. The keys above still work.
+  useEffect(() => on("capture:shown", () => fit.current?.focus()), [fit]);
 
   return (
     <div
       ref={fit}
-      className="dark flex flex-col rounded-lg border border-overlay-line bg-overlay/95 p-5 text-overlay-ink shadow-sheet backdrop-blur-xl"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Capture from clipboard"
+      tabIndex={-1}
+      className="dark flex flex-col rounded-lg border border-overlay-line bg-overlay/95 p-5 text-overlay-ink shadow-sheet backdrop-blur-xl outline-none"
     >
       <div className="mb-4 flex items-center justify-between">
         <div className="flex items-center gap-2 text-base">
           <ArrowDownToLine size={14} className="text-overlay-ink-3" />
           <span className="font-medium">Capture from clipboard</span>
-          {c.clip && c.phase !== "empty" && (
+          {clip && (
             <span className="font-mono text-xs text-overlay-ink-3">
-              {plural(c.clip.words, "word")} detected
+              {plural(clip.words, "word")} detected
             </span>
           )}
         </div>
         <Kbd dark>esc</Kbd>
       </div>
 
-      {c.clip && c.phase !== "empty" ? (
+      {c.phase === "loading" ? (
+        // Quiet until the clipboard is read: "Clipboard is empty" (or the last save) used
+        // to flash here for a frame on every show.
+        <div role="status" aria-label="Reading the clipboard" className="py-16" />
+      ) : clip ? (
         <>
-          <CapturePreview clip={c.clip} compact={c.assets.refs.length > 0} />
+          <CapturePreview clip={clip} compact={c.assets.refs.length > 0} />
           <AssetPanel plan={c.assets} dark className="mt-3" />
           <div className="mt-4">
             <CaptureFields
@@ -50,7 +67,7 @@ export function Capture() {
               projects={c.projects}
               tags={c.tags}
               lastProject={c.lastProject}
-              detected={c.form.source === c.clip.detectedSource}
+              detected={c.form.source === clip.detectedSource}
             />
           </div>
           <div className="mt-4">
@@ -62,7 +79,7 @@ export function Capture() {
               hasRemote={c.hasRemote}
               stranded={c.assets.stranded}
               onOpenEditor={c.openInEditor}
-              onSave={() => fire(c.save())}
+              onSave={(reveal) => fire(c.save(reveal))}
               onRetry={c.retry}
             />
           </div>
