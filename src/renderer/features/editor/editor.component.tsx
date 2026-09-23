@@ -101,11 +101,13 @@ export function Editor() {
               <SectionLabel>Preview</SectionLabel>
             </div>
             <div className="min-h-0 flex-1 overflow-y-auto px-8 pb-16">
-              {d.body.trim() ? (
-                <Markdown source={d.body} docPath={d.existingPath ?? d.pathPreview} />
-              ) : (
-                <div className="text-sm text-ink-4">Nothing to preview yet.</div>
-              )}
+              <article className="mx-auto max-w-170">
+                {d.body.trim() ? (
+                  <Markdown source={d.body} docPath={d.existingPath ?? d.pathPreview} />
+                ) : (
+                  <div className="text-sm text-ink-4">Nothing to preview yet.</div>
+                )}
+              </article>
             </div>
           </>
         }
@@ -125,6 +127,7 @@ export function Editor() {
         saving={d.saving}
         canSave={d.canSave}
         dirty={d.dirty}
+        persisted={!!d.existingPath}
         error={d.error}
         keptOtherVersion={!!d.lastSaved?.preservedExternalEdit}
         onSave={saveAndClose}
