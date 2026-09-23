@@ -8,7 +8,8 @@ export function subscribeToMain(): void {
   if (subscribed) return;
   subscribed = true;
   on("index:changed", (index) => {
-    useApp.setState({ index });
+    // An index only arrives from a vault that is open, whatever failed before.
+    useApp.setState({ index, vaultError: null });
     fire(useApp.getState().refreshTrash(), "Couldn't refresh the trash");
   });
   on("index:progress", (progress) => useApp.setState({ progress }));

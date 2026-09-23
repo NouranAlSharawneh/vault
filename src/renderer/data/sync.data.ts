@@ -22,6 +22,15 @@ export const SYNC_PRESENTATION: Record<SyncState, SyncPresentation> = {
 };
 
 /**
+ * Before the first status arrives, or when it couldn't be read. This used to fall back to
+ * "pushed" in green, which is the one thing the badge must never say without knowing.
+ */
+export const UNKNOWN_PRESENTATION: SyncPresentation = {
+  label: () => "checking…",
+  dot: "bg-line-2",
+};
+
+/**
  * Failures "retry" cannot fix. A repo you can read but not write used to sit under
  * "couldn't push — retry" with the raw error beside it, so it looked like a blip while
  * nothing was reaching GitHub at all.

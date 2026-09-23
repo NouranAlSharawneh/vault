@@ -56,6 +56,8 @@ export interface IpcInvoke {
   "vault:index": () => IndexSnapshot;
   "vault:updateConfig": (patch: Partial<VaultConfig>) => VaultConfig;
   "vault:revealInFinder": (path?: string) => void;
+  /** Open the configured vault again after it failed to open at launch. */
+  "vault:reopen": () => IndexSnapshot;
 
   "doc:read": (path: string) => DocContent;
   "doc:save": (req: SaveRequest) => SaveResult;

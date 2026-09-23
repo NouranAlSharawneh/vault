@@ -41,7 +41,9 @@ const boot = app.whenReady().then(async () => {
   buildAppMenu(settings.vault?.hotkey);
   if (settings.vault && session.vault) registerHotkey(settings.vault.hotkey);
   getCaptureWindow(); // pre-warm so the sheet appears instantly
-  openMainWindow(settings.onboarded && session.vault ? "main" : "onboarding");
+  // A vault that is set up but would not open still goes to the library, which says what
+  // went wrong and offers to try again; onboarding would ask to set up from scratch.
+  openMainWindow(settings.onboarded && settings.vault ? "main" : "onboarding");
 
   app.on("activate", () => {
     if (!getMainWindow() && editorWindowCount() === 0) openMainWindow();
