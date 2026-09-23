@@ -125,6 +125,7 @@ export function Editor() {
         saving={d.saving}
         canSave={d.canSave}
         dirty={d.dirty}
+        persisted={!!d.existingPath}
         error={d.error}
         keptOtherVersion={!!d.lastSaved?.preservedExternalEdit}
         onSave={saveAndClose}
