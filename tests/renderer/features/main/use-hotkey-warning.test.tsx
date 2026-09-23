@@ -16,8 +16,8 @@ describe("useHotkeyWarning", () => {
     const openSettings = vi.fn();
     renderHook(() => useHotkeyWarning(openSettings));
 
-    await vi.waitFor(() => expect(useToast.getState().toast).not.toBeNull());
-    const toast = useToast.getState().toast;
+    await vi.waitFor(() => expect(useToast.getState().toasts.length).toBeGreaterThan(0));
+    const toast = useToast.getState().toasts.at(-1);
     expect(toast?.message).toBe(
       `${acceleratorLabel("Control+Alt+V")} is taken by another app. Pick a different shortcut.`,
     );
@@ -35,7 +35,7 @@ describe("useHotkeyWarning", () => {
       const { unmount } = renderHook(() => useHotkeyWarning(vi.fn()));
       await vi.waitFor(() => expect(invoke).toHaveBeenCalledWith("hotkey:status"));
       await act(async () => undefined);
-      expect(useToast.getState().toast).toBeNull();
+      expect(useToast.getState().toasts).toEqual([]);
       unmount();
     }
   });

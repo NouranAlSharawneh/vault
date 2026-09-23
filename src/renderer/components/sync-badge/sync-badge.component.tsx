@@ -23,6 +23,16 @@ export function SyncBadge({ className, onReviewConflicts }: SyncBadgeProps) {
       </span>
     );
   }
+  // The badge has room for the start of the error; the whole of it goes in the tooltip,
+  // wrapped, since a git refusal is often longer than the window is wide.
+  const tooltip = detail ? (
+    <span className="block max-w-80 whitespace-normal">
+      {detail}
+      <span className="mt-1 block text-overlay-ink-3">Click to push again</span>
+    </span>
+  ) : canPush ? (
+    "Push now"
+  ) : undefined;
 
   return (
     <span className={cx("flex items-center gap-1", className)}>
@@ -32,8 +42,8 @@ export function SyncBadge({ className, onReviewConflicts }: SyncBadgeProps) {
           size="sm"
           className="gap-1.5 font-normal"
           onClick={canPush ? () => fire(pushNow()) : undefined}
-          tooltip={canPush ? "Push now" : undefined}
-          aria-label={`sync: ${label}`}
+          tooltip={tooltip}
+          aria-label={`sync: ${label}${detail ? ` — ${detail}` : ""}`}
         >
           {p.busy ? <Spinner className="text-warn" /> : <Dot tone={p.dot} size={6} />}
           <span className="font-mono">{branch}</span>

@@ -1,6 +1,6 @@
-import { useEffect } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { DONE_SCREEN_DELAY_MS } from "@/constants";
-import { fire } from "@/lib/api";
+import { errorMessage } from "@/helpers";
 import { useApp } from "@/stores/app";
 
 /** Tracks scan progress from the store and advances once the index is usable. */
@@ -8,12 +8,26 @@ export function useFirstScan(onDone: () => void) {
   const progress = useApp((s) => s.progress);
   const index = useApp((s) => s.index);
   const refreshIndex = useApp((s) => s.refreshIndex);
+  const [error, setError] = useState<string | null>(null);
+  const [attempt, setAttempt] = useState(0);
 
+  // A failed read has to stop the bar, not leave it sitting at 10% with nothing to press.
   useEffect(() => {
-    fire(refreshIndex(), "Couldn't read the vault folder");
-  }, [refreshIndex]);
+    let cancelled = false;
+    refreshIndex().catch((e: unknown) => !cancelled && setError(errorMessage(e)));
+
+    return () => {
+      cancelled = true;
+    };
+  }, [refreshIndex, attempt]);
+
+  const retry = useCallback(() => {
+    setError(null);
+    setAttempt((n) => n + 1);
+  }, []);
 
   const finished =
+    !error &&
     !!index &&
     (progress.phase === "done" ||
       progress.phase === "idle" ||
@@ -32,5 +46,5 @@ export function useFirstScan(onDone: () => void) {
       ? 100
       : 10;
 
-  return { index, percent };
+  return { index, percent, error, retry };
 }

@@ -26,10 +26,17 @@ describe("capture sheet keys", () => {
     expect(onHide).not.toHaveBeenCalled();
   });
 
-  it("still saves on ⌘↵", () => {
+  it("saves on ⌘↵ without asking to open Vault", () => {
     const onSave = vi.fn();
     renderHook(() => useCaptureKeys({ onSave, onOpenEditor: vi.fn(), onHide: vi.fn() }));
     press({ key: "Enter", metaKey: true });
-    expect(onSave).toHaveBeenCalled();
+    expect(onSave).toHaveBeenCalledWith(false);
+  });
+
+  it("saves and asks to open Vault on ⌥⌘↵", () => {
+    const onSave = vi.fn();
+    renderHook(() => useCaptureKeys({ onSave, onOpenEditor: vi.fn(), onHide: vi.fn() }));
+    press({ key: "Enter", metaKey: true, altKey: true });
+    expect(onSave).toHaveBeenCalledWith(true);
   });
 });
