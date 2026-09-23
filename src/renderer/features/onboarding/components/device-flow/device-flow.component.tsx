@@ -33,20 +33,20 @@ export function DeviceFlow({ onBack }: DeviceFlowProps) {
       {session ? (
         <>
           <div className="mt-6 flex justify-center gap-1.5">
-            {session.userCode
-              .replace("-", "")
-              .split("")
-              .map((c, i) => (
+            {/* The gap goes wherever GitHub put a hyphen, however many there are. */}
+            {session.userCode.split("-").map((group, g) =>
+              group.split("").map((c, i) => (
                 <span
-                  key={i}
+                  key={`${g}-${i}`}
                   className={cx(
                     "flex h-11 w-9 items-center justify-center rounded-sm border border-line bg-paper-2 font-mono text-2xl text-ink",
-                    i === 4 && "ml-3",
+                    g > 0 && i === 0 && "ml-3",
                   )}
                 >
                   {c}
                 </span>
-              ))}
+              )),
+            )}
           </div>
           <div className="mt-3 flex items-center justify-center gap-4 text-xs">
             <Button variant="link" onClick={copy}>
@@ -66,7 +66,7 @@ export function DeviceFlow({ onBack }: DeviceFlowProps) {
           </div>
           <div className="mt-6 flex items-center justify-between rounded-md border border-line bg-paper-2 px-3 py-2 text-xs text-ink-2">
             <span className="flex items-center gap-2">
-              {!terminal && <Spinner className="text-cherry" />}
+              {!terminal && status !== "ok" && <Spinner className="text-cherry" />}
               {DEVICE_FLOW_STATUS_TEXT[status]}
             </span>
             {terminal ? (

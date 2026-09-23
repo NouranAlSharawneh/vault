@@ -19,14 +19,23 @@ export async function pollDeviceFlow(
   onStatus: (s: DevicePollStatus) => void,
 ): Promise<StoredCredentials> {
   let interval = intervalSec;
+  // Anything that ends the loop has to say so, or the card spins "Waiting…" forever.
+  // Once aborted nobody is listening for this attempt, and a newer one may be.
+  const fail = () => !signal.aborted && onStatus("error");
   while (!signal.aborted) {
     await sleep(interval);
     if (signal.aborted) break;
-    const { data } = await githubOAuth().post<RawDeviceToken>("/login/oauth/access_token", {
-      client_id: clientId,
-      device_code: deviceCode,
-      grant_type: OAUTH_DEVICE_GRANT,
-    });
+    let data: RawDeviceToken;
+    try {
+      ({ data } = await githubOAuth().post<RawDeviceToken>("/login/oauth/access_token", {
+        client_id: clientId,
+        device_code: deviceCode,
+        grant_type: OAUTH_DEVICE_GRANT,
+      }));
+    } catch (e) {
+      fail();
+      throw e;
+    }
     if (data.access_token) {
       onStatus("ok");
 
@@ -47,6 +56,7 @@ export async function pollDeviceFlow(
         onStatus("denied");
         throw new NetworkError("You cancelled the authorisation on GitHub.", 403);
       default:
+        fail();
         throw new NetworkError(data.error ?? "Unknown device-flow error", 500);
     }
   }
