@@ -230,6 +230,27 @@ input {
   }
 }
 
+/* Reduced motion. Sheets, popovers and toasts still fade in — a plain opacity change is
+   not motion — but without the rise, the overshoot or the scale. The spinner keeps
+   turning so it still reads as busy, at a third of the speed. */
+@keyframes fade-in-still {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .animate-fade-in,
+  .animate-pop-in {
+    animation: fade-in-still 140ms ease-out both;
+  }
+  .animate-spin-fast {
+    animation-duration: 2.7s;
+  }
+}
+
 /* ---- component layer ---------------------------------------------- */
 @layer components {
   .btn {
