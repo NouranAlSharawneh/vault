@@ -186,6 +186,7 @@ export function Main() {
             onCollection={list.selectCollection}
             onProject={list.selectProject}
             onTag={list.toggleTag}
+            onSettings={openSettings}
           />
         )}
         {content}
