@@ -41,7 +41,17 @@ export function useMainShortcuts({ onSearch, onTrash, onSettings, onHistory }: H
     [onSearch, onTrash, onSettings, onHistory],
   );
 
-  useEffect(() => on("shortcut", dispatch), [dispatch]);
+  // The menu accelerator fires whatever has focus, so the menu path needs the same
+  // "are you typing?" check the keydown path makes: ⌘⌫ in the tag filter or the palette
+  // means "delete to line start", not "trash the selected document".
+  useEffect(
+    () =>
+      on("shortcut", (shortcut) => {
+        if (shortcut === "trash" && isEditableTarget(document.activeElement)) return;
+        dispatch(shortcut);
+      }),
+    [dispatch],
+  );
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
