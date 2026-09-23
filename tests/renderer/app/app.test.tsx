@@ -52,6 +52,11 @@ async function failSomething() {
   });
 }
 
+/** The toast host's live region. Routes may have status regions of their own (capture's
+ *  "Reading the clipboard"), so match the polite live region rather than any status. */
+const liveRegions = () =>
+  screen.getAllByRole("status").filter((el) => el.getAttribute("aria-live") === "polite");
+
 describe("App", () => {
   // `fire` logs every failure on purpose; the test expects them.
   beforeEach(() => void vi.spyOn(console, "error").mockImplementation(() => undefined));
@@ -68,7 +73,7 @@ describe("App", () => {
     async (route) => {
       await renderAt(route);
       await failSomething();
-      expect(screen.getByRole("status").textContent).toBe("Couldn’t save that — the disk is full");
+      expect(liveRegions()[0]?.textContent).toBe("Couldn’t save that — the disk is full");
       expect(screen.getAllByText("Couldn’t save that — the disk is full")).toHaveLength(2);
     },
   );
@@ -76,7 +81,7 @@ describe("App", () => {
   it("draws one host in the main window, not one per layer", async () => {
     await renderAt("main");
     await failSomething();
-    expect(screen.getAllByRole("status")).toHaveLength(1);
+    expect(liveRegions()).toHaveLength(1);
     expect(screen.getAllByRole("button", { name: "dismiss" })).toHaveLength(1);
   });
 });
