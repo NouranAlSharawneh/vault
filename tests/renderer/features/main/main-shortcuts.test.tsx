@@ -51,4 +51,27 @@ describe("main window shortcuts", () => {
     expect(h.onTrash).not.toHaveBeenCalled();
     input.remove();
   });
+
+  it("ignores the menu's ⌘⌫ while an input has focus", () => {
+    // The accelerator reaches the window over IPC whatever has focus, so ⌘⌫ in the tag
+    // filter used to trash the selected document.
+    const h = handlers();
+    const { emit, invoke } = mockVaultApi();
+    renderHook(() => useMainShortcuts(h));
+    const input = document.createElement("input");
+    document.body.append(input);
+    input.focus();
+    emit("shortcut", "trash");
+    expect(h.onTrash).not.toHaveBeenCalled();
+    expect(invoke).not.toHaveBeenCalled();
+    input.remove();
+  });
+
+  it("trashes from the menu when nothing editable has focus", () => {
+    const h = handlers();
+    const { emit } = mockVaultApi();
+    renderHook(() => useMainShortcuts(h));
+    emit("shortcut", "trash");
+    expect(h.onTrash).toHaveBeenCalledTimes(1);
+  });
 });

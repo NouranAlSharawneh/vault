@@ -59,6 +59,7 @@ export const INVOKE_CHANNELS = [
   "window:openMain",
   "window:revealDoc",
   "window:openEditor",
+  "window:setEdited",
   "app:version",
   "app:platform",
   "app:openExternal",
