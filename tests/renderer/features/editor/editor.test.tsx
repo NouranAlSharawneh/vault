@@ -59,6 +59,65 @@ describe("Editor", () => {
     expect(docSaves(invoke)).toHaveLength(1);
   });
 
+  describe("a document that can't be read", () => {
+    it("says so, and saves nothing — not even from ⌘↵", async () => {
+      // The failed read was swallowed: the header said "New document", the parked draft
+      // was put back into it, and the next save wrote a second copy under a new name.
+      window.location.hash = "#editor?path=atlas-api/spec.md";
+      vi.spyOn(window, "close").mockImplementation(() => undefined);
+      const { invoke, emit } = mockVaultApi({
+        "doc:read": new Error(
+          "Error invoking remote method 'doc:read': Error: ENOENT: no such file or directory",
+        ),
+        "draft:load": PARKED,
+        "doc:pathPreview": () => "inbox/half-a-thought.md",
+      });
+      render(<Editor />);
+
+      await screen.findByText("Couldn’t open atlas-api/spec.md.");
+      expect(screen.getByText("ENOENT: no such file or directory")).toBeTruthy();
+      expect(screen.queryByText("New document")).toBeNull();
+      expect(screen.queryByRole("button", { name: /Save & commit/ })).toBeNull();
+
+      act(() => emit("shortcut", "save"));
+      await act(() => Promise.resolve());
+      expect(docSaves(invoke)).toHaveLength(0);
+    });
+
+    it("closes from Close", async () => {
+      window.location.hash = "#editor?path=atlas-api/spec.md";
+      const close = vi.spyOn(window, "close").mockImplementation(() => undefined);
+      mockVaultApi({ "doc:read": new Error("EACCES: permission denied") });
+      render(<Editor />);
+      fireEvent.click(await screen.findByRole("button", { name: "Close" }));
+      expect(close).toHaveBeenCalled();
+    });
+
+    it("opens it once Try again succeeds", async () => {
+      window.location.hash = "#editor?path=atlas-api/spec.md";
+      let fail = true;
+      mockVaultApi({
+        "doc:read": () => {
+          if (fail) throw new Error("EACCES: permission denied");
+
+          return {
+            meta: { path: "atlas-api/spec.md", title: "Spec", project: "Atlas API", tags: [] },
+            body: "# Spec",
+            raw: "# Spec",
+          };
+        },
+        "doc:pathPreview": () => "atlas-api/spec.md",
+      });
+      render(<Editor />);
+      await screen.findByText("EACCES: permission denied");
+      fail = false;
+      fireEvent.click(screen.getByRole("button", { name: "Try again" }));
+
+      await screen.findByRole("heading", { name: "Spec" });
+      expect(screen.queryByText("EACCES: permission denied")).toBeNull();
+    });
+  });
+
   describe("the unsaved-changes prompt", () => {
     const openPrompt = async () => {
       act(() => {

@@ -37,6 +37,12 @@ export interface EditorTarget {
   path: string | null;
 }
 
+/** Where opening the window got to. Nothing can be saved until it is `ready`. */
+export type OpenStatus =
+  | { kind: "opening" }
+  | { kind: "ready" }
+  | { kind: "failed"; path: string; reason: string; retrying: boolean };
+
 export const emptyMeta = (source: Source): DraftMeta => ({
   title: "",
   project: "",
