@@ -39,6 +39,7 @@ const setIndex = () =>
       lastError: null,
       remote: "x",
       conflicts: 0,
+      failure: null,
     },
   });
 

@@ -166,6 +166,13 @@ export interface SearchHit {
   snippet: string | null;
 }
 
+/**
+ * Why the last push or pull failed. Carried on the status because two of these need a
+ * different answer from the user: a token that is gone, and a repo that is readable but
+ * not writable. As a bare message they both read "couldn't push — retry", forever.
+ */
+export type PushFailure = "offline" | "bad-credentials" | "no-permission" | "other";
+
 /** Only ever about pushing. Two versions of a document is a separate fact — see `conflicts`. */
 export type SyncState = "synced" | "pending" | "pushing" | "offline" | "error";
 
@@ -183,6 +190,8 @@ export interface SyncStatus {
    * state it vanished the moment you typed anything.
    */
   conflicts: number;
+  /** What the last failure was, so the UI can say what to do; null once a push lands. */
+  failure: PushFailure | null;
 }
 
 /**

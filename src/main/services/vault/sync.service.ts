@@ -35,6 +35,7 @@ export class SyncEngine {
     lastError: null,
     remote: null,
     conflicts: 0,
+    failure: null,
   };
 
   private pushTimer: NodeJS.Timeout | null = null;
@@ -189,13 +190,15 @@ export class SyncEngine {
       }
       this.retryDelay = PUSH_RETRY_MIN_MS;
       this.v.emit("auth-ok");
-      this.setSync({ state: "synced", lastPushAt: Date.now(), ahead: 0 });
+      this.setSync({ state: "synced", lastPushAt: Date.now(), ahead: 0, failure: null });
       await this.v.index.markUnpushed(new Set());
       await this.refreshSyncStatus();
     } catch (e) {
       const msg = redact(String((e as Error).message ?? e), this.tokenProvider());
       const failure = classifyPushError(msg);
-      this.setSync({ state: failure === "offline" ? "offline" : "error", lastError: msg });
+      this.setSync({ state: failure === "offline" ? "offline" : "error", lastError: msg, failure });
+      // Neither a dead token nor a read-only repo is fixed by asking again, so neither is
+      // retried; the status carries which one it was, so the user is told the right fix.
       if (failure === "bad-credentials" || failure === "no-permission") {
         this.v.emit("auth-suspect");
       } else {
@@ -257,7 +260,7 @@ export class SyncEngine {
       const msg = redact(String((e as Error).message ?? e), this.tokenProvider());
       const failure = classifyPushError(msg);
       if (failure === "bad-credentials" || failure === "no-permission") this.v.emit("auth-suspect");
-      this.setSync({ state: failure === "offline" ? "offline" : "error", lastError: msg });
+      this.setSync({ state: failure === "offline" ? "offline" : "error", lastError: msg, failure });
 
       return { conflicts: [] };
     }

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { AuthExpiredBanner } from "@/components/auth-expired-banner/auth-expired-banner.component";
+import { NoWriteAccessBanner } from "@/components/no-write-access-banner/no-write-access-banner.component";
 import { Button, Empty, SplitPane, Toast } from "@/components/ui";
 import { cx } from "@/helpers";
 import { api, fire, on } from "@/lib/api";
@@ -168,6 +169,7 @@ export function Main() {
         onReviewConflicts={() => setConflictsOpen(true)}
       />
       <AuthExpiredBanner />
+      <NoWriteAccessBanner />
       <div className="flex min-h-0 flex-1">
         {sidebar.state === "rail" && (
           <SidebarRail
