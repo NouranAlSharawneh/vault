@@ -570,12 +570,13 @@ if (sheetFits.win - sheetFits.panel > 40)
 console.log("capture sheet fits its content:", JSON.stringify(sheetFits));
 await sheet.waitForTimeout(400);
 await sheet.screenshot({ path: join(out, "smoke-11-capture.png") });
-await sheet.keyboard.press("Control+Enter");
+// ⌥⌘↵ (Alt+Ctrl here): save, then open the new doc in Vault. A plain ⌘↵ leaves Vault shut.
+await sheet.keyboard.press("Control+Alt+Enter");
 await sheet.waitForSelector("text=committed", { timeout: 15000 });
 await sheet.screenshot({ path: join(out, "smoke-12-capture-saved.png") });
 const log2 = execSync("git log --oneline -1", { cwd: root }).toString().trim();
 console.log("capture commit:", log2);
-// The sheet hands the new doc straight to the main window.
+// Asked to, the sheet hands the new doc straight to the main window.
 await win.waitForSelector("text=_inbox/edge-pop-inventory.md", { timeout: 10000 });
 await win.waitForTimeout(300);
 await win.screenshot({ path: join(out, "smoke-12b-capture-opened.png") });
