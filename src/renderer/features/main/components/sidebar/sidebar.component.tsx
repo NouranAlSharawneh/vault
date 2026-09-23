@@ -2,7 +2,7 @@ import { Clock, Layers, RefreshCw, Star } from "lucide-react";
 import { useState } from "react";
 import { Button, Chip, Dot, ListRow, Logo, SectionLabel } from "@/components/ui";
 import { COLLECTIONS } from "@/data/main.data";
-import { api } from "@/lib/api";
+import { api, fire } from "@/lib/api";
 import { INBOX_COLOR, INBOX_SLUG } from "@shared/constants";
 import { projectColor } from "@shared/helpers";
 import type { SidebarProps } from "./sidebar.types";
@@ -81,7 +81,7 @@ export function Sidebar({ index, config, filter, onCollection, onProject, onTag 
           variant="ghost"
           size="sm"
           className="w-6 px-0"
-          onClick={() => api("vault:rescan")}
+          onClick={() => fire(api("vault:rescan"), "Couldn't rescan the vault")}
           title="Rescan vault folder"
         >
           <RefreshCw size={11} />

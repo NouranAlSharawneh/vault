@@ -3,7 +3,7 @@ import { Button } from "@/components/ui";
 import { MOD_KEY } from "@/constants";
 import { READER_VIEWS } from "@/data/main.data";
 import { cx, readTime } from "@/helpers";
-import { api } from "@/lib/api";
+import { api, fire } from "@/lib/api";
 import { useApp } from "@/stores/app";
 import type { ReaderToolbarProps } from "./reader-toolbar.types";
 
@@ -69,7 +69,7 @@ export function ReaderToolbar({
             variant="ghost"
             size="sm"
             className="w-7 px-0"
-            onClick={() => api("window:openEditor", doc.path)}
+            onClick={() => fire(api("window:openEditor", doc.path), "Couldn't open the editor")}
             tooltip="Edit"
             aria-label="edit"
           >
@@ -92,7 +92,12 @@ export function ReaderToolbar({
               variant="ghost"
               size="sm"
               className="w-7 px-0"
-              onClick={() => api("github:openInBrowser", `${remote}/blob/${branch}/${doc.path}`)}
+              onClick={() =>
+                fire(
+                  api("github:openInBrowser", `${remote}/blob/${branch}/${doc.path}`),
+                  "Couldn't open GitHub",
+                )
+              }
               tooltip="Open on GitHub"
               aria-label="open on github"
             >

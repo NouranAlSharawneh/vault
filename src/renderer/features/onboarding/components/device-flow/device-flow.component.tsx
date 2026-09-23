@@ -52,7 +52,12 @@ export function DeviceFlow({ onBack }: DeviceFlowProps) {
             <Button variant="link" onClick={copy}>
               <Copy size={11} /> {copied ? "Copied" : "Copy code"}
             </Button>
-            <Button variant="link" onClick={() => api("github:openInBrowser", DEVICE_LOGIN_PATH)}>
+            <Button
+              variant="link"
+              onClick={() =>
+                fire(api("github:openInBrowser", DEVICE_LOGIN_PATH), "Couldn't open GitHub")
+              }
+            >
               Reopen browser
             </Button>
             <span className="font-mono text-ink-4">

@@ -1,7 +1,7 @@
 import { AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui";
 import { cx } from "@/helpers";
-import { api } from "@/lib/api";
+import { api, fire } from "@/lib/api";
 import { useApp } from "@/stores/app";
 import type { AuthExpiredBannerProps } from "./auth-expired-banner.types";
 
@@ -21,7 +21,7 @@ export function AuthExpiredBanner({ className }: AuthExpiredBannerProps) {
       <Button
         variant="link"
         className="ml-auto"
-        onClick={() => api("window:openMain", "onboarding?signin")}
+        onClick={() => fire(api("window:openMain", "onboarding?signin"), "Couldn't open sign-in")}
       >
         Sign in again
       </Button>
