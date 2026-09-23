@@ -1,3 +1,4 @@
+import { useId } from "react";
 import { Chip, ListRow } from "@/components/ui";
 import { cx } from "@/helpers";
 import { useTagInput } from "./hooks/use-tag-input.hook";
@@ -11,6 +12,8 @@ export function TagInput({
   placeholder = "type to add…",
 }: TagInputProps) {
   const t = useTagInput(value, onChange, suggestions);
+  const listId = useId();
+  const expanded = t.matches.length > 0;
 
   return (
     <div className="relative">
@@ -23,7 +26,7 @@ export function TagInput({
         )}
       >
         {value.map((tag) => (
-          <Chip key={tag} onRemove={() => t.remove(tag)}>
+          <Chip key={tag} onRemove={() => t.remove(tag)} removeLabel={`Remove ${tag}`}>
             #{tag}
           </Chip>
         ))}
@@ -37,19 +40,28 @@ export function TagInput({
           onChange={(e) => t.setText(e.target.value)}
           onKeyDown={t.onKeyDown}
           onBlur={t.onBlur}
-          aria-label="tags"
+          aria-label="Tags"
+          role="combobox"
+          aria-autocomplete="list"
+          aria-expanded={expanded}
+          aria-controls={expanded ? listId : undefined}
+          aria-activedescendant={expanded ? `${listId}-${t.cursor}` : undefined}
         />
       </div>
-      {t.matches.length > 0 && (
+      {expanded && (
         <ul
+          id={listId}
+          role="listbox"
+          aria-label="Tag suggestions"
           className={cx(
             "absolute bottom-full left-0 z-10 mb-1 w-48 rounded-md border p-1 shadow-pop",
             dark ? "border-overlay-line bg-overlay-2" : "border-line bg-paper",
           )}
         >
           {t.matches.map((m, i) => (
-            <li key={m}>
+            <li key={m} role="presentation">
               <ListRow
+                id={`${listId}-${i}`}
                 kind="menu"
                 dark={dark}
                 selected={i === t.cursor}

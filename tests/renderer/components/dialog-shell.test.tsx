@@ -44,6 +44,23 @@ describe("DialogShell", () => {
     opener.remove();
   });
 
+  it("wraps Tab at the last real stop, skipping options taken out of the Tab order", () => {
+    // The palette's rows are listbox options (tabindex -1) after its only real stop, the
+    // input. Counting them as the edge let Tab walk out into the window behind.
+    render(
+      <DialogShell label="Search" onClose={vi.fn()}>
+        <input aria-label="search" />
+        <button tabIndex={-1}>option</button>
+      </DialogShell>,
+    );
+    const input = screen.getByLabelText("search");
+    expect(document.activeElement).toBe(input);
+    const tab = new KeyboardEvent("keydown", { key: "Tab", cancelable: true });
+    window.dispatchEvent(tab);
+    expect(tab.defaultPrevented).toBe(true);
+    expect(document.activeElement).toBe(input);
+  });
+
   it("does not steal focus when you click the panel's own padding", () => {
     // This is what went wrong in the palette: clicking a group heading blurred the input
     // and the arrows and Escape stopped working, with no way back but the mouse.
