@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { AuthExpiredBanner } from "@/components/auth-expired-banner/auth-expired-banner.component";
-import { Button, Empty, SplitPane, Toasts } from "@/components/ui";
+import { Button, Empty, SplitPane } from "@/components/ui";
 import { cx } from "@/helpers";
 import { api, fire, on } from "@/lib/api";
 import { useApp } from "@/stores/app";
@@ -28,9 +28,6 @@ export function Main() {
   const index = useApp((s) => s.index);
   const config = useApp((s) => s.config);
   const trash = useApp((s) => s.trash);
-  const toasts = useToast((s) => s.toasts);
-  const announced = useToast((s) => s.announced);
-  const dismissToast = useToast((s) => s.dismiss);
   const show = useToast((s) => s.show);
   const sidebar = useSidebarState();
   const list = useDocumentFilter(index, trash);
@@ -209,7 +206,6 @@ export function Main() {
           onReviewConflicts={() => setConflictsOpen(true)}
         />
       )}
-      <Toasts toasts={toasts} announced={announced} onDismiss={dismissToast} />
     </div>
   );
 }

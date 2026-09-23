@@ -13,5 +13,6 @@ export { ListRow } from "./list-row/list-row.component";
 export { SplitPane } from "./split-pane/split-pane.component";
 export { Chip } from "./chip/chip.component";
 export { Toasts } from "./toast/toast.component";
+export type { ToastPlacement } from "./toast/toast.types";
 export { Tooltip } from "./tooltip/tooltip.component";
 export { DialogShell } from "./dialog-shell/dialog-shell.component";
