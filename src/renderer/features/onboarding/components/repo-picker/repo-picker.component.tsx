@@ -50,7 +50,17 @@ export function RepoPicker({ onDone }: RepoPickerProps) {
             />
           </div>
           <div className="mt-2 max-h-48 divide-y divide-line overflow-y-auto rounded-md border border-line">
-            {p.repos === null && !p.error && (
+            {p.listError && (
+              <div className="flex items-center gap-2 p-3 text-xs">
+                <span className="text-cherry">
+                  Couldn’t load your repos ({p.listError}). You can still create a new one above.
+                </span>
+                <Button variant="link" className="ml-auto shrink-0" onClick={p.retryList}>
+                  Try again
+                </Button>
+              </div>
+            )}
+            {p.repos === null && !p.listError && (
               <div className="flex items-center gap-2 p-3 text-xs text-ink-4">
                 <Spinner /> Loading repos…
               </div>
@@ -98,7 +108,7 @@ export function RepoPicker({ onDone }: RepoPickerProps) {
           Change
         </Button>
       </div>
-      {p.error && <div className="mt-3 text-xs text-cherry">{p.error}</div>}
+      {p.submitError && <div className="mt-3 text-xs text-cherry">{p.submitError}</div>}
       <div className="mt-5 flex justify-end">
         <Button
           variant="primary"

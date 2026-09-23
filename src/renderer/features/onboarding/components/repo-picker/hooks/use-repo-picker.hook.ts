@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { REPO_LIST_LIMIT, REPO_NAME_PATTERN } from "@/constants";
 import { errorMessage } from "@/helpers";
 import { api, fire } from "@/lib/api";
@@ -23,14 +23,29 @@ export function useRepoPicker(onDone: () => void) {
   const [newName, setNewName] = useState(DEFAULT_VAULT_NAME);
   const [localPath, setLocalPath] = useState(existingRoot ?? "");
   const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  // Kept apart: a failed list load belongs in the list box, a failed Continue under the
+  // button — and a new attempt at one must not wipe the other.
+  const [listError, setListError] = useState<string | null>(null);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [listAttempt, setListAttempt] = useState(0);
 
   useEffect(() => {
-    if (signedIn)
-      api("github:listRepos")
-        .then(setRepos)
-        .catch((e: unknown) => setError(errorMessage(e)));
-  }, [signedIn]);
+    if (!signedIn) return;
+    let cancelled = false;
+    api("github:listRepos")
+      .then((r) => !cancelled && setRepos(r))
+      .catch((e: unknown) => !cancelled && setListError(errorMessage(e)));
+
+    return () => {
+      cancelled = true;
+    };
+  }, [signedIn, listAttempt]);
+
+  const retryList = useCallback(() => {
+    setListError(null);
+    setRepos(null);
+    setListAttempt((n) => n + 1);
+  }, []);
 
   useEffect(() => {
     if (existingRoot) return;
@@ -39,13 +54,12 @@ export function useRepoPicker(onDone: () => void) {
     fire(api("vault:defaultPath", name || DEFAULT_VAULT_NAME).then(setLocalPath));
   }, [choice, newName, existingRoot]);
 
-  const filtered = useMemo(() => {
+  const matching = useMemo(() => {
     const f = filter.trim().toLowerCase();
 
-    return (repos ?? [])
-      .filter((r) => !f || r.fullName.toLowerCase().includes(f))
-      .slice(0, REPO_LIST_LIMIT);
+    return (repos ?? []).filter((r) => !f || r.fullName.toLowerCase().includes(f));
   }, [repos, filter]);
+  const filtered = matching.slice(0, REPO_LIST_LIMIT);
 
   const nameError =
     choice === "new" && !REPO_NAME_PATTERN.test(newName)
@@ -59,7 +73,7 @@ export function useRepoPicker(onDone: () => void) {
 
   const submit = async () => {
     setBusy(true);
-    setError(null);
+    setSubmitError(null);
     try {
       let repo: GitHubRepo | null = null;
       if (choice === "new") repo = await api("github:createRepo", newName.trim(), true);
@@ -67,7 +81,7 @@ export function useRepoPicker(onDone: () => void) {
       setConfig(await api("vault:setup", { repo, localPath }));
       onDone();
     } catch (e) {
-      setError(errorMessage(e));
+      setSubmitError(errorMessage(e));
       setBusy(false);
     }
   };
@@ -77,6 +91,7 @@ export function useRepoPicker(onDone: () => void) {
     login: auth.user?.login ?? "",
     repos,
     filtered,
+    matchCount: matching.length,
     filter,
     setFilter,
     choice,
@@ -87,7 +102,9 @@ export function useRepoPicker(onDone: () => void) {
     localPath,
     chooseFolder,
     busy,
-    error,
+    listError,
+    retryList,
+    submitError,
     submit,
     canSubmit: !nameError && !!localPath,
   };
