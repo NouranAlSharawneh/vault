@@ -15,6 +15,7 @@ import { MetadataBar } from "./components/metadata-bar/metadata-bar.component";
 import { useUnsavedGuard } from "./components/unsaved-guard/hooks/use-unsaved-guard.hook";
 import { UnsavedGuard } from "./components/unsaved-guard/unsaved-guard.component";
 import type { SaveMode } from "./editor.types";
+import { useDocumentEdited } from "./hooks/use-document-edited.hook";
 import { useEditorDraft } from "./hooks/use-editor-draft.hook";
 import { useEditorOpen } from "./hooks/use-editor-open.hook";
 import { useEditorShortcuts } from "./hooks/use-editor-shortcuts.hook";
@@ -36,6 +37,7 @@ export function Editor() {
     sourceDir: d.sourcePath ? parentDir(d.sourcePath) : null,
   });
   const guard = useUnsavedGuard(d.dirty);
+  useDocumentEdited(d.dirty);
   /**
    * Save, then close at once. This used to hold the window open for the "Saved" flash,
    * which read as the window refusing to go; the main window shows the result anyway.
