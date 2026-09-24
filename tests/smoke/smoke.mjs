@@ -666,7 +666,7 @@ await win.click('button[aria-label="dismiss"]');
 // Trash has no sidebar row any more — it is reached from Settings.
 await win.keyboard.press("Control+,");
 await win.waitForSelector("text=Back to vault");
-await win.click('button:has-text("View trash")');
+await win.click('button:has-text("Open trash")');
 await win.waitForSelector("text=Concorde >> nth=0", { timeout: 5000 });
 await win.click("text=Concorde >> nth=0");
 await win.waitForSelector('button:has-text("Restore")');
