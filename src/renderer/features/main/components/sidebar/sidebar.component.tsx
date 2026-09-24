@@ -38,11 +38,7 @@ export function Sidebar({
 
           return (
             <ListRow key={c.key} selected={active} onClick={() => onCollection(c.key)}>
-              {c.key === "all" ? (
-                <Logo size={14} small className="text-cherry" />
-              ) : (
-                <Icon size={13} className="text-ink-3" />
-              )}
+              {c.key === "all" ? <Logo size={14} /> : <Icon size={13} className="text-ink-3" />}
               {c.label}
               {count !== undefined && <span className="ml-auto text-xs text-ink-4">{count}</span>}
             </ListRow>

@@ -12,9 +12,9 @@ export const README_FILE = "README.md";
 export const QUERY_OPERATORS = ["project:", "tags:", "created:", "source:", "is:"] as const;
 
 // ---- metadata block --------------------------------------------------------------
-// Vault writes its metadata as a fenced YAML block at the END of the file, under a rule,
+// Marasca writes its metadata as a fenced YAML block at the END of the file, under a rule,
 // so GitHub's preview shows the content first and the fields as a small code block below.
-// Files with classic top frontmatter (Obsidian, Jekyll, older Vault) are still read.
+// Files with classic top frontmatter (Obsidian, Jekyll, older Marasca) are still read.
 export const META_RULE = "---";
 export const META_FENCE_OPEN = "```yaml";
 export const META_FENCE_CLOSE = "```";
@@ -37,8 +37,8 @@ export const SEARCH_LIMIT = 100;
 export const EXCERPT_LENGTH = 200;
 
 // ---- assets ----------------------------------------------------------------------
-/** `vault://asset/<repo-relative path>` — images/media referenced from a doc, served by main. */
-export const ASSET_SCHEME = "vault";
+/** `marasca://asset/<repo-relative path>` — images/media referenced from a doc, served by main. */
+export const ASSET_SCHEME = "marasca";
 export const ASSET_HOST = "asset";
 export const VIDEO_EXTENSIONS = new Set(["mp4", "webm", "mov", "m4v", "ogv"]);
 /** MIME types main will serve from the vault; anything else is refused. */
@@ -124,15 +124,15 @@ export const DEFAULT_HOTKEY = "Control+Alt+V";
 /** Defaults we have shipped before; a saved hotkey equal to one of these follows the current default. */
 export const LEGACY_HOTKEYS = ["Alt+Space"] as const;
 export const DEFAULT_VAULT_NAME = "vault";
-export const APP_ID = "dev.nunu.vault";
-export const GIT_IDENTITY = { name: "Vault", email: "vault@localhost" } as const;
+export const APP_ID = "dev.nunu.marasca";
+export const GIT_IDENTITY = { name: "Marasca", email: "marasca@localhost" } as const;
 
 // ---- network ----------------------------------------------------------------------
 export const GITHUB_API = "https://api.github.com";
 export const GITHUB_WEB = "https://github.com";
 export const GITHUB_API_VERSION = "2022-11-28";
 export const NETWORK_TIMEOUT_MS = 20_000;
-export const USER_AGENT = "vault-desktop";
+export const USER_AGENT = "marasca-desktop";
 export const OAUTH_DEVICE_GRANT = "urn:ietf:params:oauth:grant-type:device_code";
 export const OAUTH_SCOPE = "repo";
 export const REPO_PAGE_SIZE = 100;
@@ -154,6 +154,10 @@ export const PAPER_BG = "#fdfcfa";
 export const OVERLAY_BG = "#1e1d1b";
 
 // ---- ui ------------------------------------------------------------------------------
+/** Logo hop on the welcome screen: frame length. It loops continuously, no rest. */
+export const LOGO_HOP_FRAME_MS = 110;
+/** Below this size the logo switches to its 16×16 drawing. */
+export const LOGO_LARGE_MIN_PX = 32;
 /** Deterministic project swatches; picked by slug hash so nothing is stored. */
 export const PROJECT_COLORS = [
   "#3b82f6",
@@ -168,16 +172,7 @@ export const PROJECT_COLORS = [
 export const INBOX_COLOR = "#a9a49b";
 export const WORDS_PER_MINUTE = 220;
 
-// ---- oauth web flow (loopback redirect) --------------------------------------------
-/** Ports tried in order for the local redirect listener; register the first one as the OAuth App callback. */
-export const OAUTH_LOOPBACK_PORTS = [47831, 47832, 47833, 47834, 47835] as const;
-export const OAUTH_LOOPBACK_HOST = "127.0.0.1";
-export const OAUTH_CALLBACK_PATH = "/callback";
-/** How long the listener waits for the browser to come back. */
-export const OAUTH_TIMEOUT_MS = 5 * 60_000;
-/** How long a cancelled OAuth web flow waits before tearing down, so a StrictMode
- * remount (or a double click) rejoins the same flow instead of starting a second one. */
-export const WEB_FLOW_CANCEL_GRACE_MS = 1500;
+// ---- oauth ------------------------------------------------------------------------
 /** Renew an expiring GitHub token this long before its deadline. */
 export const TOKEN_REFRESH_SKEW_MS = 5 * 60 * 1000;
 /** The capture sheet is sized to its content between these bounds. */

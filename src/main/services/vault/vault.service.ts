@@ -149,7 +149,7 @@ export class VaultService extends EventEmitter {
     await fs.mkdir(dirname(abs), { recursive: true });
 
     // Something else wrote this file while it was open here — another editor, a pull, a
-    // second Vault window. Its version is committed before ours lands on top, so it is
+    // second Marasca window. Its version is committed before ours lands on top, so it is
     // one entry back in the history drawer rather than gone. We do not refuse the save:
     // the user is mid-thought, and their text is the one thing that must not be lost.
     const preservedExternalEdit = await this.preserveExternalEdit(req, title);
@@ -185,7 +185,7 @@ export class VaultService extends EventEmitter {
 
   /**
    * The file a save is about to replace, as it reads now (null for a new document), with
-   * what the save keeps from it: its created date and any frontmatter Vault doesn't own.
+   * what the save keeps from it: its created date and any frontmatter Marasca doesn't own.
    */
   private async readExisting(req: SaveRequest): Promise<ExistingDoc> {
     const path = req.existingPath;

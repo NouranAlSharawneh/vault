@@ -30,7 +30,7 @@ describe("capture sheet keys", () => {
     expect(onHide).not.toHaveBeenCalled();
   });
 
-  it("saves on ⌘↵ without asking to open Vault", () => {
+  it("saves on ⌘↵ without asking to open Marasca", () => {
     const onSave = vi.fn();
     renderHook(() =>
       useCaptureKeys({ onSave, onOpenEditor: vi.fn(), onActions: vi.fn(), onHide: vi.fn() }),
@@ -39,7 +39,7 @@ describe("capture sheet keys", () => {
     expect(onSave).toHaveBeenCalledWith(false);
   });
 
-  it("saves and asks to open Vault on ⌥⌘↵", () => {
+  it("saves and asks to open Marasca on ⌥⌘↵", () => {
     const onSave = vi.fn();
     renderHook(() =>
       useCaptureKeys({ onSave, onOpenEditor: vi.fn(), onActions: vi.fn(), onHide: vi.fn() }),

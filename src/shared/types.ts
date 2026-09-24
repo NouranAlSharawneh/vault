@@ -63,7 +63,7 @@ export interface AssetRef {
 
 /** What a body's relative refs turned out to be, and the folder they were read against. */
 export interface AssetResolution {
-  /** The folder used — the one passed in, or the one Vault worked out on its own. */
+  /** The folder used — the one passed in, or the one Marasca worked out on its own. */
   baseDir: string | null;
   /** True when `baseDir` was found automatically rather than supplied. */
   detected: boolean;
@@ -112,7 +112,7 @@ export interface StoredDraft {
 export interface SaveResult {
   path: string;
   /**
-   * Set when the file had been changed outside Vault since the editor loaded it. That
+   * Set when the file had been changed outside Marasca since the editor loaded it. That
    * version was committed first, so it is one entry back in the document's history.
    */
   preservedExternalEdit?: boolean;
@@ -284,16 +284,16 @@ export interface DeviceCodeSession {
 
 export type DevicePollStatus = "pending" | "slow_down" | "expired" | "denied" | "ok" | "error";
 
-export type AuthMethod = "pat" | "device" | "oauth";
+export type AuthMethod = "pat" | "device";
 
-/** Which sign-in routes are configured on this machine. PAT is always available. */
+/**
+ * Which sign-in routes are configured on this machine. PAT is always available. There is
+ * no browser-redirect (web) flow: it needs a client secret, and a secret shipped inside
+ * the app is not a secret.
+ */
 export interface AuthMethods {
-  oauth: boolean;
   device: boolean;
 }
-
-export type WebFlowStatus =
-  "waiting" | "exchanging" | "ok" | "denied" | "cancelled" | "timeout" | "error";
 
 export interface AuthState {
   status: "signed-out" | "signed-in" | "expired";

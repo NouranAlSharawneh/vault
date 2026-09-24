@@ -14,7 +14,7 @@ export async function resetApp(
     buttons: ["Reset & relaunch", "Cancel"],
     defaultId: 1,
     cancelId: 1,
-    message: "Reset Vault?",
+    message: "Reset Marasca?",
     detail:
       "Signs you out and forgets which vault is connected. Your markdown files and git history stay exactly where they are.",
   };

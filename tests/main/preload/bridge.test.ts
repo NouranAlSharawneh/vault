@@ -21,13 +21,13 @@ vi.mock("electron", () => ({
 }));
 
 import type { IpcRendererEvent } from "electron";
-import { EVENT_CHANNELS, INVOKE_CHANNELS, type VaultApi } from "@shared/ipc";
+import { EVENT_CHANNELS, INVOKE_CHANNELS, type MarascaApi } from "@shared/ipc";
 
-async function bridge(): Promise<VaultApi> {
+async function bridge(): Promise<MarascaApi> {
   vi.resetModules();
   await import("../../../src/preload/index");
 
-  return electron.exposed.vault as VaultApi;
+  return electron.exposed.marasca as MarascaApi;
 }
 
 describe("the preload bridge", () => {
@@ -41,8 +41,8 @@ describe("the preload bridge", () => {
   it("is the only thing the renderer gets — no ipcRenderer, no node", async () => {
     await bridge();
 
-    expect(Object.keys(electron.exposed)).toEqual(["vault"]);
-    expect(Object.keys(electron.exposed.vault as object).sort()).toEqual(["invoke", "on"]);
+    expect(Object.keys(electron.exposed)).toEqual(["marasca"]);
+    expect(Object.keys(electron.exposed.marasca as object).sort()).toEqual(["invoke", "on"]);
   });
 
   it("forwards a known invoke channel untouched", async () => {

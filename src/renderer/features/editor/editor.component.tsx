@@ -97,7 +97,7 @@ export function Editor() {
 
   useEffect(() => {
     const name = d.effectiveTitle || target.path || "New document";
-    document.title = `${name}${d.dirty ? " •" : ""} — Vault`;
+    document.title = `${name}${d.dirty ? " •" : ""} — Marasca`;
   }, [d.effectiveTitle, d.dirty, target.path]);
 
   const projects = index?.projects.filter((p) => p.slug !== "_inbox").map((p) => p.name) ?? [];

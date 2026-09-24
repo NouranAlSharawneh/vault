@@ -29,13 +29,14 @@ afterAll(() => github.close());
 describe("refreshAccessToken", () => {
   it("asks GitHub the way the refresh grant requires", async () => {
     reply = { access_token: "gho_new", refresh_token: "ghr_new", expires_in: 28_800 };
-    await refreshAccessToken({ clientId: "cid", clientSecret: "sekret", refreshToken: "ghr_old" });
+    await refreshAccessToken({ clientId: "cid", refreshToken: "ghr_old" });
     expect(received).toMatchObject({
       client_id: "cid",
-      client_secret: "sekret",
       grant_type: "refresh_token",
       refresh_token: "ghr_old",
     });
+    // The shipped app has no secret; sending one would mean one got baked in.
+    expect(received).not.toHaveProperty("client_secret");
   });
 
   it("keeps the rotated refresh token — GitHub issues a new one each time", async () => {
@@ -43,7 +44,6 @@ describe("refreshAccessToken", () => {
     reply = { access_token: "gho_new", refresh_token: "ghr_new", expires_in: 28_800 };
     const creds = await refreshAccessToken({
       clientId: "cid",
-      clientSecret: "sekret",
       refreshToken: "ghr_old",
     });
     expect(creds.accessToken).toBe("gho_new");
@@ -53,8 +53,8 @@ describe("refreshAccessToken", () => {
 
   it("surfaces a refusal as an auth error rather than pretending it worked", async () => {
     reply = { error: "bad_refresh_token" };
-    await expect(
-      refreshAccessToken({ clientId: "cid", clientSecret: "sekret", refreshToken: "stale" }),
-    ).rejects.toThrow(/bad_refresh_token/);
+    await expect(refreshAccessToken({ clientId: "cid", refreshToken: "stale" })).rejects.toThrow(
+      /bad_refresh_token/,
+    );
   });
 });

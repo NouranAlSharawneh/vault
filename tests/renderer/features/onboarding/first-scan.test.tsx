@@ -5,7 +5,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { FirstScan } from "@/features/onboarding/components/first-scan/first-scan.component";
 import { useApp } from "@/stores/app";
 import type { IndexSnapshot } from "@shared/types";
-import { mockVaultApi } from "../../helpers/mock-vault-api";
+import { mockMarascaApi } from "../../helpers/mock-marasca-api";
 
 const noop = () => undefined;
 
@@ -25,7 +25,7 @@ beforeEach(() => {
 
 describe("FirstScan — counts", () => {
   it("says “1 document”, not “1 documents”", async () => {
-    mockVaultApi({ "vault:index": snapshot(1, 1, 1) });
+    mockMarascaApi({ "vault:index": snapshot(1, 1, 1) });
     render(<FirstScan onDone={noop} onBack={noop} />);
     expect(await screen.findByText("document")).toBeTruthy();
     expect(screen.getByText("project")).toBeTruthy();
@@ -33,7 +33,7 @@ describe("FirstScan — counts", () => {
   });
 
   it("keeps the plural for none and for many", async () => {
-    mockVaultApi({ "vault:index": snapshot(0, 3, 0) });
+    mockMarascaApi({ "vault:index": snapshot(0, 3, 0) });
     render(<FirstScan onDone={noop} onBack={noop} />);
     expect(await screen.findByText("3")).toBeTruthy();
     expect(screen.getByText("projects")).toBeTruthy();
@@ -44,7 +44,7 @@ describe("FirstScan — counts", () => {
 
 describe("FirstScan — when the folder can’t be read", () => {
   it("stops the bar and says why, instead of sitting at 10% forever", async () => {
-    mockVaultApi({ "vault:index": new Error("EACCES: permission denied, scandir '/v'") });
+    mockMarascaApi({ "vault:index": new Error("EACCES: permission denied, scandir '/v'") });
     render(<FirstScan onDone={noop} onBack={noop} />);
     expect(await screen.findByText("Couldn’t read the vault folder.")).toBeTruthy();
     expect(screen.getByText("EACCES: permission denied, scandir '/v'")).toBeTruthy();
@@ -53,7 +53,7 @@ describe("FirstScan — when the folder can’t be read", () => {
 
   it("Try again reads the folder again and carries on when it works", async () => {
     let fail = true;
-    const { invoke } = mockVaultApi({
+    const { invoke } = mockMarascaApi({
       "vault:index": () => {
         if (fail) throw new Error("ENOENT");
 
@@ -70,7 +70,7 @@ describe("FirstScan — when the folder can’t be read", () => {
   });
 
   it("Choose a different folder goes back to the repo step", async () => {
-    mockVaultApi({ "vault:index": new Error("ENOENT") });
+    mockMarascaApi({ "vault:index": new Error("ENOENT") });
     const onBack = vi.fn();
     render(<FirstScan onDone={noop} onBack={onBack} />);
     await userEvent.click(await screen.findByRole("button", { name: "Choose a different folder" }));

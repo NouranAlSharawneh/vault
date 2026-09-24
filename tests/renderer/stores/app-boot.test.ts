@@ -2,7 +2,7 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { useApp } from "@/stores/app";
 import type { IndexSnapshot, SyncStatus, VaultConfig } from "@shared/types";
-import { mockVaultApi } from "../helpers/mock-vault-api";
+import { mockMarascaApi } from "../helpers/mock-marasca-api";
 
 const config: VaultConfig = {
   root: "/Users/nunu/Documents/vault",
@@ -47,7 +47,7 @@ beforeEach(() => {
 
 describe("boot", () => {
   it("keeps why the vault would not open, instead of passing it off as an empty one", async () => {
-    mockVaultApi({ ...answers, "vault:index": new Error("EACCES: permission denied") });
+    mockMarascaApi({ ...answers, "vault:index": new Error("EACCES: permission denied") });
     await useApp.getState().boot();
 
     expect(useApp.getState().vaultError).toBe("EACCES: permission denied");
@@ -56,7 +56,7 @@ describe("boot", () => {
   });
 
   it("does not throw the library away because the trash couldn't be listed", async () => {
-    mockVaultApi({ ...answers, "trash:list": new Error("ENOENT: .trash") });
+    mockMarascaApi({ ...answers, "trash:list": new Error("ENOENT: .trash") });
     await useApp.getState().boot();
 
     expect(useApp.getState().index).toBe(index);
@@ -66,7 +66,7 @@ describe("boot", () => {
   });
 
   it("leaves sync unknown rather than guessing when its status fails", async () => {
-    mockVaultApi({ ...answers, "sync:status": new Error("boom") });
+    mockMarascaApi({ ...answers, "sync:status": new Error("boom") });
     await useApp.getState().boot();
 
     expect(useApp.getState().index).toBe(index);
@@ -76,7 +76,7 @@ describe("boot", () => {
 
 describe("reopenVault", () => {
   it("clears the failure once the vault opens, and loads the rest", async () => {
-    const { invoke } = mockVaultApi({ ...answers, "vault:reopen": index });
+    const { invoke } = mockMarascaApi({ ...answers, "vault:reopen": index });
     useApp.setState({ config, vaultError: "EACCES: permission denied" });
     await useApp.getState().reopenVault();
 
@@ -87,7 +87,7 @@ describe("reopenVault", () => {
   });
 
   it("keeps the newest reason when it still won't open", async () => {
-    mockVaultApi({ ...answers, "vault:reopen": new Error("The folder isn’t there any more.") });
+    mockMarascaApi({ ...answers, "vault:reopen": new Error("The folder isn’t there any more.") });
     useApp.setState({ config, vaultError: "EACCES: permission denied" });
     await useApp.getState().reopenVault();
 

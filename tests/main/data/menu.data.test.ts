@@ -12,12 +12,12 @@ const everything = (menu: MenuSectionData[]): string[] =>
 describe("application menu", () => {
   it("keeps Settings and Reset in the app menu on macOS", () => {
     const menu = appMenu("Ctrl+Alt+V", { mac: true, dev: false });
-    expect(menu[0]?.label).toBe("Vault");
-    expect(section(menu, "Vault")).toEqual([
+    expect(menu[0]?.label).toBe("Marasca");
+    expect(section(menu, "Marasca")).toEqual([
       "role:about",
       "---",
       "Settings…",
-      "Reset Vault…",
+      "Reset Marasca…",
       "---",
       "role:services",
       "---",
@@ -29,15 +29,15 @@ describe("application menu", () => {
     ]);
     // Once each: not also in View, and never under Help.
     expect(everything(menu).filter((l) => l === "Settings…")).toHaveLength(1);
-    expect(everything(menu).filter((l) => l === "Reset Vault…")).toHaveLength(1);
-    expect(section(menu, "Help")).not.toContain("Reset Vault…");
+    expect(everything(menu).filter((l) => l === "Reset Marasca…")).toHaveLength(1);
+    expect(section(menu, "Help")).not.toContain("Reset Marasca…");
   });
 
   it("puts Settings and Reset in File elsewhere", () => {
     const menu = appMenu("Ctrl+Alt+V", { mac: false, dev: false });
-    expect(menu.some((s) => s.label === "Vault")).toBe(false);
-    expect(section(menu, "File")).toEqual(expect.arrayContaining(["Settings…", "Reset Vault…"]));
-    expect(section(menu, "Help")).toEqual(["Vault on GitHub"]);
+    expect(menu.some((s) => s.label === "Marasca")).toBe(false);
+    expect(section(menu, "File")).toEqual(expect.arrayContaining(["Settings…", "Reset Marasca…"]));
+    expect(section(menu, "Help")).toEqual(["Marasca on GitHub"]);
   });
 
   it("offers reload and the dev tools only in development", () => {

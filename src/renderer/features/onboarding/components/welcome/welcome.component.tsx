@@ -1,5 +1,5 @@
 import { ArrowRight } from "lucide-react";
-import { Button, Logo } from "@/components/ui";
+import { Button, Logo, Wordmark } from "@/components/ui";
 import { WELCOME_FEATURES } from "@/data/onboarding.data";
 import { FeatureItem } from "../feature-item/feature-item.component";
 import type { WelcomeProps } from "./welcome.types";
@@ -7,10 +7,10 @@ import type { WelcomeProps } from "./welcome.types";
 export function Welcome({ onNext, onLocal }: WelcomeProps) {
   return (
     <div className="pt-10">
-      <div className="mb-6 flex h-12 w-12 items-center justify-center rounded-xl border border-line bg-paper-2 text-cherry">
-        <Logo size={30} />
-      </div>
-      <h1 className="font-serif text-5xl font-medium tracking-tight text-ink">Vault</h1>
+      <Logo size={72} bounce className="mb-5 -ml-1" />
+      <h1 className="text-ink">
+        <Wordmark height={30} />
+      </h1>
       <p className="mt-3 max-w-105 text-lg text-ink-2">
         Every markdown file you'd hate to lose, committed straight to a GitHub repo you own. No
         database, no account, no lock-in.

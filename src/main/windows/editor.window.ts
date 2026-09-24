@@ -48,7 +48,7 @@ export function openEditorWindow({ path, draft }: EditorTarget = {}): BrowserWin
   const win = new BrowserWindow({
     ...COMMON_WINDOW_OPTIONS,
     ...EDITOR_WINDOW,
-    title: "New document — Vault",
+    title: "New document — Marasca",
     titleBarStyle: IS_MAC ? "hiddenInset" : "default",
     trafficLightPosition: TRAFFIC_LIGHTS,
     backgroundColor: PAPER_BG,

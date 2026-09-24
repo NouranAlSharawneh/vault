@@ -56,7 +56,7 @@ export function showCaptureWindow(): BrowserWindow {
   const { x, y, width, height } = display.workArea;
   const [w] = win.getSize();
   win.setPosition(Math.round(x + (width - w) / 2), Math.round(y + height * 0.18), false);
-  // Read before showing: once the sheet has focus, Vault is always the frontmost app.
+  // Read before showing: once the sheet has focus, Marasca is always the frontmost app.
   summonedFromAnotherApp = BrowserWindow.getFocusedWindow() === null;
   if (IS_MAC && app.dock) fire(app.dock.show(), "showing the dock icon");
   win.show();

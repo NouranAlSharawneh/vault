@@ -1,5 +1,4 @@
 export interface OAuthConfig {
+  /** Public OAuth App ID. There is deliberately no secret: the device flow needs none. */
   clientId: string;
-  /** Required for the web flow's code exchange; optional for device flow. */
-  clientSecret: string | null;
 }

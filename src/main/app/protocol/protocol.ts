@@ -14,7 +14,7 @@ export function registerAssetScheme(): void {
 }
 
 /**
- * Serve `vault://asset/<path>` from the open vault so images and media referenced from a
+ * Serve `marasca://asset/<path>` from the open vault so images and media referenced from a
  * doc render in the reader. Only paths inside the vault and only known media types.
  */
 export function registerAssetProtocol(): void {

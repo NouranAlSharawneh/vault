@@ -4,7 +4,7 @@ import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import { DEVICE_FLOW_STATUS_TEXT } from "@/data/auth.data";
 import { DeviceFlow } from "@/features/onboarding/components/device-flow/device-flow.component";
-import { mockVaultApi } from "../../helpers/mock-vault-api";
+import { mockMarascaApi } from "../../helpers/mock-marasca-api";
 
 const session = {
   userCode: "WDJB-MJRK",
@@ -15,7 +15,7 @@ const session = {
 
 describe("DeviceFlow — rejection states", () => {
   it.each(["denied", "expired"] as const)("%s → terminal text and Try again", async (status) => {
-    const { emit } = mockVaultApi({ "auth:deviceStart": session });
+    const { emit } = mockMarascaApi({ "auth:deviceStart": session });
     render(<DeviceFlow onBack={() => undefined} />);
     await screen.findByText("W"); // code rendered
     act(() => emit("auth:deviceStatus", { status }));
@@ -25,7 +25,7 @@ describe("DeviceFlow — rejection states", () => {
   });
 
   it("error (main lost GitHub mid-poll) stops waiting and offers Try again", async () => {
-    const { emit } = mockVaultApi({ "auth:deviceStart": session });
+    const { emit } = mockMarascaApi({ "auth:deviceStart": session });
     const { container } = render(<DeviceFlow onBack={() => undefined} />);
     await screen.findByText("W");
     act(() => emit("auth:deviceStatus", { status: "error" }));
@@ -35,7 +35,7 @@ describe("DeviceFlow — rejection states", () => {
   });
 
   it("ok stops the spinner", async () => {
-    const { emit } = mockVaultApi({ "auth:deviceStart": session });
+    const { emit } = mockMarascaApi({ "auth:deviceStart": session });
     const { container } = render(<DeviceFlow onBack={() => undefined} />);
     await screen.findByText("W");
     expect(container.querySelector(".animate-spin-fast")).not.toBeNull();
@@ -45,7 +45,7 @@ describe("DeviceFlow — rejection states", () => {
   });
 
   it("slow_down keeps waiting (not a failure)", async () => {
-    const { emit } = mockVaultApi({ "auth:deviceStart": session });
+    const { emit } = mockMarascaApi({ "auth:deviceStart": session });
     render(<DeviceFlow onBack={() => undefined} />);
     await screen.findByText("W");
     act(() => emit("auth:deviceStatus", { status: "slow_down" }));
@@ -56,7 +56,7 @@ describe("DeviceFlow — rejection states", () => {
 
 describe("DeviceFlow — a way out of every state", () => {
   it("while asking for a code: Cancel and Use another method", async () => {
-    mockVaultApi({ "auth:deviceStart": () => new Promise(() => undefined) });
+    mockMarascaApi({ "auth:deviceStart": () => new Promise(() => undefined) });
     const onBack = vi.fn();
     render(<DeviceFlow onBack={onBack} />);
     expect(await screen.findByText("Asking GitHub for a code…")).toBeTruthy();
@@ -68,7 +68,7 @@ describe("DeviceFlow — a way out of every state", () => {
   it("when no code comes back: the reason, Try again and Use another method", async () => {
     const reason = "No GitHub OAuth client ID configured. Paste a token instead.";
     let fail = true;
-    const { invoke } = mockVaultApi({
+    const { invoke } = mockMarascaApi({
       "auth:deviceStart": () => {
         if (fail)
           throw new Error(`Error invoking remote method 'auth:deviceStart': Error: ${reason}`);
@@ -88,7 +88,7 @@ describe("DeviceFlow — a way out of every state", () => {
   });
 
   it("with a code on screen: Use another method is still there", async () => {
-    mockVaultApi({ "auth:deviceStart": session });
+    mockMarascaApi({ "auth:deviceStart": session });
     render(<DeviceFlow onBack={() => undefined} />);
     await screen.findByText("W");
     expect(screen.getByRole("button", { name: "Use another method" })).toBeTruthy();
@@ -103,7 +103,7 @@ describe("DeviceFlow — the code", () => {
     }));
 
   it("drops every hyphen and puts the gap where each one was", async () => {
-    mockVaultApi({ "auth:deviceStart": { ...session, userCode: "AB-CDE-F" } });
+    mockMarascaApi({ "auth:deviceStart": { ...session, userCode: "AB-CDE-F" } });
     const { container } = render(<DeviceFlow onBack={() => undefined} />);
     await screen.findByText("A");
     expect(letters(container)).toEqual([

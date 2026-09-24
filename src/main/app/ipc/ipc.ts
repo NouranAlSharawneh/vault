@@ -12,7 +12,6 @@ import {
   startDeviceFlow,
 } from "../../network/github";
 import { resolveAssets } from "../../services/assets";
-import { cancelWebFlow, runWebFlow } from "../../services/auth/web-flow.service";
 import { readClipboard } from "../../services/capture/capture.service";
 import { clearDraft, loadDraft, saveDraft } from "../../store/draft.store";
 import { getOAuthConfig } from "../../store/oauth-config";
@@ -92,23 +91,7 @@ export function registerIpcHandlers(): void {
       "pat",
     ),
   );
-  handle("auth:methods", () => {
-    const cfg = getOAuthConfig();
-
-    return { oauth: !!cfg?.clientSecret, device: !!cfg };
-  });
-  handle("auth:webStart", () => {
-    const cfg = getOAuthConfig();
-    if (!cfg) throw new Error("No GitHub OAuth App configured. See .env.example.");
-    // Fire-and-forget: progress arrives on auth:webStatus, the token via auth:state.
-    void runWebFlow(cfg, (status, message) => broadcast("auth:webStatus", { status, message }))
-      .then((token) => session.signIn(token, "oauth"))
-      .catch((e: unknown) => {
-        if (!(e instanceof Error && (e.message === "cancelled" || e.message === "timeout")))
-          console.warn("web flow failed", e);
-      });
-  });
-  handle("auth:webCancel", () => cancelWebFlow());
+  handle("auth:methods", () => ({ device: !!getOAuthConfig() }));
   handle("auth:deviceStart", async () => {
     const clientId = getOAuthConfig()?.clientId;
     if (!clientId) throw new Error("No GitHub OAuth client ID configured. Paste a token instead.");
@@ -135,7 +118,7 @@ export function registerIpcHandlers(): void {
     return {
       present: !!creds,
       expiresAt: creds?.expiresAt ?? null,
-      canRefresh: !!creds?.refreshToken && !!getOAuthConfig()?.clientSecret,
+      canRefresh: !!creds?.refreshToken && !!getOAuthConfig(),
     };
   });
 

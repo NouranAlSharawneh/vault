@@ -3,7 +3,7 @@ import { docAssetPath } from "./doc-asset-path";
 
 /**
  * Turn a markdown `src` into something the renderer can load. Absolute URLs pass
- * through; repo-relative paths become `vault://asset/<path>`, resolved GitHub-style
+ * through; repo-relative paths become `marasca://asset/<path>`, resolved GitHub-style
  * against the referencing document's folder (`/x` means the repo root).
  */
 export function resolveAssetUrl(src: string, docPath: string): string {

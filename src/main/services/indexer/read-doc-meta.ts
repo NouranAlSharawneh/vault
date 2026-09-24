@@ -57,7 +57,7 @@ export async function readDocMeta(root: string, relPath: string): Promise<DocMet
 }
 
 /**
- * Big file: read the head (excerpt, or a classic top block) and the tail (Vault's
+ * Big file: read the head (excerpt, or a classic top block) and the tail (Marasca's
  * trailing metadata block) without touching the middle.
  */
 async function parseEnds(abs: string, size: number): Promise<ParsedDoc> {

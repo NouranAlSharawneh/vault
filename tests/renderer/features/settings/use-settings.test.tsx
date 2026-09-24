@@ -5,7 +5,7 @@ import { useSettings } from "@/features/settings/hooks/use-settings.hook";
 import { useApp } from "@/stores/app";
 import { useToast } from "@/stores/toast";
 import type { VaultConfig } from "@shared/types";
-import { mockVaultApi } from "../../helpers/mock-vault-api";
+import { mockMarascaApi } from "../../helpers/mock-marasca-api";
 
 const config: VaultConfig = {
   root: "/v",
@@ -20,7 +20,7 @@ const config: VaultConfig = {
 
 describe("useSettings", () => {
   it("writes a patch through main and keeps the returned config", async () => {
-    const { invoke } = mockVaultApi({
+    const { invoke } = mockMarascaApi({
       "vault:updateConfig": () => ({ ...config, hotkey: "Alt+Super+V" }),
     });
     useApp.setState({ config });
@@ -36,7 +36,7 @@ describe("useSettings", () => {
   });
 
   it("surfaces a refused hotkey and leaves the config alone", async () => {
-    mockVaultApi({ "vault:updateConfig": new Error("Alt+Space is taken by another app") });
+    mockMarascaApi({ "vault:updateConfig": new Error("Alt+Space is taken by another app") });
     useApp.setState({ config });
     const { result } = renderHook(() => useSettings());
     await act(async () => {
@@ -47,7 +47,7 @@ describe("useSettings", () => {
   });
 
   it("forgets an image folder and empties the trash", async () => {
-    const { invoke } = mockVaultApi({
+    const { invoke } = mockMarascaApi({
       "vault:updateConfig": () => ({ ...config, assetDirs: {} }),
       "trash:purge": () => ({ removed: 2, assets: ["p/assets/a.gif"] }),
       "trash:list": () => [],
@@ -66,7 +66,7 @@ describe("useSettings", () => {
   });
 
   it("says nothing when the user cancels emptying the trash", async () => {
-    const { invoke } = mockVaultApi({ "trash:purge": () => ({ removed: 0, assets: [] }) });
+    const { invoke } = mockMarascaApi({ "trash:purge": () => ({ removed: 0, assets: [] }) });
     useApp.setState({ config });
     useToast.getState().dismiss();
     const { result } = renderHook(() => useSettings());
@@ -78,7 +78,7 @@ describe("useSettings", () => {
   });
 
   it("says when the shortcut on screen isn't bound because another app holds it", async () => {
-    mockVaultApi({ "hotkey:status": { accelerator: "Control+Alt+V", active: false } });
+    mockMarascaApi({ "hotkey:status": { accelerator: "Control+Alt+V", active: false } });
     useApp.setState({ config });
     const { result } = renderHook(() => useSettings());
     await vi.waitFor(() => expect(result.current.hotkeyTaken).toBe(true));
@@ -86,7 +86,7 @@ describe("useSettings", () => {
 
   it("does not call a shortcut taken when it was simply never registered", async () => {
     // No vault open at launch, so nothing asked for it: that is not another app's doing.
-    const { invoke } = mockVaultApi({ "hotkey:status": { accelerator: null, active: false } });
+    const { invoke } = mockMarascaApi({ "hotkey:status": { accelerator: null, active: false } });
     useApp.setState({ config });
     const { result } = renderHook(() => useSettings());
     await vi.waitFor(() => expect(invoke).toHaveBeenCalledWith("hotkey:status"));

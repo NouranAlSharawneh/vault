@@ -68,7 +68,7 @@ afterEach(() => {
   for (const d of temps.splice(0)) rmSync(d, { recursive: true, force: true });
 });
 
-describe("an edit made outside Vault", () => {
+describe("an edit made outside Marasca", () => {
   it("is committed before this window's version lands on top of it", async () => {
     const v = await openVault(mine);
     const first = await v.save({

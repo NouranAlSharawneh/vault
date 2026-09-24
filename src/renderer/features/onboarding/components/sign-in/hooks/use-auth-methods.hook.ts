@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { api } from "@/lib/api";
 import type { AuthMethods } from "@shared/types";
 
-const NONE: AuthMethods = { oauth: false, device: false };
+const NONE: AuthMethods = { device: false };
 
 /**
  * Which sign-in routes main has credentials for (PAT paste is always available). `null`

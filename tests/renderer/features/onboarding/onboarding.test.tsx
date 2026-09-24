@@ -4,15 +4,15 @@ import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it } from "vitest";
 import { Onboarding } from "@/features/onboarding/onboarding.component";
 import { useApp } from "@/stores/app";
-import { mockVaultApi } from "../../helpers/mock-vault-api";
+import { mockMarascaApi } from "../../helpers/mock-marasca-api";
 
 beforeEach(() => {
   window.location.hash = "#onboarding";
   useApp.setState({
-    auth: { status: "signed-in", user: { login: "nunu" } as never, method: "oauth" },
+    auth: { status: "signed-in", user: { login: "nunu" } as never, method: "device" },
     config: null,
   });
-  mockVaultApi({
+  mockMarascaApi({
     "github:listRepos": [],
     "vault:defaultPath": (name: string) => `/Users/nunu/Documents/${name}`,
   });

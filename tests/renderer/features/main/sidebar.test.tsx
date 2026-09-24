@@ -3,7 +3,7 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { Sidebar } from "@/features/main/components/sidebar/sidebar.component";
 import type { VaultConfig } from "@shared/types";
-import { mockVaultApi } from "../../helpers/mock-vault-api";
+import { mockMarascaApi } from "../../helpers/mock-marasca-api";
 
 const config: VaultConfig = {
   root: "/vault",
@@ -17,7 +17,7 @@ const config: VaultConfig = {
 
 describe("the sidebar footer", () => {
   it("has a visible way into Settings", () => {
-    mockVaultApi();
+    mockMarascaApi();
     const onSettings = vi.fn();
     render(
       <Sidebar
@@ -39,7 +39,7 @@ describe("the sidebar footer", () => {
 
 describe("the sidebar tags", () => {
   it("count in words that agree with the number", () => {
-    mockVaultApi();
+    mockMarascaApi();
     render(
       <Sidebar
         index={{

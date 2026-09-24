@@ -12,7 +12,7 @@ const store = vi.hoisted(() => ({
   cleared: 0,
 }));
 const oauth = vi.hoisted(() => ({
-  config: null as null | { clientId: string; clientSecret: string },
+  config: null as null | { clientId: string },
 }));
 const settings = vi.hoisted(() => ({
   value: {
@@ -144,7 +144,7 @@ describe("session", () => {
 
     it("renews silently when a 401 is only an expired access token", async () => {
       signedInWith({ refreshToken: "ghr_refresh" });
-      oauth.config = { clientId: "id", clientSecret: "secret" };
+      oauth.config = { clientId: "id" };
       github.fetchUser.mockRejectedValueOnce(new NetworkError("Bad credentials", 401));
       github.refreshAccessToken.mockResolvedValue({
         accessToken: "gho_new",
@@ -160,9 +160,41 @@ describe("session", () => {
       expect(store.saved).toHaveLength(1);
     });
 
+    it("renews with only the public client ID — no secret is sent or needed", async () => {
+      signedInWith({ refreshToken: "ghr_refresh" });
+      oauth.config = { clientId: "id" };
+      github.fetchUser.mockRejectedValueOnce(new NetworkError("Bad credentials", 401));
+      github.refreshAccessToken.mockResolvedValue({
+        accessToken: "gho_new",
+        refreshToken: "ghr_new",
+        expiresAt: Date.now() + 3_600_000,
+        refreshExpiresAt: null,
+      });
+      github.fetchUser.mockResolvedValueOnce(USER);
+      await freshSession().restore();
+
+      expect(github.refreshAccessToken).toHaveBeenCalledWith({
+        clientId: "id",
+        refreshToken: "ghr_refresh",
+      });
+    });
+
+    it("is expired, not stuck, when GitHub refuses a secretless refresh", async () => {
+      signedInWith({ refreshToken: "ghr_refresh" });
+      oauth.config = { clientId: "id" };
+      github.fetchUser.mockRejectedValue(new NetworkError("Bad credentials", 401));
+      github.refreshAccessToken.mockRejectedValue(
+        new NetworkError("incorrect_client_credentials", 401),
+      );
+      const session = freshSession();
+      await session.restore();
+
+      expect(session.auth.status).toBe("expired");
+    });
+
     it("is expired when the refresh token is itself past its deadline", async () => {
       signedInWith({ refreshToken: "ghr_refresh", refreshExpiresAt: Date.now() - 1000 });
-      oauth.config = { clientId: "id", clientSecret: "secret" };
+      oauth.config = { clientId: "id" };
       github.fetchUser.mockRejectedValue(new NetworkError("Bad credentials", 401));
       const session = freshSession();
       await session.restore();
@@ -224,7 +256,7 @@ describe("session", () => {
         refreshToken: "ghr_refresh",
         expiresAt: Date.now() + TOKEN_REFRESH_SKEW_MS - 1000,
       });
-      oauth.config = { clientId: "id", clientSecret: "secret" };
+      oauth.config = { clientId: "id" };
       github.refreshAccessToken.mockResolvedValue({
         accessToken: "gho_new",
         refreshToken: "ghr_new",
@@ -240,7 +272,7 @@ describe("session", () => {
 
     it("leaves a token with plenty of time on it alone", async () => {
       signedInWith({ refreshToken: "ghr_refresh", expiresAt: Date.now() + 60 * 60 * 1000 });
-      oauth.config = { clientId: "id", clientSecret: "secret" };
+      oauth.config = { clientId: "id" };
       const session = freshSession();
       await session.freshenToken();
 

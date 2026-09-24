@@ -1,6 +1,6 @@
 {
-  "name": "vault",
-  "productName": "Vault",
+  "name": "marasca",
+  "productName": "Marasca",
   "version": "0.1.0",
   "description": "Catches every markdown file you'd hate to lose and commits it straight to a GitHub repo you own.",
   "main": "./out/main/index.js",
@@ -23,7 +23,8 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "prepare": "husky || true",
-    "reset": "node scripts/reset-app-data.mjs"
+    "reset": "node scripts/reset-app-data.mjs",
+    "verify:sign": "codesign --verify --deep --strict --verbose=2 \"release/mac-arm64/Marasca.app\" && codesign -dv \"release/mac-arm64/Marasca.app\""
   },
   "dependencies": {
     "@codemirror/commands": "^6.8.1",
@@ -90,8 +91,8 @@
     "vitest": "^3.2.7"
   },
   "build": {
-    "appId": "dev.nunu.vault",
-    "productName": "Vault",
+    "appId": "dev.nunu.marasca",
+    "productName": "Marasca",
     "directories": {
       "output": "release"
     },
@@ -105,7 +106,9 @@
         "dmg"
       ],
       "icon": "resources/icon.png",
-      "identity": null
+      "identity": "-",
+      "hardenedRuntime": false,
+      "gatekeeperAssess": false
     }
   },
   "lint-staged": {

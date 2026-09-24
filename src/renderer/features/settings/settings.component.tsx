@@ -20,7 +20,7 @@ export function Settings() {
         title="No vault connected"
         action={
           <Button variant="primary" onClick={() => (window.location.hash = "onboarding?signin")}>
-            Set up Vault
+            Set up Marasca
           </Button>
         }
       />
@@ -44,7 +44,7 @@ export function Settings() {
           <header className="mb-3 flex flex-col gap-1">
             <h1 className="font-serif text-4xl font-medium tracking-tight text-ink">Settings</h1>
             <p className="text-md text-ink-3">
-              How Vault captures, syncs and stores your documents.
+              How Marasca captures, syncs and stores your documents.
             </p>
           </header>
 
@@ -196,7 +196,7 @@ export function Settings() {
               description={
                 assetDirs.length
                   ? "Where relative image paths resolve when you capture into a project."
-                  : "None yet — Vault asks the first time a capture references relative images."
+                  : "None yet — Marasca asks the first time a capture references relative images."
               }
             />
             {assetDirs.map(([slug, dir]) => (
@@ -244,7 +244,7 @@ export function Settings() {
               </Button>
             </SettingRow>
             <SettingRow
-              label="Reset Vault"
+              label="Reset Marasca"
               description="Forget this vault and sign out. Files and git history stay on disk."
             >
               <Button variant="danger" onClick={s.reset}>
@@ -254,7 +254,7 @@ export function Settings() {
           </SettingGroup>
 
           {s.version && (
-            <p className="text-center font-mono text-2xs text-ink-4">Vault {s.version}</p>
+            <p className="text-center font-mono text-2xs text-ink-4">Marasca {s.version}</p>
           )}
         </div>
       </div>

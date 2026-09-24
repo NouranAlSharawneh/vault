@@ -4,15 +4,15 @@ import { resolveAssetUrl } from "@shared/helpers";
 describe("resolveAssetUrl", () => {
   it("resolves relative paths against the document's folder", () => {
     expect(resolveAssetUrl("docs/hero.png", "atlas-api/spec.md")).toBe(
-      "vault://asset/atlas-api/docs/hero.png",
+      "marasca://asset/atlas-api/docs/hero.png",
     );
-    expect(resolveAssetUrl("./a b.png", "notes.md")).toBe("vault://asset/a%20b.png");
-    expect(resolveAssetUrl("../shared/x.gif", "p/q/doc.md")).toBe("vault://asset/p/shared/x.gif");
+    expect(resolveAssetUrl("./a b.png", "notes.md")).toBe("marasca://asset/a%20b.png");
+    expect(resolveAssetUrl("../shared/x.gif", "p/q/doc.md")).toBe("marasca://asset/p/shared/x.gif");
   });
 
   it("treats a leading slash as the repo root and never escapes it", () => {
-    expect(resolveAssetUrl("/assets/x.png", "p/doc.md")).toBe("vault://asset/assets/x.png");
-    expect(resolveAssetUrl("../../../etc/passwd", "p/doc.md")).toBe("vault://asset/etc/passwd");
+    expect(resolveAssetUrl("/assets/x.png", "p/doc.md")).toBe("marasca://asset/assets/x.png");
+    expect(resolveAssetUrl("../../../etc/passwd", "p/doc.md")).toBe("marasca://asset/etc/passwd");
   });
 
   it("leaves absolute URLs and anchors alone", () => {

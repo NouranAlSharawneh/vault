@@ -29,12 +29,11 @@ import type {
   Template,
   TrashedDoc,
   VaultConfig,
-  WebFlowStatus,
 } from "../types";
 
 /**
  * Request/response IPC contract. Each key is a channel; the value is
- * `(args) => result`. The preload builds `window.vault` from this shape.
+ * `(args) => result`. The preload builds `window.marasca` from this shape.
  */
 export interface IpcInvoke {
   "auth:state": () => AuthState;
@@ -42,8 +41,6 @@ export interface IpcInvoke {
   "auth:deviceStart": () => DeviceCodeSession;
   "auth:deviceCancel": () => void;
   "auth:methods": () => AuthMethods;
-  "auth:webStart": () => void;
-  "auth:webCancel": () => void;
   "auth:signOut": () => void;
   /** What the stored credential looks like — never the token itself. */
   "auth:tokenStatus": () => TokenStatus;
@@ -149,7 +146,6 @@ export interface IpcEvents {
   "sync:status": SyncStatus;
   "auth:state": AuthState;
   "auth:deviceStatus": { status: DevicePollStatus };
-  "auth:webStatus": { status: WebFlowStatus; message?: string };
   "capture:shown": ClipboardCapture;
   /** The sheet went away (Esc, blur, save or the hotkey): drop anything still pending. */
   "capture:hidden": null;
@@ -162,8 +158,8 @@ export interface IpcEvents {
 export type InvokeChannel = keyof IpcInvoke;
 export type EventChannel = keyof IpcEvents;
 
-/** The API surface exposed on `window.vault`. */
-export interface VaultApi {
+/** The API surface exposed on `window.marasca`. */
+export interface MarascaApi {
   invoke: <C extends InvokeChannel>(
     channel: C,
     ...args: Parameters<IpcInvoke[C]>

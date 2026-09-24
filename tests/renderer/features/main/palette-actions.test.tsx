@@ -6,7 +6,7 @@ import { CommandPalette } from "@/features/main/components/command-palette/comma
 import { useApp } from "@/stores/app";
 import { useToast } from "@/stores/toast";
 import type { ConflictPair, PullResult, SyncStatus, VaultConfig } from "@shared/types";
-import { mockVaultApi } from "../../helpers/mock-vault-api";
+import { mockMarascaApi } from "../../helpers/mock-marasca-api";
 
 const sync = (patch: Partial<SyncStatus> = {}): SyncStatus => ({
   state: "synced",
@@ -33,13 +33,13 @@ const config: VaultConfig = {
 const EMPTY_INDEX = { docs: [], projects: [], tags: [], orphans: 0, headSha: null, scannedAt: 0 };
 
 beforeEach(() => {
-  mockVaultApi();
+  mockMarascaApi();
   useToast.getState().dismiss();
   useApp.setState({ config, index: EMPTY_INDEX, sync: sync() } as never);
 });
 
 const pullAnswering = async (result: Partial<PullResult>, onReviewConflicts = vi.fn()) => {
-  const { invoke } = mockVaultApi({
+  const { invoke } = mockMarascaApi({
     "sync:pull": { conflicts: [], pulled: 0, failure: null, ...result },
   });
   render(
@@ -107,7 +107,7 @@ describe("palette actions", () => {
   });
 
   it("says what a rescan found", async () => {
-    mockVaultApi({
+    mockMarascaApi({
       "vault:rescan": { ...EMPTY_INDEX, docs: [{}, {}] },
     });
     render(<CommandPalette onClose={vi.fn()} onOpenDoc={vi.fn()} />);
@@ -120,7 +120,7 @@ describe("palette actions", () => {
   });
   it("says what a push did", async () => {
     useApp.setState({ sync: sync({ state: "pending", ahead: 2 }) } as never);
-    mockVaultApi({ "sync:pushNow": sync() });
+    mockMarascaApi({ "sync:pushNow": sync() });
     render(<CommandPalette onClose={vi.fn()} onOpenDoc={vi.fn()} />);
     await userEvent.click(screen.getByText("Push 2 pending docs"));
     await vi.waitFor(() =>
@@ -130,7 +130,9 @@ describe("palette actions", () => {
 
   it("says a push failed instead of going quiet", async () => {
     useApp.setState({ sync: sync({ state: "pending", ahead: 1 }) } as never);
-    mockVaultApi({ "sync:pushNow": sync({ state: "error", ahead: 1, failure: "no-permission" }) });
+    mockMarascaApi({
+      "sync:pushNow": sync({ state: "error", ahead: 1, failure: "no-permission" }),
+    });
     render(<CommandPalette onClose={vi.fn()} onOpenDoc={vi.fn()} />);
     await userEvent.click(screen.getByText("Push 1 pending doc"));
     await vi.waitFor(() =>

@@ -1,4 +1,6 @@
-# Vault
+# Marasca
+
+<img src="docs/brand/marasca-lockup.svg" alt="Marasca" width="420">
 
 A macOS desktop app that catches every markdown file you'd hate to lose and commits it straight to a GitHub repository you own. **No database, no account, no lock-in** — the git repo _is_ the database.
 
@@ -6,6 +8,10 @@ A macOS desktop app that catches every markdown file you'd hate to lose and comm
 - ⌘K finds any document by title, frontmatter or body text.
 - Every save is a commit, so version history and restore come for free.
 - The vault stays fully usable if this app disappears: it's just `.md` files with YAML frontmatter.
+
+## Install
+
+Download the `.dmg` from Releases and drag Marasca to Applications. The app isn't notarized by Apple yet, so macOS asks you to confirm it once. [docs/INSTALL.md](docs/INSTALL.md) has the two-click walkthrough.
 
 ## Stack
 
@@ -18,10 +24,11 @@ npm install
 npm run dev        # launches Electron with hot reload
 npm run typecheck
 npm test
-npm run dist       # unsigned .dmg into release/
+npm run dist       # ad-hoc signed .dmg into release/ (not notarized)
+npm run verify:sign  # check the built app's signature (macOS)
 ```
 
-GitHub auth: paste a fine-grained personal access token (Contents: read/write on the vault repo). OAuth device flow is built in and activates when `VAULT_GITHUB_CLIENT_ID` is set (register a free OAuth App at github.com/settings/developers and enable Device Flow).
+GitHub auth: the OAuth device flow ("Continue with GitHub") when `MAIN_VITE_GITHUB_CLIENT_ID` is set at build time — register a free OAuth App at github.com/settings/developers and tick **Enable Device Flow** — or a pasted fine-grained personal access token (Contents: read/write on the vault repo). Only the client ID is ever used. Never put the client secret in `.env`: anything in the build can be read back out of the `.app`, and the device flow doesn't need it.
 
 ## Repo layout of a vault
 

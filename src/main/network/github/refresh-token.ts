@@ -5,16 +5,16 @@ import { toCredentials } from "./token-grant";
 
 /**
  * Trade a refresh token for a new access token. Only applies when the GitHub app issues
- * expiring tokens — otherwise there is no refresh token and nothing to do.
+ * expiring tokens — otherwise there is no refresh token and nothing to do. No client
+ * secret is sent: the shipped app has none (anything in the binary is public). If GitHub
+ * insists on one, this fails and the user is asked to sign in again.
  */
 export async function refreshAccessToken({
   clientId,
-  clientSecret,
   refreshToken,
 }: RefreshParams): Promise<StoredCredentials> {
   const { data } = await githubOAuth().post<RawDeviceToken>("/login/oauth/access_token", {
     client_id: clientId,
-    client_secret: clientSecret,
     grant_type: "refresh_token",
     refresh_token: refreshToken,
   });
