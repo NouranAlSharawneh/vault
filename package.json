@@ -23,7 +23,8 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "prepare": "husky || true",
-    "reset": "node scripts/reset-app-data.mjs"
+    "reset": "node scripts/reset-app-data.mjs",
+    "verify:sign": "codesign --verify --deep --strict --verbose=2 \"release/mac-arm64/Marasca.app\" && codesign -dv \"release/mac-arm64/Marasca.app\""
   },
   "dependencies": {
     "@codemirror/commands": "^6.8.1",
@@ -105,7 +106,9 @@
         "dmg"
       ],
       "icon": "resources/icon.png",
-      "identity": null
+      "identity": "-",
+      "hardenedRuntime": false,
+      "gatekeeperAssess": false
     }
   },
   "lint-staged": {

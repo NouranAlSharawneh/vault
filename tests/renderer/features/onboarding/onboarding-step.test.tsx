@@ -6,7 +6,7 @@ import { useApp } from "@/stores/app";
 import type { AuthState, VaultConfig } from "@shared/types";
 
 const config = { root: "/v", remote: "nunu/vault2", branch: "main" } as VaultConfig;
-const expired: AuthState = { status: "expired", user: null, method: "oauth" };
+const expired: AuthState = { status: "expired", user: null, method: "device" };
 const signedOut: AuthState = { status: "signed-out", user: null, method: null };
 
 describe("useOnboardingStep", () => {

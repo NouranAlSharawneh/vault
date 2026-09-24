@@ -14,7 +14,7 @@ const noop = () => undefined;
 const repo = (fullName: string) =>
   ({ fullName, private: true, defaultBranch: "main" }) as unknown as GitHubRepo;
 
-const signIn = (method: AuthMethod = "oauth") =>
+const signIn = (method: AuthMethod = "device") =>
   useApp.setState({
     auth: { status: "signed-in", user: { login: "nunu" } as never, method },
     config: null,

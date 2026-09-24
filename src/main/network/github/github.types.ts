@@ -40,21 +40,7 @@ export interface RawDeviceToken {
 
 export interface RefreshParams {
   clientId: string;
-  clientSecret: string;
   refreshToken: string;
-}
-
-export interface AuthorizeParams {
-  clientId: string;
-  redirectUri: string;
-  state: string;
-}
-
-export interface ExchangeParams {
-  clientId: string;
-  clientSecret: string;
-  code: string;
-  redirectUri: string;
 }
 
 export type DeviceFlowStart = DeviceCodeSession & { deviceCode: string };

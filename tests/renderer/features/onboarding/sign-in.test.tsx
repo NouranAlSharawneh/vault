@@ -8,36 +8,28 @@ import { mockMarascaApi } from "../../helpers/mock-marasca-api";
 const noop = () => undefined;
 
 describe("SignIn — which methods are offered", () => {
-  it("with an OAuth App configured: GitHub is primary, device code and token are fallbacks", async () => {
-    mockMarascaApi({ "auth:methods": { oauth: true, device: true } });
+  it("with a client ID configured: GitHub (device code) is primary, token is the fallback", async () => {
+    mockMarascaApi({ "auth:methods": { device: true } });
     render(<SignIn onBack={noop} onLocal={noop} />);
     expect(await screen.findByRole("button", { name: /Continue with GitHub/ })).toBeTruthy();
-    expect(screen.getByRole("button", { name: /Use a device code/ })).toBeTruthy();
     expect(screen.getByRole("button", { name: /Paste a token instead/ })).toBeTruthy();
   });
 
   it("with nothing configured: only paste-a-token is offered", async () => {
-    mockMarascaApi({ "auth:methods": { oauth: false, device: false } });
+    mockMarascaApi({ "auth:methods": { device: false } });
     render(<SignIn onBack={noop} onLocal={noop} />);
     expect(await screen.findByRole("button", { name: /Paste a token/ })).toBeTruthy();
     expect(screen.queryByRole("button", { name: /Continue with GitHub/ })).toBeNull();
-    expect(screen.queryByRole("button", { name: /device code/ })).toBeNull();
-  });
-
-  it("with only a client ID (no secret): device code offered, no web flow", async () => {
-    mockMarascaApi({ "auth:methods": { oauth: false, device: true } });
-    render(<SignIn onBack={noop} onLocal={noop} />);
-    expect(await screen.findByRole("button", { name: /Use a device code/ })).toBeTruthy();
-    expect(screen.queryByRole("button", { name: /Continue with GitHub/ })).toBeNull();
+    expect(screen.queryByRole("button", { name: /Paste a token instead/ })).toBeNull();
   });
 
   it("offers no primary button until main answers, so it never swaps one for another", async () => {
-    let answer: (m: { oauth: boolean; device: boolean }) => void = noop;
+    let answer: (m: { device: boolean }) => void = noop;
     mockMarascaApi({ "auth:methods": () => new Promise((r) => (answer = r)) });
     render(<SignIn onBack={noop} onLocal={noop} />);
     expect(screen.queryByRole("button", { name: /Paste a token/ })).toBeNull();
     expect(screen.queryByRole("button", { name: /Continue with GitHub/ })).toBeNull();
-    act(() => answer({ oauth: true, device: false }));
+    act(() => answer({ device: true }));
     expect(await screen.findByRole("button", { name: /Continue with GitHub/ })).toBeTruthy();
   });
 
@@ -47,12 +39,29 @@ describe("SignIn — which methods are offered", () => {
     expect(await screen.findByRole("button", { name: /Paste a token/ })).toBeTruthy();
   });
 
-  it("Continue with GitHub opens the web-flow card; Use another method returns", async () => {
-    mockMarascaApi({ "auth:methods": { oauth: true, device: false } });
+  it("Continue with GitHub opens the device-code card, never a browser redirect flow", async () => {
+    const { invoke } = mockMarascaApi({
+      "auth:methods": { device: true },
+      "auth:deviceStart": {
+        userCode: "ABCD-1234",
+        verificationUri: "https://github.com/login/device",
+        expiresIn: 900,
+        interval: 5,
+      },
+    });
     render(<SignIn onBack={noop} onLocal={noop} />);
     await userEvent.click(await screen.findByRole("button", { name: /Continue with GitHub/ }));
-    expect(screen.getByText("Approve Marasca on GitHub")).toBeTruthy();
+    expect(screen.getByText("Enter this code on GitHub")).toBeTruthy();
+    expect(invoke).toHaveBeenCalledWith("auth:deviceStart");
+    expect(invoke.mock.calls.some((c) => String(c[0]).startsWith("auth:web"))).toBe(false);
     await userEvent.click(screen.getByRole("button", { name: /Use another method/ }));
     expect(screen.getByText("What GitHub will ask you to approve")).toBeTruthy();
+  });
+
+  it("Paste a token instead opens the token form", async () => {
+    mockMarascaApi({ "auth:methods": { device: true } });
+    render(<SignIn onBack={noop} onLocal={noop} />);
+    await userEvent.click(await screen.findByRole("button", { name: /Paste a token instead/ }));
+    expect(screen.getByText("Paste a fine-grained token")).toBeTruthy();
   });
 });

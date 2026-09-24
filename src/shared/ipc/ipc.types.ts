@@ -29,7 +29,6 @@ import type {
   Template,
   TrashedDoc,
   VaultConfig,
-  WebFlowStatus,
 } from "../types";
 
 /**
@@ -42,8 +41,6 @@ export interface IpcInvoke {
   "auth:deviceStart": () => DeviceCodeSession;
   "auth:deviceCancel": () => void;
   "auth:methods": () => AuthMethods;
-  "auth:webStart": () => void;
-  "auth:webCancel": () => void;
   "auth:signOut": () => void;
   /** What the stored credential looks like — never the token itself. */
   "auth:tokenStatus": () => TokenStatus;
@@ -149,7 +146,6 @@ export interface IpcEvents {
   "sync:status": SyncStatus;
   "auth:state": AuthState;
   "auth:deviceStatus": { status: DevicePollStatus };
-  "auth:webStatus": { status: WebFlowStatus; message?: string };
   "capture:shown": ClipboardCapture;
   /** The sheet went away (Esc, blur, save or the hotkey): drop anything still pending. */
   "capture:hidden": null;

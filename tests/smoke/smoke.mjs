@@ -71,9 +71,9 @@ const app = await electron.launch({
     HOME: home,
     NODE_ENV: "production",
     ELECTRON_DISABLE_SANDBOX: "1",
-    // Fake OAuth App so the sign-in screen shows every method (no network is hit).
+    // Fake OAuth App client ID so the sign-in screen offers the device flow. Only the
+    // screen is captured; the device-code request fails offline and that is fine.
     VAULT_GITHUB_CLIENT_ID: "smoke-client-id",
-    VAULT_GITHUB_CLIENT_SECRET: "smoke-client-secret",
   },
 });
 await app.firstWindow();
@@ -93,9 +93,9 @@ await win.waitForSelector("text=What GitHub will ask you to approve");
 await win.waitForTimeout(400);
 await win.screenshot({ path: join(out, "smoke-1b-signin.png") });
 await win.click("text=Continue with GitHub");
-await win.waitForSelector("text=Approve Marasca on GitHub");
+await win.waitForSelector("text=Enter this code on GitHub");
 await win.waitForTimeout(400);
-await win.screenshot({ path: join(out, "smoke-1c-webflow.png") });
+await win.screenshot({ path: join(out, "smoke-1c-deviceflow.png") });
 await win.click("text=Use another method");
 await win.click("text=Skip for now");
 await win.waitForSelector("text=Where should the vault live?");
