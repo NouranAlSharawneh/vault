@@ -3,7 +3,7 @@ import { act, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { Logo, Wordmark } from "@/components/ui";
 import { LOGO_16, LOGO_20 } from "@/data/logo.data";
-import { LOGO_HOP_FRAME_MS, LOGO_HOP_LOOPS } from "@shared/constants";
+import { LOGO_HOP_FRAME_MS } from "@shared/constants";
 
 const viewBox = (rows: readonly string[]) => `0 0 ${rows[0].length} ${rows.length}`;
 
@@ -30,20 +30,42 @@ describe("Logo", () => {
     expect(fills()).toEqual(new Set(["fill-current"]));
   });
 
-  it("hops through its frames, then rests without moving the mark", () => {
+  it("loops continuously: every frame, in order, with no pause, and never settles", () => {
     vi.useFakeTimers();
     const { hop } = LOGO_20;
+    const n = hop!.frames.length;
     render(<Logo size={72} bounce />);
     const svg = screen.getByRole("img", { name: "Marasca" });
+    const seen: string[] = [svg.innerHTML];
+    // Four full cycles, one frame at a time.
+    for (let i = 1; i <= n * 4; i++) {
+      act(() => vi.advanceTimersByTime(LOGO_HOP_FRAME_MS));
+      seen.push(svg.innerHTML);
+    }
+    // Frame i is always the same drawing as frame i + n: a clean loop, no rest inserted.
+    for (let i = 0; i + n < seen.length; i++) expect(seen[i + n], `frame ${i}`).toBe(seen[i]);
+    // And it keeps moving: no stretch of a whole cycle where the mark stands still.
+    for (let i = 0; i + n <= seen.length; i++)
+      expect(new Set(seen.slice(i, i + n)).size, `window at ${i}`).toBeGreaterThan(1);
     expect(svg.getAttribute("viewBox")).toBe(viewBox(hop!.rest));
-    const first = svg.innerHTML;
-    act(() => vi.advanceTimersByTime(LOGO_HOP_FRAME_MS));
-    expect(svg.innerHTML).not.toBe(first);
-    act(() => vi.advanceTimersByTime(LOGO_HOP_FRAME_MS * hop!.frames.length * LOGO_HOP_LOOPS));
-    const settled = svg.innerHTML;
-    act(() => vi.advanceTimersByTime(LOGO_HOP_FRAME_MS * 5));
-    expect(svg.innerHTML).toBe(settled);
-    expect(svg.getAttribute("viewBox")).toBe(viewBox(hop!.rest));
+  });
+
+  it("stays still under reduced motion", () => {
+    vi.useFakeTimers();
+    const mm = vi.spyOn(window, "matchMedia").mockReturnValue({ matches: true } as MediaQueryList);
+    render(<Logo size={72} bounce />);
+    const svg = screen.getByRole("img", { name: "Marasca" });
+    const still = svg.innerHTML;
+    act(() => vi.advanceTimersByTime(LOGO_HOP_FRAME_MS * 40));
+    expect(svg.innerHTML).toBe(still);
+    mm.mockRestore();
+  });
+
+  it("stops its timer when it unmounts", () => {
+    vi.useFakeTimers();
+    const { unmount } = render(<Logo size={72} bounce />);
+    unmount();
+    expect(vi.getTimerCount()).toBe(0);
   });
 });
 
