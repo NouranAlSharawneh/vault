@@ -1,60 +1,84 @@
-import { Check, RefreshCw } from "lucide-react";
-import { Button, Card, Kbd, SectionLabel } from "@/components/ui";
+import { ArrowRight, PenLine, RefreshCw } from "lucide-react";
+import { GitNotice } from "@/components/git-notice/git-notice.component";
+import { Button, Card, Kbd, Logo, SectionLabel } from "@/components/ui";
 import { LEARN_SHORTCUTS } from "@/data/onboarding.data";
 import { plural } from "@/helpers";
 import { api, fire } from "@/lib/api";
 import { useApp } from "@/stores/app";
 
+/**
+ * The last onboarding screen: what was set up, the two shortcuts worth knowing, and the
+ * next step. A vault that already holds documents leads with opening it; an empty one
+ * leads with writing the first.
+ */
 export function Done() {
   const config = useApp((s) => s.config);
-  const index = useApp((s) => s.index);
+  const count = useApp((s) => s.index?.docs.length ?? 0);
+  const openVault = () => (window.location.hash = "main");
+  const newDocument = () => fire(api("window:openEditor"), "Couldn’t open the editor");
 
   return (
-    <Card className="p-8 text-center">
-      <div className="mx-auto flex h-11 w-11 items-center justify-center rounded-full bg-cherry-tint text-cherry">
-        <Check size={18} strokeWidth={2.5} />
-      </div>
-      <h2 className="mt-4 font-serif text-3xl font-medium text-ink">Marasca connected</h2>
-      <p className="mt-1 text-sm text-ink-3">
-        {plural(index?.docs.length ?? 0, "document")} indexed.{" "}
+    <Card className="p-8">
+      <Logo size={56} className="mb-5 -ml-1" />
+      <h2 className="font-serif text-4xl font-medium text-ink">Your vault is ready</h2>
+      <p className="mt-2 text-md text-ink-2">
+        {plural(count, "document")} indexed.{" "}
         {config?.remote ? (
           <>
-            Commits go straight to <span className="font-mono">{config.remote}</span> on{" "}
+            Every save is a commit to <span className="font-mono">{config.remote}</span> on{" "}
             <span className="font-mono">{config.branch}</span>.
           </>
         ) : (
-          "Local-only for now — connect GitHub from Settings whenever you like."
+          "Local-only for now. Connect GitHub from Settings whenever you like."
         )}
       </p>
-      <div className="mt-6 rounded-md border border-line bg-paper-2 p-4 text-left">
-        <SectionLabel className="mb-3 text-center">Learn one thing</SectionLabel>
-        {LEARN_SHORTCUTS.map((s) => (
-          <div key={s.keys} className="mt-2 flex items-center gap-3 text-sm text-ink-2 first:mt-0">
-            <span className="w-19 shrink-0 text-right">
-              <Kbd>{s.keys}</Kbd>
-            </span>
-            {s.description}
-          </div>
-        ))}
+
+      <div className="mt-6 rounded-md border border-line bg-paper-2 p-4">
+        <SectionLabel className="mb-3">Two shortcuts worth learning</SectionLabel>
+        <div className="flex flex-col gap-2.5">
+          {LEARN_SHORTCUTS.map((s) => (
+            <div key={s.keys} className="flex items-center gap-3 text-sm text-ink-2">
+              <span className="w-16 shrink-0">
+                <Kbd>{s.keys}</Kbd>
+              </span>
+              {s.description}
+            </div>
+          ))}
+        </div>
       </div>
-      <div className="mt-6 flex justify-center gap-2">
-        <Button variant="outline" onClick={() => (window.location.hash = "main")}>
-          Open the vault
-        </Button>
+
+      <div className="mt-7 flex flex-wrap items-center gap-2">
+        {count > 0 ? (
+          <>
+            <Button variant="primary" size="lg" onClick={openVault}>
+              Open the vault <ArrowRight size={14} />
+            </Button>
+            <Button variant="outline" size="lg" onClick={newDocument}>
+              <PenLine size={14} /> New document
+            </Button>
+          </>
+        ) : (
+          <>
+            <Button variant="primary" size="lg" onClick={newDocument}>
+              <PenLine size={14} /> Save my first document
+            </Button>
+            <Button variant="outline" size="lg" onClick={openVault}>
+              Open the vault
+            </Button>
+          </>
+        )}
+      </div>
+
+      <div className="mt-7 flex items-center justify-between gap-4 border-t border-line pt-4">
+        <GitNotice />
         <Button
-          variant="primary"
-          onClick={() => fire(api("window:openEditor"), "Couldn’t open the editor")}
+          variant="subtle"
+          className="shrink-0"
+          onClick={() => fire(api("vault:rescan"), "Couldn’t rescan the vault folder")}
         >
-          Save my first document
+          <RefreshCw size={12} /> Rescan
         </Button>
       </div>
-      <Button
-        variant="subtle"
-        className="mt-4"
-        onClick={() => fire(api("vault:rescan"), "Couldn’t rescan the vault folder")}
-      >
-        <RefreshCw size={10} /> Rescan
-      </Button>
     </Card>
   );
 }

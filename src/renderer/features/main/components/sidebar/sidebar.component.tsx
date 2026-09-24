@@ -81,30 +81,30 @@ export function Sidebar({
           ))}
         </div>
       </div>
-      <div className="flex items-center justify-between px-3 pb-3 text-xs text-ink-4">
-        <span className="truncate font-mono">{config.remote ?? "local"}</span>
-        <div className="flex shrink-0 items-center">
+      <div className="flex items-center justify-between gap-2 px-3 pb-2.5 text-xs text-ink-3">
+        <span className="min-w-0 truncate font-mono">{config.remote ?? "local"}</span>
+        <div className="flex shrink-0 items-center gap-0.5">
           <Button
             variant="ghost"
-            size="sm"
-            className="w-6 px-0"
+            className="w-7 justify-center px-0"
             onClick={rescanVault}
-            title="Rescan vault folder"
+            tooltip="Rescan vault folder"
+            tooltipSide="top"
+            aria-label="Rescan vault folder"
           >
-            <RefreshCw size={11} />
+            <RefreshCw size={14} />
           </Button>
           {/* ⌘, and the palette reach Settings too, but neither is something you can see. */}
           <Button
             variant="ghost"
-            size="sm"
-            className="w-6 px-0"
+            className="w-7 justify-center px-0"
             onClick={onSettings}
             tooltip="Settings"
             tooltipKeys={`${MOD_KEY},`}
             tooltipSide="top"
             aria-label="settings"
           >
-            <Settings size={11} />
+            <Settings size={14} />
           </Button>
         </div>
       </div>
