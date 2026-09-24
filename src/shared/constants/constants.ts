@@ -154,9 +154,8 @@ export const PAPER_BG = "#fdfcfa";
 export const OVERLAY_BG = "#1e1d1b";
 
 // ---- ui ------------------------------------------------------------------------------
-/** Logo hop on the welcome screen: frame length and how many bounces before it rests. */
+/** Logo hop on the welcome screen: frame length. It loops continuously, no rest. */
 export const LOGO_HOP_FRAME_MS = 110;
-export const LOGO_HOP_LOOPS = 2;
 /** Below this size the logo switches to its 16×16 drawing. */
 export const LOGO_LARGE_MIN_PX = 32;
 /** Deterministic project swatches; picked by slug hash so nothing is stored. */

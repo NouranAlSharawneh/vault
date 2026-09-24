@@ -14,7 +14,7 @@ export interface LogoProps {
   size?: number;
   /** `brand` uses the cherry colours; `mono` draws everything in `currentColor`. */
   tone?: "brand" | "mono";
-  /** Play the hop a couple of times, then rest. Only the large drawing has frames. */
+  /** Loop the hop continuously. Only the large drawing has frames. */
   bounce?: boolean;
   className?: string;
 }
