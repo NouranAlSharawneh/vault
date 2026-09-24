@@ -16,7 +16,7 @@ export function useHotkeyWarning(openSettings: () => void): void {
       .then(({ accelerator, active }) => {
         if (!live || active || !accelerator) return;
         show(
-          `${acceleratorLabel(accelerator)} is taken by another app. Pick a different shortcut.`,
+          `${acceleratorLabel(accelerator)} is taken by another app — pick a different shortcut`,
           {
             label: "Open Settings",
             run: openSettings,

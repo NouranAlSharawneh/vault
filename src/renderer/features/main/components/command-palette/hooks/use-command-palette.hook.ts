@@ -6,9 +6,9 @@ import {
   SEARCH_DEBOUNCE_MS,
 } from "@/constants";
 import { PALETTE_ACTIONS, type PaletteActionKey } from "@/data/palette.data";
-import { PULL_FAILURE_MESSAGE } from "@/data/sync.data";
+import { PULL_FAILURE_MESSAGE, PUSH_FAILURE_MESSAGE } from "@/data/sync.data";
 import { plural } from "@/helpers";
-import { api, fire } from "@/lib/api";
+import { api, fire, rescanVault } from "@/lib/api";
 import { useApp } from "@/stores/app";
 import { useToast } from "@/stores/toast";
 import { matchesFilters, parseQuery } from "@shared/query";
@@ -70,9 +70,27 @@ function availableActions({
 /** What a pull asked for by hand did. It used to finish in silence, whatever happened. */
 function describePull({ pulled, conflicts, failure }: PullResult): string {
   if (failure) return PULL_FAILURE_MESSAGE[failure];
-  const base = pulled > 0 ? `Pulled ${plural(pulled, "change")} from GitHub` : "Up to date";
+  const base =
+    pulled > 0
+      ? `Pulled ${plural(pulled, "change")} from GitHub`
+      : "Already up to date with GitHub";
 
   return conflicts.length ? `${base} · ${plural(conflicts.length, "document")} to review` : base;
+}
+
+/**
+ * After "Push pending docs". The badge changes colour either way, but the palette has
+ * closed and a colour is easy to miss; the action you asked for should answer.
+ */
+function describePush(waiting: number, { state, failure, ahead }: SyncStatus): string {
+  if (failure) return PUSH_FAILURE_MESSAGE[failure];
+  if (state === "offline") return PUSH_FAILURE_MESSAGE.offline;
+  if (state === "pushing") return "Already pushing to GitHub";
+  if (ahead > 0) return `${plural(ahead, "commit")} still waiting to push`;
+
+  return waiting > 0
+    ? `Pushed ${plural(waiting, "commit")} to GitHub`
+    : "Nothing to push — GitHub is up to date";
 }
 
 /** Query → grouped results (documents · in text · actions) with keyboard navigation. */
@@ -190,7 +208,10 @@ export function useCommandPalette(
           fire(api("window:openEditor"));
           break;
         case "pushPending":
-          fire(api("sync:pushNow"));
+          fire(
+            api("sync:pushNow").then((after) => show(describePush(sync?.ahead ?? 0, after))),
+            "Couldn’t push to GitHub",
+          );
           break;
         case "pullNow":
           fire(
@@ -202,23 +223,18 @@ export function useCommandPalette(
                   : undefined,
               ),
             ),
-            "Couldn't pull from GitHub",
+            "Couldn’t pull from GitHub",
           );
           break;
         case "reviewConflicts":
           onReviewConflicts?.();
           break;
         case "rescan":
-          fire(
-            api("vault:rescan").then((snap) =>
-              show(`Rescanned the vault folder — ${plural(snap.docs.length, "doc")}`),
-            ),
-            "Couldn't rescan the vault folder",
-          );
+          rescanVault();
           break;
       }
     },
-    [onTrashDoc, onReviewConflicts, show],
+    [onTrashDoc, onReviewConflicts, show, sync?.ahead],
   );
 
   const choose = useCallback(

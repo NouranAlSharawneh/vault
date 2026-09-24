@@ -69,7 +69,7 @@ export function ReaderToolbar({
             variant="ghost"
             size="sm"
             className="w-7 px-0"
-            onClick={() => fire(api("window:openEditor", doc.path), "Couldn't open the editor")}
+            onClick={() => fire(api("window:openEditor", doc.path), "Couldn’t open the editor")}
             tooltip="Edit"
             aria-label="edit"
           >
@@ -95,7 +95,7 @@ export function ReaderToolbar({
               onClick={() =>
                 fire(
                   api("github:openInBrowser", `${remote}/blob/${branch}/${doc.path}`),
-                  "Couldn't open GitHub",
+                  "Couldn’t open GitHub",
                 )
               }
               tooltip="Open on GitHub"

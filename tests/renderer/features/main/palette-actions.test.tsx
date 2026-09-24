@@ -84,7 +84,7 @@ describe("palette actions", () => {
   });
 
   it("says a pull found nothing new", async () => {
-    expect((await pullAnswering({ pulled: 0 }))?.message).toBe("Up to date");
+    expect((await pullAnswering({ pulled: 0 }))?.message).toBe("Already up to date with GitHub");
   });
 
   it("says how much a pull brought down", async () => {
@@ -114,7 +114,28 @@ describe("palette actions", () => {
     await userEvent.click(screen.getByText("Rescan vault folder"));
     await vi.waitFor(() =>
       expect(useToast.getState().toasts.at(-1)?.message).toBe(
-        "Rescanned the vault folder — 2 docs",
+        "Rescanned the vault folder — found 2 docs",
+      ),
+    );
+  });
+  it("says what a push did", async () => {
+    useApp.setState({ sync: sync({ state: "pending", ahead: 2 }) } as never);
+    mockVaultApi({ "sync:pushNow": sync() });
+    render(<CommandPalette onClose={vi.fn()} onOpenDoc={vi.fn()} />);
+    await userEvent.click(screen.getByText("Push 2 pending docs"));
+    await vi.waitFor(() =>
+      expect(useToast.getState().toasts.at(-1)?.message).toBe("Pushed 2 commits to GitHub"),
+    );
+  });
+
+  it("says a push failed instead of going quiet", async () => {
+    useApp.setState({ sync: sync({ state: "pending", ahead: 1 }) } as never);
+    mockVaultApi({ "sync:pushNow": sync({ state: "error", ahead: 1, failure: "no-permission" }) });
+    render(<CommandPalette onClose={vi.fn()} onOpenDoc={vi.fn()} />);
+    await userEvent.click(screen.getByText("Push 1 pending doc"));
+    await vi.waitFor(() =>
+      expect(useToast.getState().toasts.at(-1)?.message).toBe(
+        "Can’t push — this account has no write access to the repo",
       ),
     );
   });

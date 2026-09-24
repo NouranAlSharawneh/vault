@@ -47,6 +47,8 @@ describe("useTrashActions", () => {
     await act(() => toast!.action!.run());
     expect(invoke).toHaveBeenCalledWith("trash:restore", trashed.path);
     expect(select).toHaveBeenLastCalledWith(meta.path);
+    // Undo answers like Restore does, rather than the doc silently reappearing.
+    expect(useToast.getState().toasts.at(-1)?.message).toBe("Restored “Spec”");
   });
 
   it("restores and purges only docs that are in the trash", async () => {

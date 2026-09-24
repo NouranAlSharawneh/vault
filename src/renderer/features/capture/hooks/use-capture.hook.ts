@@ -134,7 +134,8 @@ export function useCapture() {
         cancelPending();
         pending.current = setTimeout(() => {
           pending.current = null;
-          if (reveal) fire(api("capture:reveal", res.path), "Saved, but couldn’t open it");
+          if (reveal)
+            fire(api("capture:reveal", res.path), "Saved, but couldn’t open it in the main window");
           else fireQuietly(api("capture:hide"), "hiding the sheet");
         }, CAPTURE_SAVED_FLASH_MS);
       } catch (e) {

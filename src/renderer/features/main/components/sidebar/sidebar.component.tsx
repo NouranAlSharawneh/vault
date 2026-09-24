@@ -4,7 +4,7 @@ import { Button, Chip, Dot, ListRow, Logo, SectionLabel } from "@/components/ui"
 import { MOD_KEY } from "@/constants";
 import { COLLECTIONS } from "@/data/main.data";
 import { plural } from "@/helpers";
-import { api, fire } from "@/lib/api";
+import { rescanVault } from "@/lib/api";
 import { INBOX_COLOR, INBOX_SLUG } from "@shared/constants";
 import { projectColor } from "@shared/helpers";
 import type { SidebarProps } from "./sidebar.types";
@@ -92,7 +92,7 @@ export function Sidebar({
             variant="ghost"
             size="sm"
             className="w-6 px-0"
-            onClick={() => fire(api("vault:rescan"), "Couldn't rescan the vault")}
+            onClick={rescanVault}
             title="Rescan vault folder"
           >
             <RefreshCw size={11} />
