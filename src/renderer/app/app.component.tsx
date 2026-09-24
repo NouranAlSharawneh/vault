@@ -61,13 +61,10 @@ function Booting() {
 
 function RouteView({ route }: RouteViewProps) {
   const Route = ROUTES[route];
-  if (route === "capture") {
-    return (
-      <div className="p-3">
-        <Route />
-      </div>
-    );
-  }
+  // Edge to edge: the sheet's window is transparent and macOS shadows whatever is opaque,
+  // so the panel itself is the window's shape. Padding here left room for a CSS shadow
+  // that the window then cut off, and macOS shadowed the cut.
+  if (route === "capture") return <Route />;
   if (route === "onboarding") return <Route />;
 
   return (
