@@ -105,6 +105,9 @@ export function resizeCaptureWindow(height: number): void {
   const wanted = Math.round(Math.min(Math.max(height, CAPTURE_MIN_HEIGHT), CAPTURE_MAX_HEIGHT));
   const [w, h] = win.getContentSize();
   if (Math.abs(h - wanted) > 1) win.setContentSize(w, wanted, false);
+  // macOS draws the shadow of a transparent window from its pixels once, then keeps that
+  // shape: after a resize it still outlines the old size, which reads as a clipped corner.
+  if (IS_MAC) win.invalidateShadow();
 }
 
 export function isCaptureWindow(win: BrowserWindow): boolean {
