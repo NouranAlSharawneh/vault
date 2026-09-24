@@ -173,16 +173,7 @@ export const PROJECT_COLORS = [
 export const INBOX_COLOR = "#a9a49b";
 export const WORDS_PER_MINUTE = 220;
 
-// ---- oauth web flow (loopback redirect) --------------------------------------------
-/** Ports tried in order for the local redirect listener; register the first one as the OAuth App callback. */
-export const OAUTH_LOOPBACK_PORTS = [47831, 47832, 47833, 47834, 47835] as const;
-export const OAUTH_LOOPBACK_HOST = "127.0.0.1";
-export const OAUTH_CALLBACK_PATH = "/callback";
-/** How long the listener waits for the browser to come back. */
-export const OAUTH_TIMEOUT_MS = 5 * 60_000;
-/** How long a cancelled OAuth web flow waits before tearing down, so a StrictMode
- * remount (or a double click) rejoins the same flow instead of starting a second one. */
-export const WEB_FLOW_CANCEL_GRACE_MS = 1500;
+// ---- oauth ------------------------------------------------------------------------
 /** Renew an expiring GitHub token this long before its deadline. */
 export const TOKEN_REFRESH_SKEW_MS = 5 * 60 * 1000;
 /** The capture sheet is sized to its content between these bounds. */

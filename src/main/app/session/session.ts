@@ -94,13 +94,12 @@ class Session {
   private async refreshIfPossible(): Promise<boolean> {
     const creds = loadCredentials();
     const config = getOAuthConfig();
-    if (!creds?.refreshToken || !config?.clientSecret) return false;
+    if (!creds?.refreshToken || !config) return false;
     if (creds.refreshExpiresAt && creds.refreshExpiresAt < Date.now()) return false;
     try {
       saveCredentials(
         await refreshAccessToken({
           clientId: config.clientId,
-          clientSecret: config.clientSecret,
           refreshToken: creds.refreshToken,
         }),
       );

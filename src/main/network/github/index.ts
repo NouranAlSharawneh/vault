@@ -5,7 +5,5 @@ export { getRepo } from "./get-repo";
 export { startDeviceFlow } from "./start-device-flow";
 export { pollDeviceFlow } from "./poll-device-flow";
 export { openOnGitHub } from "./open-on-github";
-export { buildAuthorizeUrl } from "./build-authorize-url";
-export { exchangeCode } from "./exchange-code";
 export { refreshAccessToken } from "./refresh-token";
 export { toCredentials } from "./token-grant";

@@ -1,4 +1,4 @@
-export type SignInMode = "choose" | "web" | "token" | "device";
+export type SignInMode = "choose" | "token" | "device";
 
 export interface SignInProps {
   onBack: () => void;

@@ -9,7 +9,7 @@ import { mockMarascaApi } from "../../helpers/mock-marasca-api";
 beforeEach(() => {
   window.location.hash = "#onboarding";
   useApp.setState({
-    auth: { status: "signed-in", user: { login: "nunu" } as never, method: "oauth" },
+    auth: { status: "signed-in", user: { login: "nunu" } as never, method: "device" },
     config: null,
   });
   mockMarascaApi({
