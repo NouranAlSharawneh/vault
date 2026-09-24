@@ -28,6 +28,7 @@ import type {
   TokenStatus,
   Template,
   TrashedDoc,
+  UpdateCheck,
   VaultConfig,
 } from "../types";
 
@@ -128,6 +129,8 @@ export interface IpcInvoke {
   /** macOS: mark the sending window as having unsaved changes (the dot in its close button). */
   "window:setEdited": (edited: boolean) => void;
   "app:version": () => string;
+  /** Compare this build with the newest published release on GitHub. */
+  "app:checkForUpdates": () => UpdateCheck;
   "app:platform": () => NodeJS.Platform;
   /** Whether the capture shortcut is really bound, or another app is holding it. */
   "hotkey:status": () => HotkeyStatus;

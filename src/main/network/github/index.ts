@@ -6,4 +6,5 @@ export { startDeviceFlow } from "./start-device-flow";
 export { pollDeviceFlow } from "./poll-device-flow";
 export { openOnGitHub } from "./open-on-github";
 export { refreshAccessToken } from "./refresh-token";
+export { listReleases } from "./list-releases";
 export { toCredentials } from "./token-grant";

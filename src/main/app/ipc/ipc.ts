@@ -2,6 +2,7 @@ import { homedir } from "node:os";
 import { join } from "node:path";
 import { app, BrowserWindow, dialog, ipcMain, shell } from "electron";
 import type { InvokeChannel, IpcInvoke } from "@shared/ipc";
+import { APP_REPO } from "../../data/menu.data";
 import { fire } from "../../lib/fire";
 import { NetworkError } from "../../network/axios";
 import {
@@ -13,6 +14,7 @@ import {
 } from "../../network/github";
 import { resolveAssets } from "../../services/assets";
 import { readClipboard } from "../../services/capture/capture.service";
+import { checkForUpdates } from "../../services/updates/check-for-updates";
 import { clearDraft, loadDraft, saveDraft } from "../../store/draft.store";
 import { getOAuthConfig } from "../../store/oauth-config";
 import { getSettings, updateSettings } from "../../store/settings.store";
@@ -75,6 +77,7 @@ let deviceAbort: AbortController | null = null;
 
 export function registerIpcHandlers(): void {
   handle("app:version", () => app.getVersion());
+  handle("app:checkForUpdates", () => checkForUpdates(APP_REPO, app.getVersion()));
   handle("app:platform", () => process.platform);
   handle("hotkey:status", () => hotkeyStatus());
   handle("app:openExternal", (url) => {

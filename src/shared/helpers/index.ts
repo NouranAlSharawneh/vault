@@ -11,3 +11,4 @@ export { isRelativeRef } from "./is-relative-ref";
 export { findAssetRefs } from "./find-asset-refs";
 export { rewriteAssetRefs } from "./rewrite-asset-refs";
 export { isSource, toSource } from "./source";
+export { compareVersions } from "./compare-versions";

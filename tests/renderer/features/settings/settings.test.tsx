@@ -35,10 +35,10 @@ function renderSettings(patch: Partial<VaultConfig> = {}, auth: AuthState = sign
 }
 
 describe("Settings layout", () => {
-  it("puts the settings in four titled groups, the danger zone last", () => {
+  it("puts the settings in five titled groups, the danger zone last", () => {
     renderSettings();
     const groups = screen.getAllByRole("region").map((g) => g.getAttribute("aria-label"));
-    expect(groups).toEqual(["Capture", "GitHub", "Storage", "Danger zone"]);
+    expect(groups).toEqual(["Capture", "GitHub", "Storage", "Updates", "Danger zone"]);
     expect(screen.getByRole("heading", { name: "Settings" })).toBeTruthy();
   });
 

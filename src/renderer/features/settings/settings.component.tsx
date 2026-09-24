@@ -5,11 +5,13 @@ import { describeToken, plural, shortPath } from "@/helpers";
 import { api, fire, rescanVault } from "@/lib/api";
 import { HotkeyRecorder } from "./components/hotkey-recorder/hotkey-recorder.component";
 import { SettingRow } from "./components/setting-row/setting-row.component";
+import { UpdateCheck } from "./components/update-check/update-check.component";
 import { useSettings } from "./hooks/use-settings.hook";
 
 /**
- * ⌘, — four groups in the order people reach for them: the capture shortcut, the GitHub
- * side, where things live on disk, and last, apart from the rest, what can't be undone.
+ * ⌘, — five groups in the order people reach for them: the capture shortcut, the GitHub
+ * side, where things live on disk, updates, and last, apart from the rest, what can't be
+ * undone.
  */
 export function Settings() {
   const s = useSettings();
@@ -225,6 +227,10 @@ export function Settings() {
             </SettingRow>
           </SettingGroup>
 
+          <SettingGroup title="Updates">
+            <UpdateCheck version={s.version || "…"} />
+          </SettingGroup>
+
           <SettingGroup title="Danger zone" tone="danger">
             <SettingRow
               label="Empty trash"
@@ -252,10 +258,6 @@ export function Settings() {
               </Button>
             </SettingRow>
           </SettingGroup>
-
-          {s.version && (
-            <p className="text-center font-mono text-2xs text-ink-4">Marasca {s.version}</p>
-          )}
         </div>
       </div>
     </div>
