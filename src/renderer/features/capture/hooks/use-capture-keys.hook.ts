@@ -4,11 +4,16 @@ interface Handlers {
   /** `reveal` is true for ⌥⌘↵: save, then open the doc in Vault. */
   onSave: (reveal: boolean) => void;
   onOpenEditor: () => void;
+  /** ⌘K: open or close the actions menu. */
+  onActions: () => void;
   onHide: () => void;
 }
 
-/** ⌘↵ save · ⌥⌘↵ save and open in Vault · ⌘E open in editor · Esc hide — anywhere in the sheet. */
-export function useCaptureKeys({ onSave, onOpenEditor, onHide }: Handlers) {
+/**
+ * ⌘↵ save · ⌥⌘↵ save and open in Vault · ⌘E open in editor · ⌘K actions · Esc hide —
+ * anywhere in the sheet.
+ */
+export function useCaptureKeys({ onSave, onOpenEditor, onActions, onHide }: Handlers) {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       const mod = e.metaKey || e.ctrlKey;
@@ -23,10 +28,13 @@ export function useCaptureKeys({ onSave, onOpenEditor, onHide }: Handlers) {
       } else if (mod && e.key.toLowerCase() === "e") {
         e.preventDefault();
         onOpenEditor();
+      } else if (mod && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        onActions();
       }
     };
     window.addEventListener("keydown", onKey);
 
     return () => window.removeEventListener("keydown", onKey);
-  }, [onSave, onOpenEditor, onHide]);
+  }, [onSave, onOpenEditor, onActions, onHide]);
 }
