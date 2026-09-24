@@ -15,7 +15,7 @@ import { useFitWindow } from "./hooks/use-fit-window.hook";
 
 /**
  * ⌃⌥V sheet: clipboard → two tabs → ⌘↵, and you are back in the app you copied from.
- * Every other action (open in Vault, open in editor, discard) is in the ⌘K menu.
+ * Every other action (open in Marasca, open in editor, discard) is in the ⌘K menu.
  */
 export function Capture() {
   const c = useCapture();
@@ -55,7 +55,7 @@ export function Capture() {
     },
     {
       id: "save-open",
-      label: "Save and open in Vault",
+      label: "Save and open in Marasca",
       keys: `${ALT_KEY}${MOD_KEY}↵`,
       disabled: c.phase !== "ready",
       run: () => fire(save(true)),

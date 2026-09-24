@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { useAssetPlan } from "@/components/asset-panel";
 import { useApp } from "@/stores/app";
 import type { AssetRef, AssetResolution, VaultConfig } from "@shared/types";
-import { mockVaultApi } from "../helpers/mock-vault-api";
+import { mockMarascaApi } from "../helpers/mock-marasca-api";
 
 const config: VaultConfig = {
   root: "/v",
@@ -33,7 +33,7 @@ const asMain = (baseDir: string | null): AssetResolution => ({
 
 describe("useAssetPlan", () => {
   it("uses the folder remembered for the project and builds the save request", async () => {
-    const { invoke } = mockVaultApi({ "assets:resolve": asMain });
+    const { invoke } = mockMarascaApi({ "assets:resolve": asMain });
     useApp.setState({ config });
     const { result } = renderHook(() => useAssetPlan({ body: BODY, project: "Concorde" }));
     await waitFor(() => expect(result.current.refs).toHaveLength(3));
@@ -60,7 +60,7 @@ describe("useAssetPlan", () => {
     // The capture sheet gets plain text: no source file, nothing remembered for the project.
     // Main is expected to answer with a folder anyway, and the plan must build a request
     // from it without the user ever opening the picker.
-    mockVaultApi({
+    mockMarascaApi({
       "assets:resolve": () => ({
         baseDir: "/Users/nunu/Coding/concorde",
         detected: true,
@@ -76,7 +76,7 @@ describe("useAssetPlan", () => {
   });
 
   it("counts every ref that won't be in the commit, so the sheet can say so", async () => {
-    mockVaultApi({ "assets:resolve": asMain });
+    mockMarascaApi({ "assets:resolve": asMain });
     useApp.setState({ config });
     const { result } = renderHook(() => useAssetPlan({ body: BODY, project: "Concorde" }));
     await waitFor(() => expect(result.current.refs).toHaveLength(3));
@@ -86,7 +86,7 @@ describe("useAssetPlan", () => {
   });
 
   it("prefers the copied file's folder, and remembers a chosen folder per project", async () => {
-    const { invoke } = mockVaultApi({
+    const { invoke } = mockMarascaApi({
       "assets:resolve": asMain,
       "assets:chooseFolder": () => "/Users/nunu/Desktop/shots",
       "vault:updateConfig": () => ({
@@ -111,7 +111,7 @@ describe("useAssetPlan", () => {
   });
 
   it("has nothing to do without relative refs, and no request when nothing was found", async () => {
-    const { invoke } = mockVaultApi({ "assets:resolve": asMain });
+    const { invoke } = mockMarascaApi({ "assets:resolve": asMain });
     useApp.setState({ config: { ...config, assetDirs: {} } });
     const none = renderHook(() => useAssetPlan({ body: "![x](https://a/b.png)", project: "P" }));
     expect(none.result.current.refs).toEqual([]);

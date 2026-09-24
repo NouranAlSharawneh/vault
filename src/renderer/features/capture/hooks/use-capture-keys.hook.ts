@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 
 interface Handlers {
-  /** `reveal` is true for ⌥⌘↵: save, then open the doc in Vault. */
+  /** `reveal` is true for ⌥⌘↵: save, then open the doc in Marasca. */
   onSave: (reveal: boolean) => void;
   onOpenEditor: () => void;
   /** ⌘K: open or close the actions menu. */
@@ -10,7 +10,7 @@ interface Handlers {
 }
 
 /**
- * ⌘↵ save · ⌥⌘↵ save and open in Vault · ⌘E open in editor · ⌘K actions · Esc hide —
+ * ⌘↵ save · ⌥⌘↵ save and open in Marasca · ⌘E open in editor · ⌘K actions · Esc hide —
  * anywhere in the sheet.
  */
 export function useCaptureKeys({ onSave, onOpenEditor, onActions, onHide }: Handlers) {

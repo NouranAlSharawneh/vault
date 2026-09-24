@@ -9,7 +9,7 @@ export function WebFlow({ onBack }: WebFlowProps) {
 
   return (
     <Card className="p-7 text-center">
-      <h2 className="font-serif text-2xl font-medium text-ink">Approve Vault on GitHub</h2>
+      <h2 className="font-serif text-2xl font-medium text-ink">Approve Marasca on GitHub</h2>
       <p className="mt-1 text-sm text-ink-3">
         Your browser opened GitHub's authorize page. Click <b>Authorize</b> there and come back —
         this window finishes on its own.

@@ -4,7 +4,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { Capture } from "@/features/capture/capture.component";
 import { useApp } from "@/stores/app";
 import type { ClipboardCapture } from "@shared/types";
-import { mockVaultApi } from "../../helpers/mock-vault-api";
+import { mockMarascaApi } from "../../helpers/mock-marasca-api";
 
 // jsdom has no ResizeObserver; the sheet only uses it to fit its window to the content.
 class NoopResizeObserver {
@@ -30,7 +30,7 @@ describe("capture sheet", () => {
   beforeEach(() => useApp.setState({ config: null, index: null }));
 
   it("is announced as a dialog and takes focus itself on show, not a field", async () => {
-    const { emit } = mockVaultApi({
+    const { emit } = mockMarascaApi({
       "capture:readClipboard": () => clip,
       "doc:pathPreview": () => "",
     });
@@ -45,7 +45,7 @@ describe("capture sheet", () => {
   });
 
   it("⌘↵ still saves with focus on the sheet", async () => {
-    const { emit, invoke } = mockVaultApi({
+    const { emit, invoke } = mockMarascaApi({
       "capture:readClipboard": () => clip,
       "doc:pathPreview": () => "",
       "doc:save": () => ({ path: "x.md", committed: true, meta: {} }),
@@ -63,14 +63,14 @@ describe("capture sheet", () => {
   });
 
   it("lets the clipboard preview take keyboard focus so a long clip can scroll", async () => {
-    mockVaultApi({ "capture:readClipboard": () => clip, "doc:pathPreview": () => "" });
+    mockMarascaApi({ "capture:readClipboard": () => clip, "doc:pathPreview": () => "" });
     render(<Capture />);
     const preview = await screen.findByLabelText("Clipboard preview");
     expect(preview.tabIndex).toBe(0);
   });
 
   it("shows nothing loud while the clipboard is still being read", () => {
-    mockVaultApi({
+    mockMarascaApi({
       "capture:readClipboard": () => new Promise(() => undefined),
       "doc:pathPreview": () => "",
     });
@@ -80,14 +80,14 @@ describe("capture sheet", () => {
   });
 
   it("keeps the bar to save and Actions, with every other action in the ⌘K menu", async () => {
-    mockVaultApi({
+    mockMarascaApi({
       "capture:readClipboard": () => clip,
       "doc:pathPreview": () => "_inbox/pasted-spec.md",
     });
     render(<Capture />);
     await screen.findByLabelText("Clipboard preview");
     // The caption line for the third action is gone; where the doc goes is said in words.
-    expect(screen.queryByText("saves and opens it in Vault")).toBeNull();
+    expect(screen.queryByText("saves and opens it in Marasca")).toBeNull();
     await screen.findByText("pasted-spec.md");
     expect(screen.getByText("Inbox")).toBeTruthy();
     expect(screen.queryByRole("menu")).toBeNull();
@@ -99,14 +99,14 @@ describe("capture sheet", () => {
       .map((i) => i.textContent);
     expect(items).toEqual([
       expect.stringMatching(/^Save/),
-      expect.stringMatching(/^Save and open in Vault/),
+      expect.stringMatching(/^Save and open in Marasca/),
       expect.stringMatching(/^Open in editor/),
       expect.stringMatching(/^Discard/),
     ]);
   });
 
   it("closes the menu on Escape without discarding the capture", async () => {
-    const { invoke } = mockVaultApi({
+    const { invoke } = mockMarascaApi({
       "capture:readClipboard": () => clip,
       "doc:pathPreview": () => "",
     });

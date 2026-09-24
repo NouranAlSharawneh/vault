@@ -12,9 +12,9 @@ export const README_FILE = "README.md";
 export const QUERY_OPERATORS = ["project:", "tags:", "created:", "source:", "is:"] as const;
 
 // ---- metadata block --------------------------------------------------------------
-// Vault writes its metadata as a fenced YAML block at the END of the file, under a rule,
+// Marasca writes its metadata as a fenced YAML block at the END of the file, under a rule,
 // so GitHub's preview shows the content first and the fields as a small code block below.
-// Files with classic top frontmatter (Obsidian, Jekyll, older Vault) are still read.
+// Files with classic top frontmatter (Obsidian, Jekyll, older Marasca) are still read.
 export const META_RULE = "---";
 export const META_FENCE_OPEN = "```yaml";
 export const META_FENCE_CLOSE = "```";
@@ -37,8 +37,8 @@ export const SEARCH_LIMIT = 100;
 export const EXCERPT_LENGTH = 200;
 
 // ---- assets ----------------------------------------------------------------------
-/** `vault://asset/<repo-relative path>` — images/media referenced from a doc, served by main. */
-export const ASSET_SCHEME = "vault";
+/** `marasca://asset/<repo-relative path>` — images/media referenced from a doc, served by main. */
+export const ASSET_SCHEME = "marasca";
 export const ASSET_HOST = "asset";
 export const VIDEO_EXTENSIONS = new Set(["mp4", "webm", "mov", "m4v", "ogv"]);
 /** MIME types main will serve from the vault; anything else is refused. */
@@ -124,15 +124,15 @@ export const DEFAULT_HOTKEY = "Control+Alt+V";
 /** Defaults we have shipped before; a saved hotkey equal to one of these follows the current default. */
 export const LEGACY_HOTKEYS = ["Alt+Space"] as const;
 export const DEFAULT_VAULT_NAME = "vault";
-export const APP_ID = "dev.nunu.vault";
-export const GIT_IDENTITY = { name: "Vault", email: "vault@localhost" } as const;
+export const APP_ID = "dev.nunu.marasca";
+export const GIT_IDENTITY = { name: "Marasca", email: "marasca@localhost" } as const;
 
 // ---- network ----------------------------------------------------------------------
 export const GITHUB_API = "https://api.github.com";
 export const GITHUB_WEB = "https://github.com";
 export const GITHUB_API_VERSION = "2022-11-28";
 export const NETWORK_TIMEOUT_MS = 20_000;
-export const USER_AGENT = "vault-desktop";
+export const USER_AGENT = "marasca-desktop";
 export const OAUTH_DEVICE_GRANT = "urn:ietf:params:oauth:grant-type:device_code";
 export const OAUTH_SCOPE = "repo";
 export const REPO_PAGE_SIZE = 100;
@@ -154,6 +154,11 @@ export const PAPER_BG = "#fdfcfa";
 export const OVERLAY_BG = "#1e1d1b";
 
 // ---- ui ------------------------------------------------------------------------------
+/** Logo hop on the welcome screen: frame length and how many bounces before it rests. */
+export const LOGO_HOP_FRAME_MS = 110;
+export const LOGO_HOP_LOOPS = 2;
+/** Below this size the logo switches to its 16×16 drawing. */
+export const LOGO_LARGE_MIN_PX = 32;
 /** Deterministic project swatches; picked by slug hash so nothing is stored. */
 export const PROJECT_COLORS = [
   "#3b82f6",

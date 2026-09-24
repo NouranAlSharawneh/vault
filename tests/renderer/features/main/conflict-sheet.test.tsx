@@ -4,7 +4,7 @@ import userEvent from "@testing-library/user-event";
 import { describe, expect, it } from "vitest";
 import { ConflictSheet } from "@/features/main/components/conflict-sheet/conflict-sheet.component";
 import type { ConflictPair, DocMeta } from "@shared/types";
-import { mockVaultApi } from "../../helpers/mock-vault-api";
+import { mockMarascaApi } from "../../helpers/mock-marasca-api";
 
 const doc = (over: Partial<DocMeta>): DocMeta => ({
   title: "Deploy checklist",
@@ -29,7 +29,7 @@ const pair: ConflictPair = {
 
 describe("ConflictSheet", () => {
   const open = () => {
-    const vault = mockVaultApi({
+    const vault = mockMarascaApi({
       "conflicts:list": [pair],
       "doc:read": (path: string) => ({ meta: doc({ path }), body: path, raw: path }),
       "conflicts:resolve": undefined,

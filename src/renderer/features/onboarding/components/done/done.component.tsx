@@ -14,7 +14,7 @@ export function Done() {
       <div className="mx-auto flex h-11 w-11 items-center justify-center rounded-full bg-cherry-tint text-cherry">
         <Check size={18} strokeWidth={2.5} />
       </div>
-      <h2 className="mt-4 font-serif text-3xl font-medium text-ink">Vault connected</h2>
+      <h2 className="mt-4 font-serif text-3xl font-medium text-ink">Marasca connected</h2>
       <p className="mt-1 text-sm text-ink-3">
         {plural(index?.docs.length ?? 0, "document")} indexed.{" "}
         {config?.remote ? (

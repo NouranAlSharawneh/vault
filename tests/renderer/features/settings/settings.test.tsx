@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { Settings } from "@/features/settings/settings.component";
 import { useApp } from "@/stores/app";
 import type { AuthState, VaultConfig } from "@shared/types";
-import { mockVaultApi } from "../../helpers/mock-vault-api";
+import { mockMarascaApi } from "../../helpers/mock-marasca-api";
 
 const config: VaultConfig = {
   root: "/Users/nunu/Documents/vault",
@@ -25,7 +25,7 @@ const signedIn: AuthState = {
 const signedOut: AuthState = { status: "signed-out", user: null, method: null };
 
 function renderSettings(patch: Partial<VaultConfig> = {}, auth: AuthState = signedIn) {
-  mockVaultApi({
+  mockMarascaApi({
     "app:version": "0.1.0",
     "hotkey:status": null,
     "auth:tokenStatus": null,

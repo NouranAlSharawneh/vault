@@ -21,7 +21,7 @@ export function VaultUnavailable() {
         title="No vault connected"
         action={
           <Button variant="primary" onClick={() => (window.location.hash = "onboarding")}>
-            Set up Vault
+            Set up Marasca
           </Button>
         }
       />
@@ -38,7 +38,7 @@ export function VaultUnavailable() {
 
   return (
     <Empty
-      title={`Vault couldn’t open ${shortPath(config.root)}.`}
+      title={`Marasca couldn’t open ${shortPath(config.root)}.`}
       hint={vaultError ?? undefined}
       action={
         <div className="flex items-center gap-2">

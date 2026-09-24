@@ -1,7 +1,7 @@
 import { is } from "@electron-toolkit/utils";
 import { BrowserWindow, Menu } from "electron";
 import { DEFAULT_HOTKEY } from "@shared/constants";
-import { appMenu, VAULT_REPO } from "../../data/menu.data";
+import { appMenu, APP_REPO } from "../../data/menu.data";
 import { fire } from "../../lib/fire";
 import { openOnGitHub } from "../../network/github";
 import { IS_MAC, openEditorWindow } from "../../windows";
@@ -22,9 +22,9 @@ function run(action: MenuAction): () => void {
     case "openMain":
       return showMainWindow;
     case "openOnGitHub":
-      return () => openOnGitHub(VAULT_REPO);
+      return () => openOnGitHub(APP_REPO);
     case "resetApp":
-      return () => fire(resetApp(), "resetting Vault");
+      return () => fire(resetApp(), "resetting Marasca");
   }
 }
 

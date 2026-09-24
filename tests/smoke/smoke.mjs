@@ -18,7 +18,7 @@ for (let i = 0; i < 800; i++) {
     `# Doc ${i}\n\nBody of document ${i} about ${project}.\n\n---\n\n\`\`\`yaml\ntitle: Doc ${i}\nproject: ${project}\ntags: [spec${i % 2 ? ", infra" : ""}]\ncreated: 2026-0${1 + (i % 9)}-0${1 + (i % 9)}T10:00:00Z\nsource: claude\n\`\`\`\n`,
   );
 }
-// One doc embeds a repo-relative image, served back through vault://asset.
+// One doc embeds a repo-relative image, served back through marasca://asset.
 const PNG_1x1 =
   "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==";
 mkdirSync(join(root, "research-log", "assets"), { recursive: true });
@@ -64,7 +64,7 @@ sh(
 const out = process.env.SMOKE_OUT ?? "/tmp";
 const app = await electron.launch({
   // HOME alone isn't enough on macOS: Electron still resolves userData to the real
-  // ~/Library/Application Support/Vault, and the run would drive the owner's own vault.
+  // ~/Library/Application Support/Marasca, and the run would drive the owner's own vault.
   args: [".", `--user-data-dir=${join(home, "userdata")}`],
   env: {
     ...process.env,
@@ -93,7 +93,7 @@ await win.waitForSelector("text=What GitHub will ask you to approve");
 await win.waitForTimeout(400);
 await win.screenshot({ path: join(out, "smoke-1b-signin.png") });
 await win.click("text=Continue with GitHub");
-await win.waitForSelector("text=Approve Vault on GitHub");
+await win.waitForSelector("text=Approve Marasca on GitHub");
 await win.waitForTimeout(400);
 await win.screenshot({ path: join(out, "smoke-1c-webflow.png") });
 await win.click("text=Use another method");
@@ -101,7 +101,7 @@ await win.click("text=Skip for now");
 await win.waitForSelector("text=Where should the vault live?");
 await win.screenshot({ path: join(out, "smoke-2-repo.png") });
 await win.click('button:has-text("Continue")');
-await win.waitForSelector("text=Vault connected", { timeout: 30000 });
+await win.waitForSelector("text=Marasca connected", { timeout: 30000 });
 await win.waitForTimeout(500);
 await win.screenshot({ path: join(out, "smoke-3-done.png") });
 console.log("done screen:", (await win.innerText("body")).match(/[\d,]+ documents indexed/)?.[0]);
@@ -470,7 +470,7 @@ await win.click('button[aria-label="toggle sidebar"]');
 await win.waitForTimeout(300);
 await win.screenshot({ path: join(out, "smoke-10-hidden.png") });
 await win.click('button[aria-label="toggle sidebar"]');
-// ---- images referenced from a doc load through vault://asset
+// ---- images referenced from a doc load through marasca://asset
 await win.keyboard.press("Control+K");
 await win.waitForSelector('input[aria-label="search"]');
 await win.keyboard.type("with image");
@@ -582,7 +582,7 @@ if (sheetFits.win - sheetFits.panel > 40)
 console.log("capture sheet fits its content:", JSON.stringify(sheetFits));
 await sheet.waitForTimeout(400);
 await sheet.screenshot({ path: join(out, "smoke-11-capture.png") });
-// ⌥⌘↵ (Alt+Ctrl here): save, then open the new doc in Vault. A plain ⌘↵ leaves Vault shut.
+// ⌥⌘↵ (Alt+Ctrl here): save, then open the new doc in Marasca. A plain ⌘↵ leaves Marasca shut.
 await sheet.keyboard.press("Control+Alt+Enter");
 await sheet.waitForSelector("text=committed", { timeout: 15000 });
 await sheet.screenshot({ path: join(out, "smoke-12-capture-saved.png") });
@@ -672,7 +672,7 @@ await win.click("text=Concorde >> nth=0");
 await win.waitForSelector('button:has-text("Restore")');
 await win.waitForTimeout(300);
 await win.screenshot({ path: join(out, "smoke-15-trash-view.png") });
-// Deleting forever is the one act in Vault that cannot be undone, so it asks first.
+// Deleting forever is the one act in Marasca that cannot be undone, so it asks first.
 // Stand in for the dialog: say no once, then yes, and check both answers are honoured.
 const stubDialog = (response) =>
   app.evaluate(async ({ dialog }, r) => {
@@ -716,7 +716,7 @@ await win.keyboard.press("Control+Alt+J");
 await win.waitForSelector("kbd:has-text('J')", { timeout: 5000 });
 await win.waitForTimeout(400);
 await win.screenshot({ path: join(out, "smoke-16-settings.png") });
-const cfg = JSON.parse(readFileSync(join(home, ".config", "Vault", "config.json"), "utf8"));
+const cfg = JSON.parse(readFileSync(join(home, ".config", "Marasca", "config.json"), "utf8"));
 if (cfg.vault.hotkey !== "Control+Alt+J") throw new Error("hotkey not saved: " + cfg.vault.hotkey);
 await win.click("text=Back to vault");
 await win.waitForSelector("text=All documents");

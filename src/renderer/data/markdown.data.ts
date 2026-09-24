@@ -24,11 +24,11 @@ const ALERT_CLASSES = [
  *
  * And one thing is taken away: `<source>`. GitHub READMEs use
  * `<picture><source media="(prefers-color-scheme: dark)">` to swap in a dark-mode asset,
- * and that media query follows the OS, not Vault — which is light-only. Honouring it would
+ * and that media query follows the OS, not Marasca — which is light-only. Honouring it would
  * drop a light-stroked, transparent-background SVG onto cream paper and make it invisible.
  * Sanitize unwraps a disallowed element rather than deleting its subtree, so removing
  * `<source>` leaves the `<picture>` holding just its `<img>` fallback: the light variant,
- * by GitHub convention. Put `<source>` back when Vault grows a dark theme.
+ * by GitHub convention. Put `<source>` back when Marasca grows a dark theme.
  *
  * `style` stays out, exactly as GitHub leaves it out: a `<div style="display:flex">`
  * stacks here because it stacks on github.com. The preview is a promise about what the

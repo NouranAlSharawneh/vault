@@ -3,7 +3,7 @@ import { renderHook, waitFor } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import { useDocument } from "@/features/main/hooks/use-document.hook";
 import type { DocMeta } from "@shared/types";
-import { mockVaultApi } from "../../helpers/mock-vault-api";
+import { mockMarascaApi } from "../../helpers/mock-marasca-api";
 
 const meta = (mtime: number) => ({ path: "atlas-api/spec.md", title: "Spec", mtime }) as DocMeta;
 
@@ -12,7 +12,7 @@ describe("useDocument", () => {
     // An editor save lands on the document already selected. Keyed on the path alone,
     // the reader kept the old text until you clicked another document and back.
     let body = "old text";
-    const { invoke } = mockVaultApi({
+    const { invoke } = mockMarascaApi({
       "doc:read": (path: string) => ({ meta: meta(1), body, path }),
     });
     const { result, rerender } = renderHook(({ live }) => useDocument("atlas-api/spec.md", live), {
@@ -27,7 +27,7 @@ describe("useDocument", () => {
   });
 
   it("does not read again when nothing about the file changed", async () => {
-    const { invoke } = mockVaultApi({
+    const { invoke } = mockMarascaApi({
       "doc:read": () => ({ meta: meta(1), body: "text" }),
     });
     const { result, rerender } = renderHook(({ live }) => useDocument("atlas-api/spec.md", live), {

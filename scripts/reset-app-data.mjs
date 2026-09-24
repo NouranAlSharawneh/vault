@@ -1,4 +1,4 @@
-// Wipes Vault's app data (settings, token, index cache) so the next launch starts at
+// Wipes Marasca's app data (settings, token, index cache) so the next launch starts at
 // onboarding. Never touches the vault repo itself. Usage: npm run reset
 import { rmSync, existsSync } from "node:fs";
 import { homedir } from "node:os";
@@ -16,7 +16,10 @@ const base =
       : (process.env.XDG_CONFIG_HOME ?? join(homedir(), ".config"));
 
 // Electron uses package.json `name` in dev and `productName` in packaged builds.
-for (const dir of new Set([join(base, name), join(base, productName)])) {
+// "vault" / "Vault" are the folders from before the rename to Marasca; nothing migrates
+// them, so reset clears them too rather than leaving an old token lying around.
+const LEGACY = ["vault", "Vault"];
+for (const dir of new Set([name, productName, ...LEGACY].map((d) => join(base, d)))) {
   if (existsSync(dir)) {
     rmSync(dir, { recursive: true, force: true });
     console.log(`removed ${dir}`);

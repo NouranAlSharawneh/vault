@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from "vitest";
 import { useEditorDraft } from "@/features/editor/hooks/use-editor-draft.hook";
 import { readEditorTarget, useEditorOpen } from "@/features/editor/hooks/use-editor-open.hook";
 import type { DocContent, StoredDraft } from "@shared/types";
-import { mockVaultApi } from "../../helpers/mock-vault-api";
+import { mockMarascaApi } from "../../helpers/mock-marasca-api";
 
 const DOC = {
   meta: {
@@ -55,7 +55,7 @@ function useOpenedEditor() {
 describe("useEditorOpen", () => {
   it("reads the document once, however often its callbacks are rebuilt", async () => {
     window.location.hash = "#editor?path=atlas-api/spec.md";
-    const { invoke } = mockVaultApi({ "doc:read": DOC });
+    const { invoke } = mockMarascaApi({ "doc:read": DOC });
     // `onDoc` is rebuilt on every render here, exactly as it is when the config changes —
     // and the config changes from inside this window when the image panel picks a folder.
     // Re-reading would replace whatever the user had typed.
@@ -69,14 +69,14 @@ describe("useEditorOpen", () => {
 
   it("reads nothing when the hash names no document", () => {
     window.location.hash = "#editor";
-    const { invoke } = mockVaultApi();
+    const { invoke } = mockMarascaApi();
     renderHook(() => useEditorOpen(readEditorTarget(), noop()));
     expect(invoke).not.toHaveBeenCalledWith("doc:read", expect.anything());
   });
 
   it("fails loudly when the document can't be read, and recovers nothing over it", async () => {
     window.location.hash = "#editor?path=atlas-api/spec.md";
-    mockVaultApi({ "doc:read": new Error("Error invoking remote method 'doc:read': ENOENT") });
+    mockMarascaApi({ "doc:read": new Error("Error invoking remote method 'doc:read': ENOENT") });
     const handlers = noop();
     const { result } = renderHook(() => useEditorOpen(readEditorTarget(), handlers));
     expect(result.current.status.kind).toBe("opening");
@@ -101,7 +101,7 @@ describe("useEditorOpen", () => {
     window.location.hash = "#editor?path=atlas-api/spec.md";
     const doc = deferred<DocContent>();
     const draft = deferred<StoredDraft | null>();
-    mockVaultApi({
+    mockMarascaApi({
       "doc:read": () => doc.promise,
       "draft:load": () => draft.promise,
       "doc:pathPreview": () => "",
@@ -121,7 +121,7 @@ describe("useEditorOpen", () => {
   it("pulls the capture sheet's text once it is listening, instead of hoping for an event", async () => {
     // main used to push this on did-finish-load, before the editor had subscribed.
     window.location.hash = "#editor";
-    const { invoke } = mockVaultApi({
+    const { invoke } = mockMarascaApi({
       "editor:seed": { body: "# From the clipboard", frontmatter: { source: "chatgpt" } },
       "draft:load": PARKED,
       "doc:pathPreview": () => "",
@@ -136,7 +136,7 @@ describe("useEditorOpen", () => {
 
   it("recovers a new window's parked text under the key main gave it", async () => {
     window.location.hash = "#editor?draft=untitled%3Aabc";
-    const { invoke } = mockVaultApi({
+    const { invoke } = mockMarascaApi({
       "editor:seed": null,
       "draft:load": PARKED,
       "doc:pathPreview": () => "",
@@ -148,7 +148,7 @@ describe("useEditorOpen", () => {
 
   it("still finds the draft every new window used to share, after an update", async () => {
     window.location.hash = "#editor";
-    const { invoke } = mockVaultApi({ "editor:seed": null, "draft:load": PARKED });
+    const { invoke } = mockMarascaApi({ "editor:seed": null, "draft:load": PARKED });
     renderHook(() => useOpenedEditor());
     await waitFor(() => expect(invoke).toHaveBeenCalledWith("draft:load", "new"));
   });

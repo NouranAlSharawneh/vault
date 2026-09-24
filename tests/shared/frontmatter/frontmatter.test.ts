@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { composeDoc, excerptOf, parseDoc, splitFrontmatter } from "@shared/frontmatter";
 
-/** Vault's own layout: content first, metadata as a fenced YAML block at the end. */
+/** Marasca's own layout: content first, metadata as a fenced YAML block at the end. */
 const SAMPLE = `# Rate limiting at the edge
 
 We currently rate-limit inside the application layer.
@@ -17,7 +17,7 @@ source: claude
 \`\`\`
 `;
 
-/** Classic head frontmatter, as Obsidian/Jekyll and older Vault files write it. */
+/** Classic head frontmatter, as Obsidian/Jekyll and older Marasca files write it. */
 const LEGACY = `---
 title: Rate limiting at the edge
 project: Atlas API

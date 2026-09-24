@@ -5,7 +5,7 @@ const SETTINGS: MenuItemData = {
   accelerator: "CmdOrCtrl+,",
   action: { shortcut: "settings" },
 };
-const RESET: MenuItemData = { label: "Reset Vault…", action: "resetApp" };
+const RESET: MenuItemData = { label: "Reset Marasca…", action: "resetApp" };
 const SEPARATOR: MenuItemData = { type: "separator" };
 
 /**
@@ -19,7 +19,7 @@ export const appMenu = (captureHotkey: string, { mac, dev }: MenuTarget): MenuSe
   ...(mac
     ? [
         {
-          label: "Vault",
+          label: "Marasca",
           items: [
             { role: "about" as const },
             SEPARATOR,
@@ -46,7 +46,7 @@ export const appMenu = (captureHotkey: string, { mac, dev }: MenuTarget): MenuSe
       SEPARATOR,
       { label: "Move to Trash", accelerator: "CmdOrCtrl+Backspace", action: { shortcut: "trash" } },
       SEPARATOR,
-      { label: "Open Vault Window", accelerator: "CmdOrCtrl+Shift+V", action: "openMain" },
+      { label: "Open Marasca Window", accelerator: "CmdOrCtrl+Shift+V", action: "openMain" },
       SEPARATOR,
       ...(mac ? [] : [SETTINGS, RESET, SEPARATOR]),
       { role: "close" },
@@ -78,8 +78,8 @@ export const appMenu = (captureHotkey: string, { mac, dev }: MenuTarget): MenuSe
   { role: "windowMenu" },
   {
     label: "Help",
-    items: [{ label: "Vault on GitHub", action: "openOnGitHub" }],
+    items: [{ label: "Marasca on GitHub", action: "openOnGitHub" }],
   },
 ];
 
-export const VAULT_REPO = "NouranAlSharawneh/vault";
+export const APP_REPO = "NouranAlSharawneh/vault";

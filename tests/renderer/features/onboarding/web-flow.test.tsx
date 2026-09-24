@@ -4,11 +4,11 @@ import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import { WEB_FLOW_STATUS_TEXT } from "@/data/auth.data";
 import { WebFlow } from "@/features/onboarding/components/web-flow/web-flow.component";
-import { mockVaultApi } from "../../helpers/mock-vault-api";
+import { mockMarascaApi } from "../../helpers/mock-marasca-api";
 
 describe("WebFlow — what the user sees when GitHub says no", () => {
   it("starts the flow on mount and shows the waiting state with a Cancel", () => {
-    const { invoke } = mockVaultApi();
+    const { invoke } = mockMarascaApi();
     render(<WebFlow onBack={() => undefined} />);
     expect(invoke).toHaveBeenCalledWith("auth:webStart");
     expect(screen.getByText(WEB_FLOW_STATUS_TEXT.waiting)).toBeTruthy();
@@ -21,7 +21,7 @@ describe("WebFlow — what the user sees when GitHub says no", () => {
     ["timeout", "timeout"],
     ["error", "bad_verification_code"],
   ] as const)("%s → explains it and offers Try again", async (status, message) => {
-    const { emit, invoke } = mockVaultApi();
+    const { emit, invoke } = mockMarascaApi();
     render(<WebFlow onBack={() => undefined} />);
     act(() => emit("auth:webStatus", { status, message }));
     expect(screen.getByText(WEB_FLOW_STATUS_TEXT[status])).toBeTruthy();
@@ -34,7 +34,7 @@ describe("WebFlow — what the user sees when GitHub says no", () => {
   });
 
   it("shows the raw reason for unexpected errors but not for known ones", () => {
-    const { emit } = mockVaultApi();
+    const { emit } = mockMarascaApi();
     render(<WebFlow onBack={() => undefined} />);
     act(() => emit("auth:webStatus", { status: "error", message: "state mismatch" }));
     expect(screen.getByText("(state mismatch)")).toBeTruthy();
@@ -43,7 +43,7 @@ describe("WebFlow — what the user sees when GitHub says no", () => {
   });
 
   it("surfaces a failure to even start (e.g. no OAuth App configured)", async () => {
-    mockVaultApi({
+    mockMarascaApi({
       "auth:webStart": new Error("No GitHub OAuth App configured. See .env.example."),
     });
     render(<WebFlow onBack={() => undefined} />);
@@ -55,7 +55,7 @@ describe("WebFlow — what the user sees when GitHub says no", () => {
 
   it("Cancel goes back and unmounting tells main to stop listening", async () => {
     const onBack = vi.fn();
-    const { invoke } = mockVaultApi();
+    const { invoke } = mockMarascaApi();
     const { unmount } = render(<WebFlow onBack={onBack} />);
     await userEvent.click(screen.getByRole("button", { name: "Cancel" }));
     expect(onBack).toHaveBeenCalled();

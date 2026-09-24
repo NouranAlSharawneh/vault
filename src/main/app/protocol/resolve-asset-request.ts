@@ -4,7 +4,7 @@ import { ASSET_HOST, ASSET_MIME, TRASH_DIR } from "@shared/constants";
 export type AssetResolution = { deny: number } | { path: string; mime: string };
 
 /**
- * What `vault://asset/<path>` should serve, decided before anything is read. Split from
+ * What `marasca://asset/<path>` should serve, decided before anything is read. Split from
  * the protocol handler so the rules — inside the vault, a known media type, never the
  * repo's own `.git/` — can be tested without an Electron session.
  *

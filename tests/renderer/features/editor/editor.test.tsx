@@ -4,7 +4,7 @@ import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { Editor } from "@/features/editor/editor.component";
 import { useApp } from "@/stores/app";
 import type { StoredDraft } from "@shared/types";
-import { mockVaultApi } from "../../helpers/mock-vault-api";
+import { mockMarascaApi } from "../../helpers/mock-marasca-api";
 
 const config = {
   root: "/tmp/v",
@@ -22,7 +22,7 @@ const PARKED: StoredDraft = {
   at: "2026-01-01",
 };
 
-const docSaves = (invoke: ReturnType<typeof mockVaultApi>["invoke"]) =>
+const docSaves = (invoke: ReturnType<typeof mockMarascaApi>["invoke"]) =>
   invoke.mock.calls.filter((c) => c[0] === "doc:save");
 
 describe("Editor", () => {
@@ -43,7 +43,7 @@ describe("Editor", () => {
     // and a new document came out as two files.
     window.location.hash = "#editor";
     vi.spyOn(window, "close").mockImplementation(() => undefined);
-    const { invoke, emit } = mockVaultApi({
+    const { invoke, emit } = mockMarascaApi({
       "draft:load": PARKED,
       "doc:pathPreview": () => "inbox/half-a-thought.md",
       "doc:save": () => new Promise(() => undefined),
@@ -62,7 +62,7 @@ describe("Editor", () => {
   it("tells main which document it holds once it has one, so a second open focuses it", async () => {
     window.location.hash = "#editor?draft=untitled%3Aa";
     vi.spyOn(window, "close").mockImplementation(() => undefined);
-    const { invoke } = mockVaultApi({
+    const { invoke } = mockMarascaApi({
       "draft:load": PARKED,
       "doc:pathPreview": () => "inbox/half-a-thought.md",
       "doc:save": () => ({
@@ -88,7 +88,7 @@ describe("Editor", () => {
       // was put back into it, and the next save wrote a second copy under a new name.
       window.location.hash = "#editor?path=atlas-api/spec.md";
       vi.spyOn(window, "close").mockImplementation(() => undefined);
-      const { invoke, emit } = mockVaultApi({
+      const { invoke, emit } = mockMarascaApi({
         "doc:read": new Error(
           "Error invoking remote method 'doc:read': Error: ENOENT: no such file or directory",
         ),
@@ -110,7 +110,7 @@ describe("Editor", () => {
     it("closes from Close", async () => {
       window.location.hash = "#editor?path=atlas-api/spec.md";
       const close = vi.spyOn(window, "close").mockImplementation(() => undefined);
-      mockVaultApi({ "doc:read": new Error("EACCES: permission denied") });
+      mockMarascaApi({ "doc:read": new Error("EACCES: permission denied") });
       render(<Editor />);
       fireEvent.click(await screen.findByRole("button", { name: "Close" }));
       expect(close).toHaveBeenCalled();
@@ -119,7 +119,7 @@ describe("Editor", () => {
     it("opens it once Try again succeeds", async () => {
       window.location.hash = "#editor?path=atlas-api/spec.md";
       let fail = true;
-      mockVaultApi({
+      mockMarascaApi({
         "doc:read": () => {
           if (fail) throw new Error("EACCES: permission denied");
 
@@ -157,7 +157,7 @@ describe("Editor", () => {
       window.location.hash = "#editor";
       const close = vi.spyOn(window, "close").mockImplementation(() => undefined);
       let fail: (e: Error) => void = () => undefined;
-      mockVaultApi({
+      mockMarascaApi({
         "draft:load": PARKED,
         "doc:pathPreview": () => "inbox/half-a-thought.md",
         "doc:save": () => new Promise((_, reject) => (fail = reject)),
@@ -178,7 +178,7 @@ describe("Editor", () => {
     it("says why an emptied document can't be saved", async () => {
       window.location.hash = "#editor";
       vi.spyOn(window, "close").mockImplementation(() => undefined);
-      const { invoke } = mockVaultApi({
+      const { invoke } = mockMarascaApi({
         "draft:load": { ...PARKED, body: "  \n" },
         "doc:pathPreview": () => "",
       });

@@ -5,7 +5,7 @@ import { describe, expect, it, vi } from "vitest";
 import { CommandPalette } from "@/features/main/components/command-palette/command-palette.component";
 import { useApp } from "@/stores/app";
 import type { DocMeta } from "@shared/types";
-import { mockVaultApi } from "../../helpers/mock-vault-api";
+import { mockMarascaApi } from "../../helpers/mock-marasca-api";
 
 const doc = (over: Partial<DocMeta>): DocMeta => ({
   title: "t",
@@ -54,7 +54,7 @@ const setIndex = () =>
 
 describe("CommandPalette", () => {
   it("empty query → recent docs + actions incl. 'Push 3 pending docs'", () => {
-    mockVaultApi();
+    mockMarascaApi();
     setIndex();
     render(<CommandPalette onClose={() => undefined} onOpenDoc={() => undefined} />);
     expect(screen.getByText("Recent")).toBeTruthy();
@@ -63,7 +63,7 @@ describe("CommandPalette", () => {
 
   it("Recent is a glance — at most two, however many docs exist", () => {
     // It used to list eight and swallow the whole panel.
-    mockVaultApi();
+    mockMarascaApi();
     setIndex();
     render(<CommandPalette onClose={() => undefined} onOpenDoc={() => undefined} />);
     expect(screen.getByText("Recent")).toBeTruthy();
@@ -74,7 +74,7 @@ describe("CommandPalette", () => {
   });
 
   it("a filtered search still shows the full list, not the Recent glance", () => {
-    mockVaultApi();
+    mockMarascaApi();
     setIndex();
     render(<CommandPalette onClose={() => undefined} onOpenDoc={() => undefined} />);
     fireEvent.change(screen.getByLabelText("search"), { target: { value: "source:chatgpt" } });
@@ -84,7 +84,7 @@ describe("CommandPalette", () => {
 
   it("text query groups title hits and in-text hits, Enter opens the first", async () => {
     const onOpen = vi.fn();
-    mockVaultApi({
+    mockMarascaApi({
       "search:query": () => [
         { path: "b", score: 2, snippet: "…we rate-limit inside…" },
         { path: "a", score: 3, snippet: null },
@@ -101,7 +101,7 @@ describe("CommandPalette", () => {
   });
 
   it("structured filters without text narrow the list", () => {
-    mockVaultApi();
+    mockMarascaApi();
     setIndex();
     render(<CommandPalette onClose={() => undefined} onOpenDoc={() => undefined} />);
     const input = screen.getByLabelText("search");
@@ -115,7 +115,7 @@ describe("CommandPalette", () => {
   });
 
   it("is a combobox over a listbox of grouped options, focus staying in the input", async () => {
-    mockVaultApi();
+    mockMarascaApi();
     setIndex();
     render(<CommandPalette onClose={() => undefined} onOpenDoc={() => undefined} />);
     const input = screen.getByRole("combobox", { name: "search" });
@@ -133,7 +133,7 @@ describe("CommandPalette", () => {
 
   it("Escape closes; actions run their IPC", async () => {
     const onClose = vi.fn();
-    const { invoke } = mockVaultApi({
+    const { invoke } = mockMarascaApi({
       "vault:rescan": { docs: [], projects: [], tags: [], orphans: 0, headSha: null, scannedAt: 0 },
     });
     setIndex();
@@ -151,7 +151,7 @@ describe("CommandPalette", () => {
   it("Enter runs the chosen action exactly once", async () => {
     const onTrash = vi.fn();
     const onClose = vi.fn();
-    mockVaultApi({ "search:query": () => [] });
+    mockMarascaApi({ "search:query": () => [] });
     setIndex();
     render(<CommandPalette onClose={onClose} onOpenDoc={() => undefined} onTrashDoc={onTrash} />);
     await userEvent.type(screen.getByLabelText("search"), "trash");
@@ -161,7 +161,7 @@ describe("CommandPalette", () => {
 
   it("Enter opens the highlighted doc exactly once", async () => {
     const onOpen = vi.fn();
-    mockVaultApi();
+    mockMarascaApi();
     setIndex();
     render(<CommandPalette onClose={() => undefined} onOpenDoc={onOpen} />);
     await userEvent.keyboard("{Enter}");
@@ -170,7 +170,7 @@ describe("CommandPalette", () => {
   });
 
   it("ArrowDown moves the highlight exactly one row", async () => {
-    mockVaultApi();
+    mockMarascaApi();
     setIndex();
     const { container } = render(
       <CommandPalette onClose={() => undefined} onOpenDoc={() => undefined} />,
@@ -184,7 +184,7 @@ describe("CommandPalette", () => {
 
   it("keys still work, once each, after clicking the preview blurs the input", async () => {
     const onOpen = vi.fn();
-    mockVaultApi();
+    mockMarascaApi();
     setIndex();
     const { container } = render(<CommandPalette onClose={() => undefined} onOpenDoc={onOpen} />);
     await userEvent.click(screen.getByText("excerpt"));
@@ -199,7 +199,7 @@ describe("CommandPalette", () => {
   });
 
   it("the trash action names the doc it will trash", () => {
-    mockVaultApi();
+    mockMarascaApi();
     setIndex();
     render(
       <CommandPalette
@@ -216,7 +216,7 @@ describe("CommandPalette", () => {
   it.each(["trash", "move document"])(
     "typing “%s” still finds the named trash action",
     async (q) => {
-      mockVaultApi({ "search:query": () => [] });
+      mockMarascaApi({ "search:query": () => [] });
       setIndex();
       render(
         <CommandPalette
@@ -232,7 +232,7 @@ describe("CommandPalette", () => {
   );
 
   it("with no doc open there is no trash action at all", () => {
-    mockVaultApi();
+    mockMarascaApi();
     setIndex();
     render(<CommandPalette onClose={() => undefined} onOpenDoc={() => undefined} />);
     expect(screen.queryByText(/to trash/)).toBeNull();
@@ -240,7 +240,7 @@ describe("CommandPalette", () => {
 
   it("Escape still closes the palette", async () => {
     const onClose = vi.fn();
-    mockVaultApi();
+    mockMarascaApi();
     setIndex();
     render(<CommandPalette onClose={onClose} onOpenDoc={() => undefined} />);
     await userEvent.keyboard("{Escape}");

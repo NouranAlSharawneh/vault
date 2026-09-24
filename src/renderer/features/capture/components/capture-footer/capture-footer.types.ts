@@ -15,7 +15,7 @@ export interface CaptureFooterProps {
   actions: CaptureAction[];
   actionsOpen: boolean;
   onActionsOpenChange: (open: boolean) => void;
-  /** `reveal`: also open the saved doc in Vault (⌥-click). */
+  /** `reveal`: also open the saved doc in Marasca (⌥-click). */
   onSave: (reveal: boolean) => void;
   onRetry: () => void;
 }

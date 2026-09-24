@@ -3,7 +3,7 @@ import { act, renderHook } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { useUnsavedGuard } from "@/features/editor/components/unsaved-guard/hooks/use-unsaved-guard.hook";
 import { useEditorShortcuts } from "@/features/editor/hooks/use-editor-shortcuts.hook";
-import { mockVaultApi } from "../../helpers/mock-vault-api";
+import { mockMarascaApi } from "../../helpers/mock-marasca-api";
 
 const fireBeforeUnload = () => {
   const e = new Event("beforeunload", { cancelable: true });
@@ -46,7 +46,7 @@ describe("useUnsavedGuard", () => {
 });
 
 describe("useEditorShortcuts", () => {
-  beforeEach(() => mockVaultApi());
+  beforeEach(() => mockMarascaApi());
   const press = (key: string, prevent = false) => {
     const e = new KeyboardEvent("keydown", { key, cancelable: true });
     if (prevent) e.preventDefault();

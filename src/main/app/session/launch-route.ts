@@ -15,7 +15,7 @@ export function launchRoute(): LaunchRoute {
 }
 
 /**
- * Launch, a second launch, the dock icon and Window ▸ Vault all come here. An open main
+ * Launch, a second launch, the dock icon and Window ▸ Marasca all come here. An open main
  * window is only brought forward — navigating it would pull you out of Settings or
  * onboarding halfway through. A new one opens where launch would put it.
  */

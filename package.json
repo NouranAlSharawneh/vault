@@ -1,6 +1,6 @@
 {
-  "name": "vault",
-  "productName": "Vault",
+  "name": "marasca",
+  "productName": "Marasca",
   "version": "0.1.0",
   "description": "Catches every markdown file you'd hate to lose and commits it straight to a GitHub repo you own.",
   "main": "./out/main/index.js",
@@ -90,8 +90,8 @@
     "vitest": "^3.2.7"
   },
   "build": {
-    "appId": "dev.nunu.vault",
-    "productName": "Vault",
+    "appId": "dev.nunu.marasca",
+    "productName": "Marasca",
     "directories": {
       "output": "release"
     },
