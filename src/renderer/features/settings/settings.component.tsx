@@ -1,4 +1,4 @@
-import { ArrowLeft, FolderOpen, RefreshCw, Trash2 } from "lucide-react";
+import { ArrowLeft, ChevronDown, FolderOpen, RefreshCw, Trash2 } from "lucide-react";
 import { Button, Dot, Empty, PathText, SettingGroup } from "@/components/ui";
 import { PUSH_DEBOUNCE_LABELS } from "@/data/settings.data";
 import { describeToken, plural, shortPath } from "@/helpers";
@@ -139,19 +139,29 @@ export function Settings() {
                 label="Push after saving"
                 description="How long to wait after each commit."
               >
-                <select
-                  className="input input-sm w-42 cursor-pointer"
-                  value={config.pushDebounceMs}
-                  disabled={s.busy === "pushDebounceMs"}
-                  onChange={(e) => fire(s.update({ pushDebounceMs: Number(e.target.value) }))}
-                  aria-label="push delay"
-                >
-                  {PUSH_DEBOUNCE_LABELS.map((o) => (
-                    <option key={o.ms} value={o.ms}>
-                      {o.label}
-                    </option>
-                  ))}
-                </select>
+                {/* The native control drew its own chevron hard against the right edge, in a
+                    different weight from every other control here; ours matches the source
+                    picker's. It sizes to its longest option rather than a fixed width, which left
+                    a wide empty gap before the chevron. */}
+                <div className="relative">
+                  <select
+                    className="input input-sm w-auto cursor-pointer appearance-none pr-7"
+                    value={config.pushDebounceMs}
+                    disabled={s.busy === "pushDebounceMs"}
+                    onChange={(e) => fire(s.update({ pushDebounceMs: Number(e.target.value) }))}
+                    aria-label="push delay"
+                  >
+                    {PUSH_DEBOUNCE_LABELS.map((o) => (
+                      <option key={o.ms} value={o.ms}>
+                        {o.label}
+                      </option>
+                    ))}
+                  </select>
+                  <ChevronDown
+                    size={12}
+                    className="pointer-events-none absolute top-1/2 right-2.5 -translate-y-1/2 text-ink-4"
+                  />
+                </div>
               </SettingRow>
             )}
           </SettingGroup>
