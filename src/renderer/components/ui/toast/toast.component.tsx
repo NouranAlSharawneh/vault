@@ -65,7 +65,7 @@ function ToastItem({ toast, onDismiss, onDark }: ToastItemProps) {
           className="shrink-0 text-cherry-3 hover:bg-ink-2 hover:text-white"
           onClick={() => {
             const undo = toast.action?.run();
-            if (undo) fire(undo, "Couldn't undo that");
+            if (undo) fire(undo, "Couldn’t undo that");
             onDismiss(toast.id);
           }}
         >

@@ -18,7 +18,7 @@ export const SYNC_PRESENTATION: Record<SyncState, SyncPresentation> = {
   pending: { label: (n) => (n > 0 ? `${n} not pushed` : "not pushed"), dot: "bg-warn" },
   pushing: { label: () => "pushing…", dot: "bg-warn", busy: true },
   offline: { label: (n) => (n > 0 ? `offline · ${n} waiting` : "offline"), dot: "bg-ink-4" },
-  error: { label: () => "couldn't push — retry", dot: "bg-cherry" },
+  error: { label: () => "couldn’t push — retry", dot: "bg-cherry" },
 };
 
 /**
@@ -32,11 +32,19 @@ export const UNKNOWN_PRESENTATION: SyncPresentation = {
 
 /**
  * Failures "retry" cannot fix. A repo you can read but not write used to sit under
- * "couldn't push — retry" with the raw error beside it, so it looked like a blip while
+ * "couldn’t push — retry" with the raw error beside it, so it looked like a blip while
  * nothing was reaching GitHub at all.
  */
 export const FAILURE_PRESENTATION: Partial<Record<PushFailure, SyncPresentation>> = {
   "no-permission": { label: () => "can’t push — no write access", dot: "bg-cherry" },
+};
+
+/** Said after a push asked for by hand fails. The badge says the rest. */
+export const PUSH_FAILURE_MESSAGE: Record<PushFailure, string> = {
+  offline: "Couldn’t reach GitHub — your commits will push once you’re online",
+  "bad-credentials": "GitHub signed you out — sign in again to push",
+  "no-permission": "Can’t push — this account has no write access to the repo",
+  other: "Couldn’t push to GitHub — your commits are safe here",
 };
 
 /** Said after a pull asked for by hand fails. The badge says the rest. */

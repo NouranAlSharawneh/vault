@@ -56,7 +56,7 @@ export const Markdown = memo(function Markdown({
         onOpenDoc?.(target.path);
         break;
       case "external":
-        fire(api("app:openExternal", target.url), "Couldn't open that link");
+        fire(api("app:openExternal", target.url), "Couldn’t open that link");
         break;
       case "none":
         break;

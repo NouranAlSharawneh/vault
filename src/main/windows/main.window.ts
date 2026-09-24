@@ -1,5 +1,6 @@
 import { BrowserWindow, shell } from "electron";
 import { MAIN_WINDOW, PAPER_BG, TRAFFIC_LIGHTS } from "@shared/constants";
+import type { DocReveal, SavedNotice } from "@shared/types";
 import { fire } from "../lib/fire";
 import { COMMON_WINDOW_OPTIONS, IS_MAC, loadRoute } from "./load-route";
 
@@ -46,9 +47,10 @@ export function openMainWindow(route?: string): BrowserWindow {
 }
 
 /** Bring the main window forward with one document selected. */
-export function revealDoc(path: string): void {
+export function revealDoc(path: string, saved?: SavedNotice): void {
   const win = openMainWindow("main");
-  const send = () => win.webContents.send("doc:reveal", path);
+  const reveal: DocReveal = saved ? { path, saved } : { path };
+  const send = () => win.webContents.send("doc:reveal", reveal);
   if (win.webContents.isLoading()) win.webContents.once("did-finish-load", send);
   else send();
 }

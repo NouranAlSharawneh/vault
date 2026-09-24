@@ -26,14 +26,14 @@ export function NoWriteAccessBanner({ className }: NoWriteAccessBannerProps) {
         variant="link"
         className="ml-auto"
         onClick={() =>
-          fire(api("window:openMain", "onboarding?connect"), "Couldn't open repo setup")
+          fire(api("window:openMain", "onboarding?connect"), "Couldn’t open repo setup")
         }
       >
         Connect a different repo
       </Button>
       <Button
         variant="link"
-        onClick={() => fire(api("github:openInBrowser", remote), "Couldn't open GitHub")}
+        onClick={() => fire(api("github:openInBrowser", remote), "Couldn’t open GitHub")}
       >
         Open on GitHub
       </Button>

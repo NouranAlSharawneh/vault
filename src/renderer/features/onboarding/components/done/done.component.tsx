@@ -43,7 +43,7 @@ export function Done() {
         </Button>
         <Button
           variant="primary"
-          onClick={() => fire(api("window:openEditor"), "Couldn't open the editor")}
+          onClick={() => fire(api("window:openEditor"), "Couldn’t open the editor")}
         >
           Save my first document
         </Button>
@@ -51,7 +51,7 @@ export function Done() {
       <Button
         variant="subtle"
         className="mt-4"
-        onClick={() => fire(api("vault:rescan"), "Couldn't rescan the vault")}
+        onClick={() => fire(api("vault:rescan"), "Couldn’t rescan the vault folder")}
       >
         <RefreshCw size={10} /> Rescan
       </Button>

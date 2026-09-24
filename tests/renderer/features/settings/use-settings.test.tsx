@@ -61,7 +61,7 @@ describe("useSettings", () => {
     await act(() => result.current.emptyTrash());
     expect(invoke).toHaveBeenCalledWith("trash:purge");
     expect(useToast.getState().toasts.at(-1)?.message).toContain(
-      "2 docs gone for good, with 1 image",
+      "deleted 2 docs and 1 image forever",
     );
   });
 

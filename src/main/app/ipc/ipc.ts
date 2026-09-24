@@ -275,7 +275,7 @@ export function registerIpcHandlers(): void {
 
   // ---- windows
   handle("window:openMain", (route) => void openMainWindow(route));
-  handle("window:revealDoc", (path) => revealDoc(path));
+  handle("window:revealDoc", (path, saved) => revealDoc(path, saved));
   handleFrom("window:setEdited", (sender, edited) => {
     if (IS_MAC) sender?.setDocumentEdited(edited);
   });

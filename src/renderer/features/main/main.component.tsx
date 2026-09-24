@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { AuthExpiredBanner } from "@/components/auth-expired-banner/auth-expired-banner.component";
 import { NoWriteAccessBanner } from "@/components/no-write-access-banner/no-write-access-banner.component";
 import { SplitPane } from "@/components/ui";
-import { cx } from "@/helpers";
+import { cx, describeSave } from "@/helpers";
 import { api, fire, on } from "@/lib/api";
 import { useApp } from "@/stores/app";
 import { useToast } from "@/stores/toast";
@@ -38,7 +38,7 @@ export function Main() {
   const list = useDocumentFilter(index, trash, (docs) =>
     setSelected((s) => reconcileSelection(s, docs)),
   );
-  const { showAll, filtered } = list;
+  const { showAll, filtered, docs: listed } = list;
   const [view, setView] = useState<ReaderView>("preview");
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
@@ -47,18 +47,33 @@ export function Main() {
   const doc = useDocument(selected, inTrash ? trash.map((t) => t.meta) : index?.docs);
   const trashActions = useTrashActions(doc?.meta ?? null, setSelected);
 
-  // A capture lands as `doc:reveal`: drop back to All documents so the new doc is in
-  // the list, then select it. The index arrives on its own event, so order doesn't matter.
+  // A capture or an editor save lands as `doc:reveal`: select the document, dropping back
+  // to All documents only when the current list doesn't hold it. The index arrives on its
+  // own event, so order doesn't matter.
   useEffect(
     () =>
-      on("doc:reveal", (path) => {
-        // Dropping the filters is what makes the new document findable, but doing it in
-        // silence left you looking at a different list than the one you had set up.
-        if (filtered) show("Showing all documents, so the new one is in the list");
-        showAll();
+      on("doc:reveal", ({ path, saved }) => {
+        // An edited document is usually in the list already; clearing the filters for it
+        // threw away the view you had set up and announced it as "the new one".
+        const inList = listed.some((d) => d.path === path);
+        if (!inList) showAll();
         setSelected(path);
+        // The editor closes as it saves, so this is the only place left to say how it went.
+        if (saved) {
+          const cleared = filtered && !inList ? " · showing all documents" : "";
+          show(
+            describeSave(saved) + cleared,
+            saved.keptOtherVersion
+              ? { label: "History", run: () => setHistoryOpen(true) }
+              : undefined,
+          );
+        } else if (filtered && !inList) {
+          // Dropping the filters is what makes the new document findable, but doing it in
+          // silence left you looking at a different list than the one you had set up.
+          show("Showing all documents so the new one is in the list");
+        }
       }),
-    [showAll, filtered, show],
+    [showAll, filtered, show, listed],
   );
 
   // A relative `.md` link in the reader. Checked against the index so a broken link says so

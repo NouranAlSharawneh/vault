@@ -21,7 +21,7 @@ export function TokenForm({ onBack }: TokenFormProps) {
           <Button
             variant="link"
             className="text-sm underline"
-            onClick={() => fire(api("github:openInBrowser", NEW_REPO_PATH), "Couldn't open GitHub")}
+            onClick={() => fire(api("github:openInBrowser", NEW_REPO_PATH), "Couldn’t open GitHub")}
           >
             github.com/{NEW_REPO_PATH}
           </Button>
@@ -33,7 +33,7 @@ export function TokenForm({ onBack }: TokenFormProps) {
             variant="link"
             className="text-sm underline"
             onClick={() =>
-              fire(api("github:openInBrowser", TOKEN_SETTINGS_PATH), "Couldn't open GitHub")
+              fire(api("github:openInBrowser", TOKEN_SETTINGS_PATH), "Couldn’t open GitHub")
             }
           >
             github.com/{TOKEN_SETTINGS_PATH}
