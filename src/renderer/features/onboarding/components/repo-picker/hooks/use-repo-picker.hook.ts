@@ -12,6 +12,11 @@ export function useRepoPicker(onDone: () => void) {
   const auth = useApp((s) => s.auth);
   const config = useApp((s) => s.config);
   const setConfig = useApp((s) => s.setConfig);
+  // Creating or cloning the vault is the first thing that runs git. Until it works the
+  // button waits — and so does the GitHub repo, which used to be created and then left
+  // behind, empty, when setup failed on a Mac without git. An unknown status doesn't
+  // block: main checks again in setup either way, and says why if it refuses.
+  const gitReady = useApp((s) => !s.gitStatus || s.gitStatus.state === "ready");
   const signedIn = auth.status === "signed-in";
   // The token form has people make a fine-grained token scoped to one repo, which can't
   // create another — so for them the list is the way in, not "Create a new private repo".
@@ -28,6 +33,9 @@ export function useRepoPicker(onDone: () => void) {
   const [newName, setNewName] = useState(DEFAULT_VAULT_NAME);
   const [localPath, setLocalPath] = useState(existingRoot ?? "");
   const [busy, setBusy] = useState(false);
+  // A repo this screen already made, so a retry after a failed setup uses it instead of
+  // failing on "name already exists".
+  const [created, setCreated] = useState<GitHubRepo | null>(null);
   // Kept apart: a failed list load belongs in the list box, a failed Continue under the
   // button — and a new attempt at one must not wipe the other.
   const [listError, setListError] = useState<string | null>(null);
@@ -91,8 +99,11 @@ export function useRepoPicker(onDone: () => void) {
     setSubmitError(null);
     try {
       let repo: GitHubRepo | null = null;
-      if (choice === "new") repo = await api("github:createRepo", newName.trim(), true);
-      else if (choice !== "local") repo = repos?.find((r) => r.fullName === choice) ?? null;
+      if (choice === "new") {
+        const name = newName.trim();
+        repo = created?.name === name ? created : await api("github:createRepo", name, true);
+        setCreated(repo);
+      } else if (choice !== "local") repo = repos?.find((r) => r.fullName === choice) ?? null;
       setConfig(await api("vault:setup", { repo, localPath }));
       onDone();
     } catch (e) {
@@ -129,6 +140,6 @@ export function useRepoPicker(onDone: () => void) {
     retryList,
     submitError,
     submit,
-    canSubmit: choice !== null && !nameError && !!localPath,
+    canSubmit: choice !== null && !nameError && !!localPath && gitReady,
   };
 }

@@ -1,3 +1,5 @@
+import type { GitSource } from "@shared/types";
+
 export type TokenProvider = () => string | null;
 
 export interface ChangedFile {
@@ -16,3 +18,10 @@ export interface AheadBehind {
  * "ours"/"theirs", which swap meaning between a merge and a rebase.
  */
 export type ConflictSide = "mine" | "remote";
+
+/** A place git is often installed that a Finder-launched app's PATH doesn't include. */
+export interface GitCandidate {
+  /** Absolute, or starting with `~/`. */
+  path: string;
+  source: GitSource;
+}

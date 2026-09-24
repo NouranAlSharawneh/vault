@@ -377,3 +377,24 @@ export interface DiffHunk {
   heading: string;
   lines: DiffLine[];
 }
+
+/** Where the git Marasca runs came from. `path` is whatever `git` resolves to off macOS. */
+export type GitSource = "apple" | "homebrew" | "macports" | "nix" | "shell" | "path" | "custom";
+
+/**
+ * Whether Marasca can run git, and if not, which fix applies. Every save is a commit, so
+ * anything but `ready` means the vault can't be set up or opened.
+ */
+export type GitStatus =
+  | { state: "ready"; version: string; binary: string; source: GitSource }
+  /** No developer tools and no other git: Apple's installer is the fix. */
+  | { state: "missing" }
+  /** Apple's installer was started from Marasca and hasn't finished yet. */
+  | { state: "installing"; startedAt: number }
+  /** A developer folder is selected but has no git in it — usually after a macOS update. */
+  | { state: "broken"; developerDir: string }
+  /** The full Xcode app is selected and its licence hasn't been accepted. */
+  | { state: "license"; binary: string }
+  | { state: "too-old"; version: string; binary: string; source: GitSource }
+  /** The path chosen in Settings isn't there, or isn't git. */
+  | { state: "custom-invalid"; binary: string; reason: string };

@@ -15,4 +15,5 @@ export function subscribeToMain(): void {
   on("index:progress", (progress) => useApp.setState({ progress }));
   on("sync:status", (sync) => useApp.setState({ sync }));
   on("auth:state", (auth) => useApp.setState({ auth }));
+  on("git:status", (gitStatus) => useApp.setState({ gitStatus }));
 }

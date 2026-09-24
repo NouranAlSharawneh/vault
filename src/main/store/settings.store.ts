@@ -13,6 +13,7 @@ const DEFAULTS: AppSettings = {
   authMethod: null,
   githubClientId: null,
   onboarded: false,
+  gitPath: null,
 };
 
 let cache: AppSettings | null = null;

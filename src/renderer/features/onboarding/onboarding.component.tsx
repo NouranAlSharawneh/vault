@@ -1,4 +1,5 @@
-import { Dot } from "@/components/ui";
+import { Dot, Spinner } from "@/components/ui";
+import { useApp } from "@/stores/app";
 import { Done } from "./components/done/done.component";
 import { FirstScan } from "./components/first-scan/first-scan.component";
 import { RepoPicker } from "./components/repo-picker/repo-picker.component";
@@ -9,10 +10,17 @@ import { useOnboardingStep } from "./hooks/use-onboarding-step.hook";
 /** Five screens, target ninety seconds. Success = one document saved. */
 export function Onboarding() {
   const { step, setStep, signedIn, user } = useOnboardingStep();
+  const installing = useApp((s) => s.gitStatus?.state === "installing");
 
   return (
     <div className="flex h-full flex-col bg-paper">
-      <div className="flex h-10 shrink-0 items-center justify-end px-4 drag">
+      <div className="flex h-10 shrink-0 items-center justify-end gap-4 px-4 drag">
+        {/* Welcome shows the whole card; later steps keep the install in sight here. */}
+        {installing && step !== "welcome" && (
+          <div className="flex items-center gap-1.5 text-xs text-ink-3" role="status">
+            <Spinner className="text-warn-2" /> Installing Apple's tools…
+          </div>
+        )}
         {user && (
           <div className="flex items-center gap-1.5 text-xs text-ink-3 no-drag">
             <Dot tone="bg-ok" size={6} /> Signed in as {user.login}

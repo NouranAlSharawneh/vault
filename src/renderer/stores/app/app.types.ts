@@ -1,5 +1,6 @@
 import type {
   AuthState,
+  GitStatus,
   IndexSnapshot,
   ScanProgress,
   SyncStatus,
@@ -22,6 +23,8 @@ export interface AppState {
   /** Contents of `.trash/`; refreshed with the index and after trash actions. */
   trash: TrashedDoc[];
   platform: string;
+  /** Whether git can run; null until main has answered. */
+  gitStatus: GitStatus | null;
   boot: () => Promise<void>;
   /** Ask main to open the configured vault again, then load it as boot would. */
   reopenVault: () => Promise<void>;

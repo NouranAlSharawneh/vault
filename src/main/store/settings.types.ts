@@ -5,4 +5,6 @@ export interface AppSettings {
   authMethod: AuthMethod | null;
   githubClientId: string | null;
   onboarded: boolean;
+  /** A git chosen in Settings; null means detect one. */
+  gitPath: string | null;
 }

@@ -14,6 +14,7 @@ import type {
   EditorDraft,
   SavedNotice,
   GitHubRepo,
+  GitStatus,
   GitHubUser,
   PullResult,
   HotkeyStatus,
@@ -48,6 +49,17 @@ export interface IpcInvoke {
   "github:listRepos": () => GitHubRepo[];
   "github:createRepo": (name: string, isPrivate: boolean) => GitHubRepo;
   "github:openInBrowser": (path?: string) => void;
+
+  /** Whether git can run, from the last check (made at launch, then on demand). */
+  "git:status": () => GitStatus;
+  /** Look for git again, now — after the user installed or fixed it themselves. */
+  "git:recheck": () => GitStatus;
+  /** Open Apple's Command Line Tools installer; progress arrives on the git:status event. */
+  "git:installTools": () => GitStatus;
+  /** Pick a git binary by hand. Null when the dialog was cancelled. */
+  "git:choosePath": () => GitStatus | null;
+  /** Forget a hand-picked git and detect one again. */
+  "git:clearPath": () => GitStatus;
 
   "vault:config": () => VaultConfig | null;
   "vault:setup": (opts: { repo: GitHubRepo | null; localPath: string }) => VaultConfig;
@@ -145,6 +157,7 @@ export interface IpcEvents {
   "index:progress": ScanProgress;
   "sync:status": SyncStatus;
   "auth:state": AuthState;
+  "git:status": GitStatus;
   "auth:deviceStatus": { status: DevicePollStatus };
   "capture:shown": ClipboardCapture;
   /** The sheet went away (Esc, blur, save or the hotkey): drop anything still pending. */

@@ -1,7 +1,7 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 // @vitest-environment jsdom
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { REPO_LIST_LIMIT } from "@/constants";
 import { RepoPicker } from "@/features/onboarding/components/repo-picker/repo-picker.component";
 import { useApp } from "@/stores/app";
@@ -155,5 +155,49 @@ describe("RepoPicker — long lists", () => {
     expect(screen.queryByText(/Showing \d+ of/)).toBeNull();
     await userEvent.clear(screen.getByPlaceholderText("Filter your repos…"));
     expect(screen.getByText(/Showing \d+ of 120/)).toBeTruthy();
+  });
+});
+
+describe("RepoPicker — git", () => {
+  afterEach(() => useApp.setState({ gitStatus: null }));
+
+  it("waits for git before creating anything, and says why", async () => {
+    mockMarascaApi({ ...base, "github:listRepos": [] });
+    useApp.setState({ gitStatus: { state: "installing", startedAt: 1 } });
+    render(<RepoPicker onDone={noop} onBack={noop} />);
+    expect(screen.getByText("Installing Apple's Command Line Tools")).toBeTruthy();
+    expect(screen.getByRole("button", { name: /Continue/ })).toHaveProperty("disabled", true);
+
+    useApp.setState({
+      gitStatus: { state: "ready", version: "2.39.5", binary: "/usr/bin/git", source: "apple" },
+    });
+    expect(await screen.findByRole("button", { name: /Continue/ })).toHaveProperty(
+      "disabled",
+      false,
+    );
+  });
+
+  it("reuses the repo it made when setup failed, instead of making another", async () => {
+    const made = { ...repo("nunu/vault"), name: "vault" } as GitHubRepo;
+    let setupFails = true;
+    const { invoke } = mockMarascaApi({
+      ...base,
+      "github:listRepos": [],
+      "github:createRepo": made,
+      "vault:setup": () => {
+        if (setupFails) throw new Error("Marasca needs git before it can open the vault.");
+
+        return base["vault:setup"];
+      },
+    });
+    const onDone = vi.fn();
+    render(<RepoPicker onDone={onDone} onBack={noop} />);
+
+    await userEvent.click(screen.getByRole("button", { name: /Continue/ }));
+    expect(await screen.findByText(/needs git/)).toBeTruthy();
+    setupFails = false;
+    await userEvent.click(screen.getByRole("button", { name: /Continue/ }));
+    await vi.waitFor(() => expect(onDone).toHaveBeenCalled());
+    expect(invoke.mock.calls.filter(([c]) => c === "github:createRepo")).toHaveLength(1);
   });
 });
