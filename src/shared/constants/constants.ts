@@ -127,6 +127,25 @@ export const DEFAULT_VAULT_NAME = "vault";
 export const APP_ID = "dev.nunu.marasca";
 export const GIT_IDENTITY = { name: "Marasca", email: "marasca@localhost" } as const;
 
+// ---- git preflight ----------------------------------------------------------------
+
+/** `git init -b` arrived in 2.28; anything older can't set up a vault. */
+export const GIT_MIN_VERSION = "2.28.0";
+/** One `git --version` or `xcode-select -p`. Both answer instantly when they work at all. */
+export const GIT_PROBE_TIMEOUT_MS = 5_000;
+/** Asking the login shell where git is; a slow `.zprofile` shouldn't hold up launch. */
+export const GIT_SHELL_PROBE_TIMEOUT_MS = 3_000;
+/** How often to look for git while Apple's installer runs. */
+export const GIT_INSTALL_POLL_MS = 3_000;
+/** Give up waiting for the installer after this long; the user can start it again. */
+export const GIT_INSTALL_WAIT_MS = 60 * 60_000;
+/** What `/usr/bin/git` exits with when the Xcode licence hasn't been accepted. */
+export const GIT_LICENSE_EXIT_CODE = 69;
+/** The one command that fixes `license`; shown so it can be copied. */
+export const XCODE_LICENSE_COMMAND = "sudo xcodebuild -license accept";
+/** Thrown by setup and reopen while git isn't usable; the renderer shows why from `GitStatus`. */
+export const GIT_NOT_READY = "Marasca needs git before it can open the vault.";
+
 // ---- network ----------------------------------------------------------------------
 export const GITHUB_API = "https://api.github.com";
 export const GITHUB_WEB = "https://github.com";

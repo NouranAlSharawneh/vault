@@ -13,6 +13,12 @@ import {
 } from "../../network/github";
 import { resolveAssets } from "../../services/assets";
 import { readClipboard } from "../../services/capture/capture.service";
+import {
+  currentGitStatus,
+  installGitTools,
+  onGitStatus,
+  refreshGitStatus,
+} from "../../services/git/git-status.service";
 import { clearDraft, loadDraft, saveDraft } from "../../store/draft.store";
 import { getOAuthConfig } from "../../store/oauth-config";
 import { getSettings, updateSettings } from "../../store/settings.store";
@@ -58,8 +64,8 @@ function handleFrom<C extends InvokeChannel>(channel: C, fn: IpcSenderHandler<C>
   });
 }
 
-/** Pick a folder, as a sheet on the window that asked when there is one. */
-async function chooseFolder(
+/** An open dialog (folder or file), as a sheet on the window that asked when there is one. */
+async function pickPath(
   sender: BrowserWindow | null,
   options: Electron.OpenDialogOptions,
 ): Promise<string | null> {
@@ -129,11 +135,33 @@ export function registerIpcHandlers(): void {
     openOnGitHub(path ?? session.vault?.config.remote ?? ""),
   );
 
+  // ---- git
+  onGitStatus((status) => broadcast("git:status", status));
+  handle("git:status", () => currentGitStatus());
+  handle("git:recheck", () => refreshGitStatus());
+  handle("git:installTools", () => installGitTools());
+  handleFrom("git:choosePath", async (sender) => {
+    const path = await pickPath(sender, {
+      title: "Choose the git Marasca should use",
+      properties: ["openFile", "showHiddenFiles", "treatPackageAsDirectory"],
+      defaultPath: "/usr/local/bin",
+    });
+    if (!path) return null;
+    updateSettings({ gitPath: path });
+
+    return refreshGitStatus();
+  });
+  handle("git:clearPath", () => {
+    updateSettings({ gitPath: null });
+
+    return refreshGitStatus();
+  });
+
   // ---- vault lifecycle
   handle("vault:config", () => getSettings().vault);
   handle("vault:defaultPath", (name) => join(homedir(), "Documents", name));
   handleFrom("vault:chooseFolder", (sender) =>
-    chooseFolder(sender, {
+    pickPath(sender, {
       properties: ["openDirectory", "createDirectory"],
       defaultPath: join(homedir(), "Documents"),
     }),
@@ -234,7 +262,7 @@ export function registerIpcHandlers(): void {
   // The hold keeps the sheet from hiding as the dialog takes its focus.
   handleFrom("assets:chooseFolder", (sender, defaultPath) =>
     whileCaptureDialogOpen(() =>
-      chooseFolder(sender, {
+      pickPath(sender, {
         title: "Where are these images relative to?",
         properties: ["openDirectory"],
         defaultPath: defaultPath ?? join(homedir(), "Documents"),

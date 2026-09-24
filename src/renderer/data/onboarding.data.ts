@@ -30,7 +30,7 @@ export const GITHUB_SCOPES: ScopeData[] = [
 
 /** Done screen: the two shortcuts worth learning. */
 export const LEARN_SHORTCUTS: ShortcutData[] = [
-  { keys: CAPTURE_HOTKEY_LABEL, description: "From anywhere — copy markdown, hit this, save it." },
+  { keys: CAPTURE_HOTKEY_LABEL, description: "Copy markdown anywhere, press this, and save it." },
   { keys: `${MOD_KEY} K`, description: "Find anything you've saved." },
 ];
 

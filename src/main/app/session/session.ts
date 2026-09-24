@@ -1,9 +1,10 @@
 import { existsSync } from "node:fs";
-import { TOKEN_REFRESH_SKEW_MS } from "@shared/constants";
+import { GIT_NOT_READY, TOKEN_REFRESH_SKEW_MS } from "@shared/constants";
 import type { AuthMethod, AuthState, GitHubUser, VaultConfig } from "@shared/types";
 import { fire } from "../../lib/fire";
 import { NetworkError } from "../../network/axios";
 import { fetchUser, refreshAccessToken } from "../../network/github";
+import { refreshGitStatus } from "../../services/git/git-status.service";
 import { VaultService } from "../../services/vault/vault.service";
 import { getOAuthConfig } from "../../store/oauth-config";
 import { getSettings, updateSettings } from "../../store/settings.store";
@@ -207,6 +208,7 @@ class Session {
       this.openFailure = MISSING_ROOT;
       throw new Error(MISSING_ROOT);
     }
+    await this.requireGit();
 
     return this.openVault(config);
   }
@@ -240,11 +242,26 @@ class Session {
     if (s.vault && !existsSync(s.vault.root)) this.openFailure = MISSING_ROOT;
     else if (s.vault) {
       try {
+        await this.requireGit();
         await this.openVault(s.vault);
       } catch (e) {
         console.error("Failed to open vault", e);
       }
+    } else {
+      // Nothing to open yet, but onboarding asks straight away: find out now.
+      await refreshGitStatus();
     }
+  }
+
+  /**
+   * Refuse to open a vault while git can't run. Opening runs git at once, and on a Mac
+   * whose developer tools are gone that means Apple's install dialog on every launch,
+   * followed by an `xcrun` error nobody can act on. The renderer explains from GitStatus.
+   */
+  private async requireGit(): Promise<void> {
+    if ((await refreshGitStatus()).state === "ready") return;
+    this.openFailure = GIT_NOT_READY;
+    throw new Error(GIT_NOT_READY);
   }
 }
 

@@ -101,7 +101,7 @@ await win.click("text=Skip for now");
 await win.waitForSelector("text=Where should the vault live?");
 await win.screenshot({ path: join(out, "smoke-2-repo.png") });
 await win.click('button:has-text("Continue")');
-await win.waitForSelector("text=Marasca connected", { timeout: 30000 });
+await win.waitForSelector("text=Your vault is ready", { timeout: 30000 });
 await win.waitForTimeout(500);
 await win.screenshot({ path: join(out, "smoke-3-done.png") });
 console.log("done screen:", (await win.innerText("body")).match(/[\d,]+ documents indexed/)?.[0]);

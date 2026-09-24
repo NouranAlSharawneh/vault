@@ -1,7 +1,7 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 // @vitest-environment jsdom
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { VaultUnavailable } from "@/features/main/components/vault-unavailable/vault-unavailable.component";
 import { useApp } from "@/stores/app";
 import type { VaultConfig } from "@shared/types";
@@ -51,5 +51,37 @@ describe("VaultUnavailable", () => {
 
     await userEvent.click(screen.getByRole("button", { name: "Set up again" }));
     expect(window.location.hash).toBe("#onboarding?connect");
+  });
+});
+
+describe("VaultUnavailable — when git is the reason", () => {
+  const gitError = "Error: Marasca needs git before it can open the vault.";
+
+  it("explains, offers the fix, and says the documents are still there", () => {
+    mockMarascaApi();
+    useApp.setState({
+      config,
+      vaultError: gitError,
+      gitStatus: { state: "broken", developerDir: "/x" },
+    });
+    render(<VaultUnavailable />);
+    expect(screen.getByText("Marasca needs git to open your vault")).toBeTruthy();
+    expect(screen.getByText(/Your documents are still in ~\/Documents\/vault/)).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Reinstall tools" })).toBeTruthy();
+  });
+
+  it("opens the vault by itself once git works again", async () => {
+    const { invoke } = mockMarascaApi({ "vault:reopen": new Error("later") });
+    useApp.setState({
+      config,
+      vaultError: gitError,
+      gitStatus: { state: "installing", startedAt: 1 },
+    });
+    render(<VaultUnavailable />);
+    expect(invoke).not.toHaveBeenCalledWith("vault:reopen");
+    useApp.setState({
+      gitStatus: { state: "ready", version: "2.39.5", binary: "/usr/bin/git", source: "apple" },
+    });
+    await vi.waitFor(() => expect(invoke).toHaveBeenCalledWith("vault:reopen"));
   });
 });
