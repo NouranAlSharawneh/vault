@@ -2,7 +2,18 @@
 
 Marasca is free and isn't notarized by Apple (that needs a paid Apple Developer account). The app is **ad-hoc signed**, so macOS knows the files haven't been changed since the build. It just can't name a verified developer. You confirm it once, and after that it opens like any other app.
 
-## First install
+## One command (recommended)
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/NouranAlSharawneh/vault/main/install.sh | bash
+```
+
+This downloads the newest release's DMG, checks it against the release's `SHA256SUMS.txt`, copies Marasca into `/Applications` (quitting a running copy first) and opens it. Because the script installs the app itself, macOS doesn't show the "could not verify" prompt. Run the same command to update.
+
+- Install a specific version: `curl -fsSL https://raw.githubusercontent.com/NouranAlSharawneh/vault/main/install.sh | MARASCA_VERSION=0.0.1 bash`
+- Read the script before running it: [install.sh](../install.sh)
+
+## First install (by hand)
 
 Marasca needs macOS 13 (Ventura) or later on an Apple Silicon Mac (M1 or newer).
 

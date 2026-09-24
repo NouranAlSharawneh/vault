@@ -19,5 +19,5 @@ First public build. macOS 13+ on Apple Silicon.
 
 ### Notes
 
-- The app is ad-hoc signed, not notarized. macOS asks you to confirm it once. See [INSTALL.md](docs/INSTALL.md).
+- The app is ad-hoc signed, not notarized. macOS asks you to confirm it once. See [INSTALL.md](https://github.com/NouranAlSharawneh/vault/blob/main/docs/INSTALL.md).
 - Needs git installed (`xcode-select --install`).
