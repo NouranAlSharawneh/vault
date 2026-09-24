@@ -1,4 +1,5 @@
 import { ArrowRight } from "lucide-react";
+import { GitNotice } from "@/components/git-notice/git-notice.component";
 import { Button, Logo, Wordmark } from "@/components/ui";
 import { WELCOME_FEATURES } from "@/data/onboarding.data";
 import { FeatureItem } from "../feature-item/feature-item.component";
@@ -27,6 +28,8 @@ export function Welcome({ onNext, onLocal }: WelcomeProps) {
           Start local, connect later
         </Button>
       </div>
+      {/* Sign-in doesn't need git, so nothing here blocks: an install can run meanwhile. */}
+      <GitNotice className="mt-5" />
       <div className="mt-14 grid grid-cols-3 gap-4 text-xs text-ink-3">
         {WELCOME_FEATURES.map((f) => (
           <FeatureItem key={f.shortcut} {...f} />

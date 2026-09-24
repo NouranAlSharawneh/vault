@@ -12,3 +12,5 @@ export { findAssetRefs } from "./find-asset-refs";
 export { rewriteAssetRefs } from "./rewrite-asset-refs";
 export { isSource, toSource } from "./source";
 export { compareVersions } from "./compare-versions";
+export { parseGitVersion } from "./parse-git-version";
+export { isVersionAtLeast } from "./is-version-at-least";

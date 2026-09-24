@@ -48,6 +48,7 @@ describe("settings store", () => {
       authMethod: null,
       githubClientId: null,
       onboarded: false,
+      gitPath: null,
     });
   });
 

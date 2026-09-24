@@ -34,10 +34,14 @@ export function TopBar({ sidebar, onToggleSidebar, onSearch, onReviewConflicts }
       </Button>
       <div className="flex items-center justify-end gap-2 no-drag">
         <SyncBadge onReviewConflicts={onReviewConflicts} />
+        {/* ⌘N goes in the tooltip, like every other shortcut in the app: printed on the
+            cherry fill it cluttered the one button that should read cleanly. */}
         <Button
           variant="primary"
           size="sm"
           onClick={() => fire(api("window:openEditor"), "Couldn’t open the editor")}
+          tooltip="New document"
+          tooltipKeys={`${MOD_KEY}N`}
         >
           <Plus size={11} /> New
         </Button>

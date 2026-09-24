@@ -8,3 +8,9 @@ node_modules
 out
 release
 Claude outputs/
+
+# archives & scratch — never commit (a .tgz once leaked .env)
+*.tgz
+*.tar.gz
+_to_delete/
+.backup/

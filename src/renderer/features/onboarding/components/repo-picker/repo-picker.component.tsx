@@ -1,4 +1,5 @@
 import { ArrowRight, FolderOpen, Plus, Search } from "lucide-react";
+import { GitNotice } from "@/components/git-notice/git-notice.component";
 import { Button, Card, ListRow, Option, PathText, SectionLabel, Spinner } from "@/components/ui";
 import { REPO_LIST_LIMIT } from "@/constants";
 import { cx } from "@/helpers";
@@ -114,6 +115,7 @@ export function RepoPicker({ onDone, onBack }: RepoPickerProps) {
           Change
         </Button>
       </div>
+      <GitNotice hideWhenReady className="mt-4" />
       {p.submitError && <div className="mt-3 text-xs text-cherry">{p.submitError}</div>}
       <div className="mt-5 flex items-center justify-between">
         <Button variant="subtle" onClick={onBack}>

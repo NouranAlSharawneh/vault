@@ -1,5 +1,5 @@
-import { ExternalLink, History, Pencil, RotateCcw, Star, Trash2 } from "lucide-react";
-import { Button } from "@/components/ui";
+import { History, Pencil, RotateCcw, Star, Trash2 } from "lucide-react";
+import { Button, GitHubMark } from "@/components/ui";
 import { MOD_KEY } from "@/constants";
 import { READER_VIEWS } from "@/data/main.data";
 import { cx, readTime } from "@/helpers";
@@ -101,7 +101,8 @@ export function ReaderToolbar({
               tooltip="Open on GitHub"
               aria-label="open on github"
             >
-              <ExternalLink size={12} />
+              {/* The mark says where the link goes, and matches the sidebar's repo link. */}
+              <GitHubMark size={12} />
             </Button>
           )}
           <Button

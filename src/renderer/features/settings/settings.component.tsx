@@ -3,6 +3,7 @@ import { Button, Dot, Empty, PathText, SettingGroup } from "@/components/ui";
 import { PUSH_DEBOUNCE_LABELS } from "@/data/settings.data";
 import { describeToken, plural, shortPath } from "@/helpers";
 import { api, fire, rescanVault } from "@/lib/api";
+import { GitRow } from "./components/git-row/git-row.component";
 import { HotkeyRecorder } from "./components/hotkey-recorder/hotkey-recorder.component";
 import { SettingRow } from "./components/setting-row/setting-row.component";
 import { UpdateCheck } from "./components/update-check/update-check.component";
@@ -191,6 +192,8 @@ export function Settings() {
                 <RefreshCw size={12} />
               </Button>
             </SettingRow>
+
+            <GitRow />
 
             <SettingRow
               label="Image folders"

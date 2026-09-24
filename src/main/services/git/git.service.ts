@@ -1,10 +1,30 @@
 import { existsSync, mkdirSync } from "node:fs";
 import { dirname } from "node:path";
-import { simpleGit, type SimpleGit } from "simple-git";
+import { simpleGit, type SimpleGit, type SimpleGitOptions } from "simple-git";
 import { DEFAULT_BRANCH } from "@shared/constants";
 import { relativeTime } from "@shared/helpers";
 import type { CommitInfo } from "@shared/types";
+import { gitBinary } from "./git-status.service";
 import type { AheadBehind, ChangedFile, ConflictSide, TokenProvider } from "./git.types";
+
+/** The characters simple-git accepts in a binary path without being told it's deliberate. */
+const PLAIN_BINARY = /^([a-z]:)?([a-z0-9/.\\_~-]+)$/i;
+
+/**
+ * Options for every simple-git instance: the git detection settled on, rather than
+ * whatever `git` means on a PATH a Finder-launched app barely has. A path with a space in
+ * it trips simple-git's injection guard; ours came from detection or a file dialog, never
+ * from a document, so it is allowed through.
+ */
+function gitOptions(baseDir?: string): Partial<SimpleGitOptions> {
+  const binary = gitBinary();
+
+  return {
+    ...(baseDir ? { baseDir } : {}),
+    binary,
+    unsafe: { allowUnsafeCustomBinary: !PLAIN_BINARY.test(binary) },
+  };
+}
 
 /**
  * Thin wrapper around simple-git. The token is injected per-command through an
@@ -17,12 +37,7 @@ export class GitService {
     readonly root: string,
     private readonly tokenProvider: TokenProvider,
   ) {
-    this.git = simpleGit({
-      baseDir: root,
-      binary: "git",
-      maxConcurrentProcesses: 1,
-      trimmed: true,
-    });
+    this.git = simpleGit({ ...gitOptions(root), maxConcurrentProcesses: 1, trimmed: true });
   }
 
   private static authArgsFor(token: string | null): string[] {
@@ -39,16 +54,6 @@ export class GitService {
     return GitService.authArgsFor(this.tokenProvider());
   }
 
-  static async isAvailable(): Promise<string | null> {
-    try {
-      const v = await simpleGit().version();
-
-      return v.installed ? `${v.major}.${v.minor}.${v.patch}` : null;
-    } catch {
-      return null;
-    }
-  }
-
   static async clone(
     url: string,
     dest: string,
@@ -58,12 +63,12 @@ export class GitService {
     mkdirSync(dirname(dest), { recursive: true });
     const args = [...GitService.authArgsFor(token)];
     if (branch) args.push("--branch", branch);
-    await simpleGit().clone(url, dest, args);
+    await simpleGit(gitOptions()).clone(url, dest, args);
   }
 
   static async init(dest: string, branch = DEFAULT_BRANCH): Promise<void> {
     mkdirSync(dest, { recursive: true });
-    if (!existsSync(`${dest}/.git`)) await simpleGit({ baseDir: dest }).init(["-b", branch]);
+    if (!existsSync(`${dest}/.git`)) await simpleGit(gitOptions(dest)).init(["-b", branch]);
   }
 
   async isRepo(): Promise<boolean> {

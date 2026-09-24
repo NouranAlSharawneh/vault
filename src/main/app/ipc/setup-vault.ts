@@ -1,7 +1,13 @@
 import { existsSync } from "node:fs";
 import { join } from "node:path";
-import { DEFAULT_BRANCH, DEFAULT_HOTKEY, DEFAULT_PUSH_DEBOUNCE_MS } from "@shared/constants";
+import {
+  DEFAULT_BRANCH,
+  DEFAULT_HOTKEY,
+  DEFAULT_PUSH_DEBOUNCE_MS,
+  GIT_NOT_READY,
+} from "@shared/constants";
 import type { GitHubRepo, VaultConfig } from "@shared/types";
+import { refreshGitStatus } from "../../services/git/git-status.service";
 import { GitService } from "../../services/git/git.service";
 import { getSettings, updateSettings } from "../../store/settings.store";
 import { loadToken } from "../../store/token.store";
@@ -19,9 +25,9 @@ export async function setupVault(
   repo: GitHubRepo | null,
   localPath: string,
 ): Promise<VaultConfig> {
-  if (!(await GitService.isAvailable())) {
-    throw new Error("git is not installed. On macOS run `xcode-select --install` and try again.");
-  }
+  // Checked afresh, not from the cache: this is the step that can't work without it, and
+  // the renderer's gate may be a moment behind an installer that just finished.
+  if ((await refreshGitStatus()).state !== "ready") throw new Error(GIT_NOT_READY);
   const previous = getSettings().vault;
   const keep = previous?.root === localPath ? previous : null;
   const config: VaultConfig = {
