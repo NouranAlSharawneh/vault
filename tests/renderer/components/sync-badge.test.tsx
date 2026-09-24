@@ -40,7 +40,7 @@ describe("SyncBadge", () => {
     ["pending", 3, "3 not pushed"],
     ["pushing", 1, "pushing…"],
     ["offline", 2, "offline · 2 waiting"],
-    ["error", 1, "couldn't push — retry"],
+    ["error", 1, "couldn’t push — retry"],
   ] as const)("%s → %s", (state, ahead, label) => {
     mockVaultApi();
     useApp.setState({ config, sync: status(state, ahead) });
@@ -82,7 +82,7 @@ describe("SyncBadge", () => {
     });
     render(<SyncBadge />);
     expect(screen.getByText("can’t push — no write access")).toBeTruthy();
-    expect(screen.queryByText("couldn't push — retry")).toBeNull();
+    expect(screen.queryByText("couldn’t push — retry")).toBeNull();
     // The raw error is not what the user needs to read here.
     expect(screen.queryByText(/Permission to/)).toBeNull();
   });

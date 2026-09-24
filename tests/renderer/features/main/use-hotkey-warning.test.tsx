@@ -19,7 +19,7 @@ describe("useHotkeyWarning", () => {
     await vi.waitFor(() => expect(useToast.getState().toasts.length).toBeGreaterThan(0));
     const toast = useToast.getState().toasts.at(-1);
     expect(toast?.message).toBe(
-      `${acceleratorLabel("Control+Alt+V")} is taken by another app. Pick a different shortcut.`,
+      `${acceleratorLabel("Control+Alt+V")} is taken by another app — pick a different shortcut`,
     );
     expect(toast?.action?.label).toBe("Open Settings");
     act(() => void toast?.action?.run());

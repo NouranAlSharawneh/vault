@@ -37,7 +37,7 @@ export function TopBar({ sidebar, onToggleSidebar, onSearch, onReviewConflicts }
         <Button
           variant="primary"
           size="sm"
-          onClick={() => fire(api("window:openEditor"), "Couldn't open the editor")}
+          onClick={() => fire(api("window:openEditor"), "Couldn’t open the editor")}
         >
           <Plus size={11} /> New
         </Button>

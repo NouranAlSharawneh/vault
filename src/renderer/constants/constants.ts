@@ -29,3 +29,11 @@ export const MERMAID_ZOOM_MAX = 4;
 export const MERMAID_ZOOM_STEP = 0.25;
 /** Horizontal padding of the diagram pane, subtracted when fitting to width. */
 export const MERMAID_PANE_PAD = 32;
+
+/** How a restored version is named in its toast: when it was written, not its sha. */
+export const RESTORED_FROM_FORMAT: Intl.DateTimeFormatOptions = {
+  day: "numeric",
+  month: "short",
+  hour: "numeric",
+  minute: "2-digit",
+};

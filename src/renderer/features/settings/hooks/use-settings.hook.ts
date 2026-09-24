@@ -87,8 +87,8 @@ export function useSettings() {
       // announcing an emptied trash then would be a lie.
       if (!removed) return;
       await refreshTrash();
-      const images = assets.length ? `, with ${plural(assets.length, "image")}` : "";
-      show(`Emptied the trash — ${plural(removed, "doc")} gone for good${images}`);
+      const images = assets.length ? ` and ${plural(assets.length, "image")}` : "";
+      show(`Emptied the trash — deleted ${plural(removed, "doc")}${images} forever`);
     } catch (e) {
       show(errorMessage(e));
     } finally {

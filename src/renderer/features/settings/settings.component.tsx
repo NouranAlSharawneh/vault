@@ -2,7 +2,7 @@ import { ArrowLeft, FolderOpen, RefreshCw, Trash2 } from "lucide-react";
 import { Button, Dot, Empty, PathText, SettingGroup } from "@/components/ui";
 import { PUSH_DEBOUNCE_LABELS } from "@/data/settings.data";
 import { describeToken, plural, shortPath } from "@/helpers";
-import { api, fire } from "@/lib/api";
+import { api, fire, rescanVault } from "@/lib/api";
 import { HotkeyRecorder } from "./components/hotkey-recorder/hotkey-recorder.component";
 import { SettingRow } from "./components/setting-row/setting-row.component";
 import { useSettings } from "./hooks/use-settings.hook";
@@ -164,7 +164,7 @@ export function Settings() {
               <Button
                 variant="outline"
                 onClick={() =>
-                  fire(api("vault:revealInFinder"), "Couldn't show the vault in Finder")
+                  fire(api("vault:revealInFinder"), "Couldn’t show the vault in Finder")
                 }
               >
                 <FolderOpen size={12} /> Show in Finder
@@ -174,7 +174,7 @@ export function Settings() {
                 className="w-7 justify-center px-0"
                 tooltip="Rescan the folder"
                 aria-label="Rescan the folder"
-                onClick={() => fire(api("vault:rescan"), "Couldn't rescan the vault")}
+                onClick={rescanVault}
               >
                 <RefreshCw size={12} />
               </Button>

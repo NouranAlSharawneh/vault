@@ -32,7 +32,7 @@ export function VaultUnavailable() {
     setTrying(true);
     fire(
       reopenVault().finally(() => setTrying(false)),
-      "Couldn't open the vault",
+      "Couldn’t open the vault",
     );
   };
 
@@ -46,7 +46,7 @@ export function VaultUnavailable() {
             Try again
           </Button>
           <Button
-            onClick={() => fire(api("vault:revealInFinder"), "Couldn't show the vault in Finder")}
+            onClick={() => fire(api("vault:revealInFinder"), "Couldn’t show the vault in Finder")}
           >
             Reveal in Finder
           </Button>

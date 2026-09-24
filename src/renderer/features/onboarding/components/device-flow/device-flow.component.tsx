@@ -17,9 +17,14 @@ export function DeviceFlow({ onBack }: DeviceFlowProps) {
 
   const copy = () => {
     if (!session) return;
-    fire(navigator.clipboard.writeText(session.userCode), "Couldn't copy the code");
-    setCopied(true);
-    setTimeout(() => setCopied(false), COPIED_FEEDBACK_MS);
+    // "Copied" only once it is: it used to show even when the clipboard refused.
+    fire(
+      navigator.clipboard.writeText(session.userCode).then(() => {
+        setCopied(true);
+        setTimeout(() => setCopied(false), COPIED_FEEDBACK_MS);
+      }),
+      "Couldn’t copy the code",
+    );
   };
 
   return (
@@ -55,7 +60,7 @@ export function DeviceFlow({ onBack }: DeviceFlowProps) {
             <Button
               variant="link"
               onClick={() =>
-                fire(api("github:openInBrowser", DEVICE_LOGIN_PATH), "Couldn't open GitHub")
+                fire(api("github:openInBrowser", DEVICE_LOGIN_PATH), "Couldn’t open GitHub")
               }
             >
               Reopen browser

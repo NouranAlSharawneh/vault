@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { RESTORED_FROM_FORMAT } from "@/constants";
 import { errorMessage } from "@/helpers";
 import { api } from "@/lib/api";
 import { useToast } from "@/stores/toast";
@@ -63,7 +64,12 @@ export function useDocHistory(path: string, onRestored: (path: string) => void) 
       const res = await api("doc:restore", path, selected);
       // Restoring writes a new commit rather than rewriting history, so the version you
       // moved away from stays reachable — worth saying, since "restore" sounds final.
-      show(`Restored ${selected.slice(0, 7)} as a new commit`);
+      // Named by when it was written: a short sha means nothing to someone reading a toast.
+      const from = state.commits.find((c) => c.sha === selected);
+      const when = from
+        ? new Date(from.date).toLocaleString(undefined, RESTORED_FROM_FORMAT)
+        : selected.slice(0, 7);
+      show(`Restored the version from ${when} as a new commit`);
       onRestored(res.path);
       // The restore is itself a commit, so the list it came from is now out of date.
       setReloads((n) => n + 1);
@@ -72,7 +78,7 @@ export function useDocHistory(path: string, onRestored: (path: string) => void) 
     } finally {
       setState((s) => ({ ...s, restoring: false }));
     }
-  }, [path, selected, show, onRestored]);
+  }, [path, selected, state.commits, show, onRestored]);
 
   return {
     ...state,
