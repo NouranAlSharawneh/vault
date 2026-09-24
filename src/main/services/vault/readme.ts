@@ -41,8 +41,12 @@ export async function commitWithReadme(
   ctx: VaultContext,
   paths: string[],
   message: string,
-): Promise<void> {
-  await ctx.git.commitPaths(paths, message);
+): Promise<boolean> {
+  // Nothing staged makes no commit and an empty sha. Amending then would rewrite the
+  // commit before it — often one already on GitHub, so the next push is rejected.
+  if (!(await ctx.git.commitPaths(paths, message))) return false;
   await ctx.writeReadme();
   await ctx.git.amendPaths([README_FILE]);
+
+  return true;
 }

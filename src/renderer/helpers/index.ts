@@ -13,3 +13,5 @@ export { describeToken } from "./describe-token";
 export { parseUnifiedDiff, diffStat } from "./parse-diff";
 export { classifyHref } from "./classify-href";
 export { scrollToAnchor } from "./scroll-to-anchor";
+export { describeSave } from "./describe-save";
+export { describeResolution } from "./describe-resolution";

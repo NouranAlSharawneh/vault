@@ -32,7 +32,7 @@ import { projects, renameProject } from "./projects";
 import { commitWithReadme, writeReadme } from "./readme";
 import { SyncEngine } from "./sync.service";
 import { listTrash, purgeTrash, readTrashed, restoreFromTrash } from "./trash";
-import type { TokenProvider } from "./vault.types";
+import type { ExistingDoc, TokenProvider } from "./vault.types";
 import { ViewsStore } from "./views";
 
 const ADR_TEMPLATE =
@@ -132,13 +132,7 @@ export class VaultService extends EventEmitter {
   async save(req: SaveRequest): Promise<SaveResult> {
     if (req.existingPath) assertInside(this.root, req.existingPath);
     const title = (req.frontmatter.title || inferTitle(req.body) || "Untitled").trim();
-    let created = req.frontmatter.created;
-    let extra: Record<string, unknown> = {};
-    if (req.existingPath && existsSync(join(this.root, req.existingPath))) {
-      const prev = parseDoc(await fs.readFile(join(this.root, req.existingPath), "utf8"));
-      created = created ?? prev.frontmatter?.created;
-      extra = prev.extra;
-    }
+    const { before, created, extra } = await this.readExisting(req);
     const fm: Frontmatter = {
       title,
       project: (req.frontmatter.project ?? "").trim(),
@@ -171,25 +165,49 @@ export class VaultService extends EventEmitter {
       body = rewriteAssetRefs(body, imported.map);
       assets = imported.paths;
     }
-    await fs.writeFile(abs, composeDoc(fm, body, extra));
+    const text = composeDoc(fm, body, extra);
+    const rewritten = moved || assets.length > 0 || text !== before;
+    await fs.writeFile(abs, text);
 
     const meta = (await this.index.refreshFile(target))!;
     if (moved) this.index.remove(req.existingPath!);
 
-    let committed = false;
-    if (req.commit) {
-      const message = isNew
-        ? `add: ${fm.title}`
-        : moved
-          ? `move: ${fm.title}`
-          : `update: ${fm.title}`;
-      await commitWithReadme(this, [target, ...assets], message);
-      committed = true;
-      this.schedulePush();
-    }
+    const verb = isNew ? "add" : moved ? "move" : "update";
+    const committed =
+      req.commit && (await this.commitSave([target, ...assets], `${verb}: ${title}`));
     this.emit("index", this.index.snapshot());
+    // A commit that found nothing staged means the file already read this way in git —
+    // even if an earlier local-only save had changed it, that is what was just recorded.
+    const changed = req.commit ? committed : rewritten;
 
-    return { path: target, meta, committed, assets, preservedExternalEdit };
+    return { path: target, meta, committed, changed, assets, preservedExternalEdit };
+  }
+
+  /**
+   * The file a save is about to replace, as it reads now (null for a new document), with
+   * what the save keeps from it: its created date and any frontmatter Vault doesn't own.
+   */
+  private async readExisting(req: SaveRequest): Promise<ExistingDoc> {
+    const path = req.existingPath;
+    if (!path || !existsSync(join(this.root, path))) {
+      return { before: null, created: req.frontmatter.created, extra: {} };
+    }
+    const before = await fs.readFile(join(this.root, path), "utf8");
+    const prev = parseDoc(before);
+
+    return {
+      before,
+      created: req.frontmatter.created ?? prev.frontmatter?.created,
+      extra: prev.extra,
+    };
+  }
+
+  /** Commit a save and queue its push. False when git found nothing new to record. */
+  private async commitSave(paths: string[], message: string): Promise<boolean> {
+    const committed = await commitWithReadme(this, paths, message);
+    if (committed) this.schedulePush();
+
+    return committed;
   }
 
   /**
