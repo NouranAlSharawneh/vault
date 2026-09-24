@@ -4,7 +4,7 @@ import type { DocImageProps } from "./doc-image.types";
 
 /**
  * `![alt](path)` in a doc, and every raw `<img>` a README carries. Relative paths are
- * served from the vault through `vault://`; a video file behind an image link plays
+ * served from the vault through `marasca://`; a video file behind an image link plays
  * inline, the way GitHub renders it.
  *
  * Images are explicitly inline: Tailwind's preflight makes every `img` a block, which

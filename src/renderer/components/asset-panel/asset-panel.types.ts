@@ -11,7 +11,7 @@ export interface AssetPlan {
   /** Every relative image/media path in the body, in order. */
   refs: AssetRef[];
   baseDir: string | null;
-  /** True when Vault worked the folder out itself rather than being handed one. */
+  /** True when Marasca worked the folder out itself rather than being handed one. */
   detected: boolean;
   /** Refs the user unticked (too big, not wanted). */
   excluded: string[];

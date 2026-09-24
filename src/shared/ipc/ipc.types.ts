@@ -34,7 +34,7 @@ import type {
 
 /**
  * Request/response IPC contract. Each key is a channel; the value is
- * `(args) => result`. The preload builds `window.vault` from this shape.
+ * `(args) => result`. The preload builds `window.marasca` from this shape.
  */
 export interface IpcInvoke {
   "auth:state": () => AuthState;
@@ -162,8 +162,8 @@ export interface IpcEvents {
 export type InvokeChannel = keyof IpcInvoke;
 export type EventChannel = keyof IpcEvents;
 
-/** The API surface exposed on `window.vault`. */
-export interface VaultApi {
+/** The API surface exposed on `window.marasca`. */
+export interface MarascaApi {
   invoke: <C extends InvokeChannel>(
     channel: C,
     ...args: Parameters<IpcInvoke[C]>

@@ -4,7 +4,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { useHotkeyWarning } from "@/features/main/hooks/use-hotkey-warning.hook";
 import { acceleratorLabel } from "@/helpers";
 import { useToast } from "@/stores/toast";
-import { mockVaultApi } from "../../helpers/mock-vault-api";
+import { mockMarascaApi } from "../../helpers/mock-marasca-api";
 
 beforeEach(() => {
   useToast.getState().dismiss();
@@ -12,7 +12,7 @@ beforeEach(() => {
 
 describe("useHotkeyWarning", () => {
   it("says the shortcut is taken, and offers the way to change it", async () => {
-    mockVaultApi({ "hotkey:status": { accelerator: "Control+Alt+V", active: false } });
+    mockMarascaApi({ "hotkey:status": { accelerator: "Control+Alt+V", active: false } });
     const openSettings = vi.fn();
     renderHook(() => useHotkeyWarning(openSettings));
 
@@ -31,7 +31,7 @@ describe("useHotkeyWarning", () => {
       { accelerator: "Control+Alt+V", active: true },
       { accelerator: null, active: false },
     ]) {
-      const { invoke } = mockVaultApi({ "hotkey:status": status });
+      const { invoke } = mockMarascaApi({ "hotkey:status": status });
       const { unmount } = renderHook(() => useHotkeyWarning(vi.fn()));
       await vi.waitFor(() => expect(invoke).toHaveBeenCalledWith("hotkey:status"));
       await act(async () => undefined);

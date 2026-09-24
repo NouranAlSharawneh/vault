@@ -5,7 +5,7 @@ import { useTrashActions } from "@/features/main/hooks/use-trash-actions.hook";
 import { useApp } from "@/stores/app";
 import { useToast } from "@/stores/toast";
 import type { DocMeta } from "@shared/types";
-import { mockVaultApi } from "../../helpers/mock-vault-api";
+import { mockMarascaApi } from "../../helpers/mock-marasca-api";
 
 const meta: DocMeta = {
   path: "atlas-api/spec.md",
@@ -30,7 +30,7 @@ const trashed = {
 
 describe("useTrashActions", () => {
   it("moves the doc to trash, clears the selection and offers Undo", async () => {
-    const { invoke } = mockVaultApi({
+    const { invoke } = mockMarascaApi({
       "doc:trash": () => trashed,
       "trash:list": () => [trashed],
       "trash:restore": () => ({ path: meta.path, meta, committed: true }),
@@ -52,7 +52,7 @@ describe("useTrashActions", () => {
   });
 
   it("restores and purges only docs that are in the trash", async () => {
-    const { invoke } = mockVaultApi({
+    const { invoke } = mockMarascaApi({
       "trash:restore": () => ({ path: meta.path, meta, committed: true }),
       "trash:purge": () => ({ removed: 1, assets: ["p/assets/a.gif", "p/assets/b.png"] }),
       "trash:list": () => [],
@@ -76,7 +76,7 @@ describe("useTrashActions", () => {
   it("changes nothing when the confirmation is declined", async () => {
     // Main asks before deleting forever; answering no comes back as removed: 0. That has
     // to leave the selection and the toast exactly where they were.
-    mockVaultApi({ "trash:purge": { removed: 0, assets: [] } });
+    mockMarascaApi({ "trash:purge": { removed: 0, assets: [] } });
     useToast.getState().dismiss();
     const select = vi.fn();
     const { result } = renderHook(() => useTrashActions(trashed.meta, select));
@@ -86,7 +86,7 @@ describe("useTrashActions", () => {
   });
 
   it("shows the error when main refuses", async () => {
-    mockVaultApi({ "doc:trash": new Error("git is busy") });
+    mockMarascaApi({ "doc:trash": new Error("git is busy") });
     const { result } = renderHook(() => useTrashActions(meta, vi.fn()));
     await act(() => result.current.trash());
     expect(useToast.getState().toasts.at(-1)?.message).toBe("git is busy");

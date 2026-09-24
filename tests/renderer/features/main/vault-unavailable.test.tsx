@@ -5,7 +5,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { VaultUnavailable } from "@/features/main/components/vault-unavailable/vault-unavailable.component";
 import { useApp } from "@/stores/app";
 import type { VaultConfig } from "@shared/types";
-import { mockVaultApi } from "../../helpers/mock-vault-api";
+import { mockMarascaApi } from "../../helpers/mock-marasca-api";
 
 const config: VaultConfig = {
   root: "/Users/nunu/Documents/vault",
@@ -23,22 +23,22 @@ beforeEach(() => {
 
 describe("VaultUnavailable", () => {
   it("still asks to set up when there is no vault at all", () => {
-    mockVaultApi();
+    mockMarascaApi();
     useApp.setState({ config: null, vaultError: null });
     render(<VaultUnavailable />);
     expect(screen.getByText("No vault connected")).toBeTruthy();
   });
 
   it("says which vault failed and why, not that it is empty", () => {
-    mockVaultApi();
+    mockMarascaApi();
     useApp.setState({ config, vaultError: "EACCES: permission denied" });
     render(<VaultUnavailable />);
-    expect(screen.getByText("Vault couldn’t open ~/Documents/vault.")).toBeTruthy();
+    expect(screen.getByText("Marasca couldn’t open ~/Documents/vault.")).toBeTruthy();
     expect(screen.getByText("EACCES: permission denied")).toBeTruthy();
   });
 
   it("tries again, shows the folder, or starts over", async () => {
-    const { invoke } = mockVaultApi({ "vault:reopen": new Error("still no") });
+    const { invoke } = mockMarascaApi({ "vault:reopen": new Error("still no") });
     useApp.setState({ config, vaultError: "EACCES: permission denied" });
     render(<VaultUnavailable />);
 

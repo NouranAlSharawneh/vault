@@ -5,7 +5,7 @@ import { App } from "@/app/app.component";
 import { fire } from "@/lib/api";
 import { useApp } from "@/stores/app";
 import { useToast } from "@/stores/toast";
-import { mockVaultApi } from "../helpers/mock-vault-api";
+import { mockMarascaApi } from "../helpers/mock-marasca-api";
 
 const config = {
   root: "/tmp/v",
@@ -33,7 +33,7 @@ Range.prototype.getBoundingClientRect ??= () => new DOMRect();
 
 async function renderAt(route: string) {
   window.location.hash = route;
-  mockVaultApi({
+  mockMarascaApi({
     "auth:state": { status: "signed-in", user: null, method: "pat" },
     "app:platform": "darwin",
     "vault:config": config,

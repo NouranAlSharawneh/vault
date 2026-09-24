@@ -5,7 +5,7 @@ import { describe, expect, it } from "vitest";
 import { NoWriteAccessBanner } from "@/components/no-write-access-banner/no-write-access-banner.component";
 import { useApp } from "@/stores/app";
 import type { SyncStatus, VaultConfig } from "@shared/types";
-import { mockVaultApi } from "../helpers/mock-vault-api";
+import { mockMarascaApi } from "../helpers/mock-marasca-api";
 
 const config: VaultConfig = {
   root: "/tmp/v",
@@ -31,7 +31,7 @@ const sync = (patch: Partial<SyncStatus> = {}): SyncStatus => ({
 
 describe("NoWriteAccessBanner", () => {
   it("names the repo and says the documents are still safe", () => {
-    mockVaultApi();
+    mockMarascaApi();
     useApp.setState({ config, sync: sync() });
     render(<NoWriteAccessBanner />);
     expect(
@@ -42,7 +42,7 @@ describe("NoWriteAccessBanner", () => {
   });
 
   it("offers another repo and the repo on GitHub", async () => {
-    const { invoke } = mockVaultApi();
+    const { invoke } = mockMarascaApi();
     useApp.setState({ config, sync: sync() });
     render(<NoWriteAccessBanner />);
     await userEvent.click(screen.getByRole("button", { name: "Connect a different repo" }));
@@ -52,7 +52,7 @@ describe("NoWriteAccessBanner", () => {
   });
 
   it("stays out of the way for every other failure, and once a push lands", () => {
-    mockVaultApi();
+    mockMarascaApi();
     useApp.setState({ config, sync: sync({ failure: "other" }) });
     const { rerender, container } = render(<NoWriteAccessBanner />);
     expect(container.textContent).toBe("");

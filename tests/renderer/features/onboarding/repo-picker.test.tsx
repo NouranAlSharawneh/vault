@@ -7,7 +7,7 @@ import { RepoPicker } from "@/features/onboarding/components/repo-picker/repo-pi
 import { useApp } from "@/stores/app";
 import { CREATE_REPO_FORBIDDEN } from "@shared/constants";
 import type { AuthMethod, GitHubRepo, VaultConfig } from "@shared/types";
-import { mockVaultApi } from "../../helpers/mock-vault-api";
+import { mockMarascaApi } from "../../helpers/mock-marasca-api";
 
 const noop = () => undefined;
 
@@ -29,7 +29,7 @@ beforeEach(() => signIn());
 
 describe("RepoPicker — when the repo list fails", () => {
   it("says so inside the list box, with Try again", async () => {
-    mockVaultApi({ ...base, "github:listRepos": new Error("Network unreachable") });
+    mockMarascaApi({ ...base, "github:listRepos": new Error("Network unreachable") });
     render(<RepoPicker onDone={noop} onBack={noop} />);
     expect(
       await screen.findByText(/Couldn’t load your repos \(Network unreachable\)/),
@@ -40,7 +40,7 @@ describe("RepoPicker — when the repo list fails", () => {
 
   it("Try again asks again and shows the repos", async () => {
     let fail = true;
-    mockVaultApi({
+    mockMarascaApi({
       ...base,
       "github:listRepos": () => {
         if (fail) throw new Error("Network unreachable");
@@ -58,7 +58,7 @@ describe("RepoPicker — when the repo list fails", () => {
 
   it("keeps create-new usable, and a failed Continue does not wipe the list error", async () => {
     const onDone = vi.fn();
-    const { invoke } = mockVaultApi({
+    const { invoke } = mockMarascaApi({
       ...base,
       "github:listRepos": new Error("Network unreachable"),
       "github:createRepo": new Error("name already exists on this account"),
@@ -79,7 +79,7 @@ describe("RepoPicker — signed in with a pasted token", () => {
   );
 
   it("OAuth: create-new is picked and recommended", async () => {
-    mockVaultApi({ ...base, "github:listRepos": [repo("nunu/notes")] });
+    mockMarascaApi({ ...base, "github:listRepos": [repo("nunu/notes")] });
     render(<RepoPicker onDone={noop} onBack={noop} />);
     await screen.findByText("nunu/notes");
     expect(screen.getByText("recommended")).toBeTruthy();
@@ -90,7 +90,7 @@ describe("RepoPicker — signed in with a pasted token", () => {
 
   it("PAT: nothing recommends create-new, and the one repo the token sees is picked", async () => {
     signIn("pat");
-    mockVaultApi({ ...base, "github:listRepos": [repo("nunu/vault")] });
+    mockMarascaApi({ ...base, "github:listRepos": [repo("nunu/vault")] });
     render(<RepoPicker onDone={noop} onBack={noop} />);
     await screen.findByText("nunu/vault");
     expect(screen.queryByText("recommended")).toBeNull();
@@ -104,7 +104,7 @@ describe("RepoPicker — signed in with a pasted token", () => {
 
   it("PAT with several repos: nothing is picked for them, so Continue waits", async () => {
     signIn("pat");
-    mockVaultApi({ ...base, "github:listRepos": [repo("nunu/a"), repo("nunu/b")] });
+    mockMarascaApi({ ...base, "github:listRepos": [repo("nunu/a"), repo("nunu/b")] });
     render(<RepoPicker onDone={noop} onBack={noop} />);
     await screen.findByText("nunu/a");
     expect(screen.getByRole("button", { name: /Continue/ })).toHaveProperty("disabled", true);
@@ -115,7 +115,7 @@ describe("RepoPicker — signed in with a pasted token", () => {
   it("a 403 from create says what to do, moves to the list and refreshes it", async () => {
     signIn("pat");
     let made = false;
-    const { invoke } = mockVaultApi({
+    const { invoke } = mockMarascaApi({
       ...base,
       "github:listRepos": () => (made ? [repo("nunu/vault")] : []),
       "github:createRepo": forbidden,
@@ -139,7 +139,7 @@ describe("RepoPicker — long lists", () => {
   const many = Array.from({ length: 120 }, (_, i) => repo(`nunu/repo-${i}`));
 
   it("says the list is cut short and how to find the rest", async () => {
-    mockVaultApi({ ...base, "github:listRepos": many });
+    mockMarascaApi({ ...base, "github:listRepos": many });
     render(<RepoPicker onDone={noop} onBack={noop} />);
     expect(
       await screen.findByText(`Showing ${REPO_LIST_LIMIT} of 120 — type to filter.`),
@@ -147,7 +147,7 @@ describe("RepoPicker — long lists", () => {
   });
 
   it("counts what the filter matches, and goes quiet once it all fits", async () => {
-    mockVaultApi({ ...base, "github:listRepos": many });
+    mockMarascaApi({ ...base, "github:listRepos": many });
     render(<RepoPicker onDone={noop} onBack={noop} />);
     await screen.findByText("nunu/repo-0");
     await userEvent.type(screen.getByPlaceholderText("Filter your repos…"), "repo-1");

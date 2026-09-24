@@ -1,7 +1,7 @@
 import { CAPTURE_HOTKEY_LABEL, MOD_KEY } from "@/constants";
 import type { FeatureData, ScopeData, ShortcutData } from "@/features/onboarding/onboarding.types";
 
-/** Welcome screen: the three things Vault does. */
+/** Welcome screen: the three things Marasca does. */
 export const WELCOME_FEATURES: FeatureData[] = [
   { shortcut: CAPTURE_HOTKEY_LABEL, description: "Capture the clipboard from any app." },
   { shortcut: `${MOD_KEY} K`, description: "Find anything you've saved." },
@@ -14,7 +14,7 @@ export const GITHUB_SCOPES: ScopeData[] = [
     granted: true,
     title: "Read and write your repositories",
     description:
-      "GitHub's OAuth scope covers all your repos; Vault only ever touches the one you pick next. Paste a fine-grained token instead if you want it narrowed to that repo.",
+      "GitHub's OAuth scope covers all your repos; Marasca only ever touches the one you pick next. Paste a fine-grained token instead if you want it narrowed to that repo.",
   },
   {
     granted: true,

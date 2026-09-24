@@ -2,7 +2,7 @@ import { renderHook } from "@testing-library/react";
 // @vitest-environment jsdom
 import { describe, expect, it, vi } from "vitest";
 import { useMainShortcuts } from "@/features/main/hooks/use-main-shortcuts.hook";
-import { mockVaultApi } from "../../helpers/mock-vault-api";
+import { mockMarascaApi } from "../../helpers/mock-marasca-api";
 
 const handlers = () => ({
   onSearch: vi.fn(),
@@ -20,7 +20,7 @@ describe("main window shortcuts", () => {
     // both are delivered — Windows and Linux — ⌘Y used to toggle history twice, so the
     // drawer never opened, and ⌘⌫ trashed twice, the second call failing into a toast.
     const h = handlers();
-    const { emit } = mockVaultApi();
+    const { emit } = mockMarascaApi();
     renderHook(() => useMainShortcuts(h));
     key({ key: "y", ctrlKey: true });
     emit("shortcut", "history");
@@ -29,7 +29,7 @@ describe("main window shortcuts", () => {
 
   it("still acts on a second, deliberate press", () => {
     const h = handlers();
-    mockVaultApi();
+    mockMarascaApi();
     renderHook(() => useMainShortcuts(h));
     key({ key: "y", ctrlKey: true });
     const later = Date.now() + 400;
@@ -41,7 +41,7 @@ describe("main window shortcuts", () => {
 
   it("leaves ⌘⌫ alone while you are typing", () => {
     const h = handlers();
-    mockVaultApi();
+    mockMarascaApi();
     renderHook(() => useMainShortcuts(h));
     const input = document.createElement("input");
     document.body.append(input);
@@ -56,7 +56,7 @@ describe("main window shortcuts", () => {
     // The accelerator reaches the window over IPC whatever has focus, so ⌘⌫ in the tag
     // filter used to trash the selected document.
     const h = handlers();
-    const { emit, invoke } = mockVaultApi();
+    const { emit, invoke } = mockMarascaApi();
     renderHook(() => useMainShortcuts(h));
     const input = document.createElement("input");
     document.body.append(input);
@@ -69,7 +69,7 @@ describe("main window shortcuts", () => {
 
   it("trashes from the menu when nothing editable has focus", () => {
     const h = handlers();
-    const { emit } = mockVaultApi();
+    const { emit } = mockMarascaApi();
     renderHook(() => useMainShortcuts(h));
     emit("shortcut", "trash");
     expect(h.onTrash).toHaveBeenCalledTimes(1);

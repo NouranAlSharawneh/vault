@@ -63,6 +63,6 @@ export interface ExistingDoc {
   /** The file as it reads now; null when there is none yet. */
   before: string | null;
   created: string | undefined;
-  /** Frontmatter keys Vault doesn't own, kept as they were. */
+  /** Frontmatter keys Marasca doesn't own, kept as they were. */
   extra: Record<string, unknown>;
 }

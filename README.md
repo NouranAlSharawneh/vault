@@ -1,4 +1,6 @@
-# Vault
+# Marasca
+
+<img src="docs/brand/marasca-lockup.svg" alt="Marasca" width="420">
 
 A macOS desktop app that catches every markdown file you'd hate to lose and commits it straight to a GitHub repository you own. **No database, no account, no lock-in** — the git repo _is_ the database.
 

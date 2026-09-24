@@ -4,9 +4,9 @@ import type { TrashedDoc } from "@shared/types";
 /**
  * The one confirmation the app was missing.
  *
- * Emptying the trash and deleting a document forever are the only two acts in Vault that
+ * Emptying the trash and deleting a document forever are the only two acts in Marasca that
  * cannot be undone — everything else is a commit, and a commit can be walked back. They
- * were also the only two that happened on a single click, while Reset Vault, which
+ * were also the only two that happened on a single click, while Reset Marasca, which
  * destroys nothing on disk, asked first.
  *
  * It lives in main rather than the renderer so both entry points — the reader's toolbar
@@ -17,7 +17,7 @@ export async function confirmPurge(
   trashed: TrashedDoc[],
   parent: BrowserWindow | null = null,
 ): Promise<boolean> {
-  const IRREVERSIBLE = "This is the one thing in Vault you cannot undo.";
+  const IRREVERSIBLE = "This is the one thing in Marasca you cannot undo.";
   if (path) {
     // The title is only for the wording — a path the listing does not know about is
     // still a delete, and must not be described as emptying the whole trash.

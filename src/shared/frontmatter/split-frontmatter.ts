@@ -1,7 +1,7 @@
 import { FM_CLOSE, FM_OPEN, META_FENCE_OPEN, META_TAIL_CLOSE, META_TAIL_OPEN } from "../constants";
 import type { SplitResult } from "./frontmatter.types";
 
-/** The trailing block Vault writes: `---`, blank line, ```yaml … ``` at end of file. */
+/** The trailing block Marasca writes: `---`, blank line, ```yaml … ``` at end of file. */
 function splitTail(raw: string): SplitResult | null {
   const close = META_TAIL_CLOSE.exec(raw);
   if (!close) return null;
@@ -20,7 +20,7 @@ function splitTail(raw: string): SplitResult | null {
   };
 }
 
-/** Classic frontmatter at the head of the file (Obsidian, Jekyll, older Vault files). */
+/** Classic frontmatter at the head of the file (Obsidian, Jekyll, older Marasca files). */
 function splitHead(raw: string): SplitResult | null {
   const open = FM_OPEN.exec(raw);
   if (!open) return null;
@@ -38,7 +38,7 @@ function splitHead(raw: string): SplitResult | null {
 }
 
 /**
- * Split a markdown file into its metadata YAML and body. Looks for Vault's trailing
+ * Split a markdown file into its metadata YAML and body. Looks for Marasca's trailing
  * block first, then a classic head block; touches only the two ends of the file.
  */
 export function splitFrontmatter(raw: string): SplitResult {

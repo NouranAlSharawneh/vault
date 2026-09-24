@@ -53,8 +53,8 @@ const boot = app.whenReady().then(async () => {
 // Nothing else is watching this. Without the catch, anything that throws before the
 // window opens leaves the app running with no window and no clue why.
 boot.catch((e: unknown) => {
-  console.error("Vault failed to start:", e);
-  dialog.showErrorBox("Vault couldn't start", e instanceof Error ? e.message : String(e));
+  console.error("Marasca failed to start:", e);
+  dialog.showErrorBox("Marasca couldn't start", e instanceof Error ? e.message : String(e));
   app.exit(1);
 });
 

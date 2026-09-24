@@ -2,10 +2,10 @@ import { fireEvent, render, screen } from "@testing-library/react";
 // @vitest-environment jsdom
 import { describe, expect, it, vi } from "vitest";
 import { Markdown } from "@/components/markdown";
-import { mockVaultApi } from "../helpers/mock-vault-api";
+import { mockMarascaApi } from "../helpers/mock-marasca-api";
 
 const html = (source: string, docPath = "notes/doc.md") => {
-  mockVaultApi();
+  mockMarascaApi();
 
   return render(<Markdown source={source} docPath={docPath} />).container;
 };
@@ -88,7 +88,7 @@ describe("Markdown — GFM still works alongside raw HTML", () => {
 
   it("resolves a relative image through the vault protocol", () => {
     const c = html("![hero](assets/hero.png)");
-    expect(c.querySelector("img")?.getAttribute("src")).toContain("vault://");
+    expect(c.querySelector("img")?.getAttribute("src")).toContain("marasca://");
   });
 
   it("keeps the language class a fenced block needs", () => {
@@ -110,7 +110,7 @@ describe("Markdown — links", () => {
 
   /** Mounted inside a scroll container, as the reader and the editor preview both are. */
   const mount = (onOpenDoc?: (path: string) => void) => {
-    const api = mockVaultApi();
+    const api = mockMarascaApi();
     const view = render(
       <div data-testid="scroller" style={{ overflowY: "auto" }}>
         <Markdown source={DOC} docPath="atlas-api/notes/doc.md" onOpenDoc={onOpenDoc} />
@@ -135,7 +135,7 @@ describe("Markdown — links", () => {
     expect(api.invoke).not.toHaveBeenCalled();
   });
 
-  it("opens a relative .md link in Vault, resolved against the doc's folder", () => {
+  it("opens a relative .md link in Marasca, resolved against the doc's folder", () => {
     const onOpenDoc = vi.fn();
     mount(onOpenDoc);
     fireEvent.click(screen.getByText("the spec"));

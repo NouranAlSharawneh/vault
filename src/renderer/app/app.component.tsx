@@ -54,7 +54,7 @@ function Booting() {
   // the window can get stuck in. It must stay transparent for the capture sheet.
   return (
     <div className="flex h-full items-center justify-center bg-transparent text-line-2">
-      <Logo size={28} />
+      <Logo size={28} tone="mono" />
     </div>
   );
 }

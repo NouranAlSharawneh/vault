@@ -112,7 +112,7 @@ export function useCapture() {
 
   const hide = useCallback(() => fireQuietly(api("capture:hide"), "hiding the sheet"), []);
 
-  /** ⌘↵ saves and hands focus back to the app you were in; ⌥⌘↵ also opens it in Vault. */
+  /** ⌘↵ saves and hands focus back to the app you were in; ⌥⌘↵ also opens it in Marasca. */
   const save = useCallback(
     async (reveal = false) => {
       if (!state.clip || state.phase !== "ready") return;

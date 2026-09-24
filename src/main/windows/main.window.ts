@@ -28,7 +28,7 @@ export function openMainWindow(route?: string): BrowserWindow {
   mainWin = new BrowserWindow({
     ...COMMON_WINDOW_OPTIONS,
     ...MAIN_WINDOW,
-    title: "Vault",
+    title: "Marasca",
     titleBarStyle: IS_MAC ? "hiddenInset" : "default",
     trafficLightPosition: TRAFFIC_LIGHTS,
     backgroundColor: PAPER_BG,

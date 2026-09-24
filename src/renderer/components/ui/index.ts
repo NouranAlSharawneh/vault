@@ -1,4 +1,5 @@
 export { Logo } from "./logo/logo.component";
+export { Wordmark } from "./wordmark/wordmark.component";
 export { Spinner } from "./spinner/spinner.component";
 export { Kbd } from "./kbd/kbd.component";
 export { Button } from "./button/button.component";

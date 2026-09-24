@@ -9,7 +9,7 @@ import { findAssetRoot } from "./find-asset-root";
  *
  * With no folder to check against, one is looked for rather than giving up — a capture pasted
  * as plain text carries no path of its own, and asking the user to point at their own project
- * folder every time is a question Vault can usually answer itself. `known` seeds that search
+ * folder every time is a question Marasca can usually answer itself. `known` seeds that search
  * with the folders already remembered for other projects.
  */
 export async function resolveAssets(

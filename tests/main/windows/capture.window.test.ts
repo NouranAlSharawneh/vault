@@ -27,7 +27,7 @@ class FakeWindow extends EventEmitter {
 const electron = vi.hoisted(() => ({
   windows: [] as unknown[],
   appHide: vi.fn(),
-  /** Whatever Vault window has focus when the hotkey fires; null = another app is in front. */
+  /** Whatever Marasca window has focus when the hotkey fires; null = another app is in front. */
   focused: null as unknown,
   mainOpen: false,
 }));
@@ -128,20 +128,20 @@ describe("capture window", () => {
       expect(electron.appHide).toHaveBeenCalled();
     });
 
-    it("leaves Vault alone when the user has already clicked elsewhere", async () => {
+    it("leaves Marasca alone when the user has already clicked elsewhere", async () => {
       const { win } = await sheet();
       win.emit("blur");
       expect(electron.appHide).not.toHaveBeenCalled();
     });
 
-    it("keeps Vault up when ⌥⌘↵ is about to show the doc in it", async () => {
+    it("keeps Marasca up when ⌥⌘↵ is about to show the doc in it", async () => {
       const { mod } = await sheet();
       mod.hideCaptureWindow("handoff");
       expect(electron.appHide).not.toHaveBeenCalled();
     });
   });
 
-  it("just hides the sheet when Vault was already in front", async () => {
+  it("just hides the sheet when Marasca was already in front", async () => {
     electron.mainOpen = true;
     electron.focused = {};
     const { mod } = await sheet();

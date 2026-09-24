@@ -4,7 +4,7 @@ import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import { SyncBadge } from "@/components/sync-badge/sync-badge.component";
 import { useApp } from "@/stores/app";
-import { mockVaultApi } from "../helpers/mock-vault-api";
+import { mockMarascaApi } from "../helpers/mock-marasca-api";
 
 const config = {
   root: "/tmp/v",
@@ -29,7 +29,7 @@ const status = (state: "synced" | "pending" | "pushing" | "offline" | "error", a
 
 describe("SyncBadge", () => {
   it("shows 'local' with no remote", () => {
-    mockVaultApi();
+    mockMarascaApi();
     useApp.setState({ config: { ...config, remote: null }, sync: null });
     render(<SyncBadge />);
     expect(screen.getByText("local")).toBeTruthy();
@@ -42,14 +42,14 @@ describe("SyncBadge", () => {
     ["offline", 2, "offline · 2 waiting"],
     ["error", 1, "couldn’t push — retry"],
   ] as const)("%s → %s", (state, ahead, label) => {
-    mockVaultApi();
+    mockMarascaApi();
     useApp.setState({ config, sync: status(state, ahead) });
     render(<SyncBadge />);
     expect(screen.getByText(label)).toBeTruthy();
   });
 
   it("says it is checking, not that everything is pushed, before it knows", async () => {
-    const { invoke } = mockVaultApi();
+    const { invoke } = mockMarascaApi();
     useApp.setState({ config, sync: null });
     render(<SyncBadge />);
     expect(screen.getByText("checking…")).toBeTruthy();
@@ -60,7 +60,7 @@ describe("SyncBadge", () => {
   });
 
   it("says what is waiting on GitHub beside the push state", () => {
-    mockVaultApi();
+    mockMarascaApi();
     useApp.setState({ config, sync: { ...status("synced"), behind: 1 } });
     const { unmount } = render(<SyncBadge />);
     expect(screen.getByText("pushed · 1 change on GitHub")).toBeTruthy();
@@ -71,7 +71,7 @@ describe("SyncBadge", () => {
   });
 
   it("says a read-only repo is a missing permission, not something a retry fixes", () => {
-    mockVaultApi();
+    mockMarascaApi();
     useApp.setState({
       config,
       sync: {
@@ -88,7 +88,7 @@ describe("SyncBadge", () => {
   });
 
   it("asks for a review only when something is waiting, and only where it can show one", () => {
-    mockVaultApi();
+    mockMarascaApi();
     const onReviewConflicts = vi.fn();
     useApp.setState({ config, sync: { ...status("synced"), conflicts: 2 } });
     // Being pushed and owing an answer are separate facts; both are said.
@@ -102,7 +102,7 @@ describe("SyncBadge", () => {
 
   it("keeps the whole push error a hover away", () => {
     vi.useFakeTimers();
-    mockVaultApi();
+    mockMarascaApi();
     const lastError =
       "remote: Permission to nunu/vault.git denied to someone-else. fatal: unable to access";
     useApp.setState({ config, sync: { ...status("error", 1), lastError } });
@@ -116,7 +116,7 @@ describe("SyncBadge", () => {
   });
 
   it("pushes now when clicked in a pending state, not when already synced", async () => {
-    const { invoke } = mockVaultApi();
+    const { invoke } = mockMarascaApi();
     useApp.setState({ config, sync: status("pending", 2) });
     render(<SyncBadge />);
     await userEvent.click(screen.getByRole("button"));

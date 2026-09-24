@@ -1,10 +1,10 @@
 import { contextBridge, ipcRenderer, type IpcRendererEvent } from "electron";
-import { EVENT_CHANNELS, INVOKE_CHANNELS, type VaultApi } from "@shared/ipc";
+import { EVENT_CHANNELS, INVOKE_CHANNELS, type MarascaApi } from "@shared/ipc";
 
 const invokeSet = new Set<string>(INVOKE_CHANNELS);
 const eventSet = new Set<string>(EVENT_CHANNELS);
 
-const api: VaultApi = {
+const api: MarascaApi = {
   invoke: (channel, ...args) => {
     if (!invokeSet.has(channel)) return Promise.reject(new Error(`Unknown channel ${channel}`));
 
@@ -19,4 +19,4 @@ const api: VaultApi = {
   },
 };
 
-contextBridge.exposeInMainWorld("vault", api);
+contextBridge.exposeInMainWorld("marasca", api);

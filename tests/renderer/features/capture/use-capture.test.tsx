@@ -5,7 +5,7 @@ import { CAPTURE_SAVED_FLASH_MS } from "@/constants";
 import { useCapture } from "@/features/capture/hooks/use-capture.hook";
 import { useApp } from "@/stores/app";
 import type { ClipboardCapture } from "@shared/types";
-import { mockVaultApi } from "../../helpers/mock-vault-api";
+import { mockMarascaApi } from "../../helpers/mock-marasca-api";
 
 const clip: ClipboardCapture = {
   text: "# Pasted spec\n\nbody",
@@ -27,7 +27,7 @@ const config = {
 
 describe("useCapture", () => {
   it("pre-fills from the clipboard analysis and last-used project, previews the path", async () => {
-    mockVaultApi({
+    mockMarascaApi({
       "capture:readClipboard": () => clip,
       "doc:pathPreview": () => "atlas-api/pasted-spec.md",
     });
@@ -41,7 +41,7 @@ describe("useCapture", () => {
 
   it("empty clipboard → empty phase; a later capture:shown event fills it", async () => {
     const empty = { ...clip, text: "", words: 0, lines: 1, detectedTitle: null };
-    const { emit } = mockVaultApi({
+    const { emit } = mockMarascaApi({
       "capture:readClipboard": () => empty,
       "doc:pathPreview": () => "",
     });
@@ -54,7 +54,7 @@ describe("useCapture", () => {
 
   it("stays quiet until the clipboard has been read, instead of flashing “empty”", async () => {
     let answer: (c: ClipboardCapture) => void = () => undefined;
-    mockVaultApi({
+    mockMarascaApi({
       "capture:readClipboard": () => new Promise<ClipboardCapture>((r) => (answer = r)),
       "doc:pathPreview": () => "",
     });
@@ -65,7 +65,7 @@ describe("useCapture", () => {
   });
 
   it("forgets the last show when hidden, so the next one doesn't flash “saved”", async () => {
-    const { emit } = mockVaultApi({
+    const { emit } = mockMarascaApi({
       "capture:readClipboard": () => clip,
       "doc:pathPreview": () => "",
       "doc:save": () => ({ path: "atlas-api/pasted-spec.md", committed: true, meta: {} }),
@@ -84,7 +84,7 @@ describe("useCapture", () => {
   it("prefills the project saved last, even when that save happened after boot", async () => {
     // The sheet lives for the whole session. Main moves `lastProject` on with every save;
     // the copy the sheet read at boot does not.
-    const { emit } = mockVaultApi({
+    const { emit } = mockMarascaApi({
       "capture:readClipboard": () => clip,
       "doc:pathPreview": () => "",
       "vault:config": () => ({ ...config, lastProject: "Research log" }),
@@ -99,7 +99,7 @@ describe("useCapture", () => {
   });
 
   it("keeps what the user typed when config arrives mid-edit", async () => {
-    mockVaultApi({ "capture:readClipboard": () => clip, "doc:pathPreview": () => "" });
+    mockMarascaApi({ "capture:readClipboard": () => clip, "doc:pathPreview": () => "" });
     useApp.setState({ config });
     const { result } = renderHook(() => useCapture());
     await waitFor(() => expect(result.current.phase).toBe("ready"));
@@ -112,7 +112,7 @@ describe("useCapture", () => {
 
   /** Render ready to save, then freeze the clock so the "saved" flash can be stepped. */
   async function readyToSave() {
-    const api = mockVaultApi({
+    const api = mockMarascaApi({
       "capture:readClipboard": () => clip,
       "doc:pathPreview": () => "",
       "doc:save": () => saved,
@@ -125,14 +125,14 @@ describe("useCapture", () => {
     return { ...api, ...hook };
   }
 
-  const channels = (invoke: ReturnType<typeof mockVaultApi>["invoke"]) =>
+  const channels = (invoke: ReturnType<typeof mockMarascaApi>["invoke"]) =>
     invoke.mock.calls.map((c) => c[0]);
 
   afterEach(() => {
     vi.useRealTimers();
   });
 
-  it("⌘↵ saves with commit, flashes, then hides the sheet without opening Vault", async () => {
+  it("⌘↵ saves with commit, flashes, then hides the sheet without opening Marasca", async () => {
     const { invoke, result } = await readyToSave();
     await act(async () => {
       await result.current.save();
@@ -162,7 +162,7 @@ describe("useCapture", () => {
     expect(channels(invoke)).not.toContain("capture:hide");
   });
 
-  it("a sheet dismissed during the saved flash does not then open Vault", async () => {
+  it("a sheet dismissed during the saved flash does not then open Marasca", async () => {
     const { invoke, emit, result } = await readyToSave();
     await act(async () => {
       await result.current.save(true);
@@ -175,7 +175,7 @@ describe("useCapture", () => {
   });
 
   it("a failed save shows the error and can retry", async () => {
-    mockVaultApi({
+    mockMarascaApi({
       "capture:readClipboard": () => clip,
       "doc:pathPreview": () => "",
       "doc:save": new Error("boom"),

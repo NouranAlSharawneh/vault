@@ -4,11 +4,11 @@ import userEvent from "@testing-library/user-event";
 import { describe, expect, it } from "vitest";
 import { NEW_REPO_PATH, TOKEN_SETTINGS_PATH } from "@/data/onboarding.data";
 import { TokenForm } from "@/features/onboarding/components/token-form/token-form.component";
-import { mockVaultApi } from "../../helpers/mock-vault-api";
+import { mockMarascaApi } from "../../helpers/mock-marasca-api";
 
 describe("TokenForm — steps", () => {
   it("has the repo made before the token, since a one-repo token can’t make it", () => {
-    mockVaultApi();
+    mockMarascaApi();
     render(<TokenForm onBack={() => undefined} />);
     const steps = screen.getAllByRole("listitem");
     expect(steps).toHaveLength(4);
@@ -21,7 +21,7 @@ describe("TokenForm — steps", () => {
   });
 
   it("opens github.com/new and the token page through the app, not a raw link", async () => {
-    const { invoke } = mockVaultApi();
+    const { invoke } = mockMarascaApi();
     render(<TokenForm onBack={() => undefined} />);
     await userEvent.click(screen.getByRole("button", { name: `github.com/${NEW_REPO_PATH}` }));
     await userEvent.click(

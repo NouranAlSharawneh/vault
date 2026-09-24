@@ -3,7 +3,7 @@ import { act, renderHook, waitFor } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { useEditorDraft } from "@/features/editor/hooks/use-editor-draft.hook";
 import { useApp } from "@/stores/app";
-import { mockVaultApi } from "../../helpers/mock-vault-api";
+import { mockMarascaApi } from "../../helpers/mock-marasca-api";
 
 const config = {
   root: "/tmp/v",
@@ -19,7 +19,7 @@ const KEY = "untitled:one";
 
 describe("useEditorDraft", () => {
   it("infers the title from the first heading and previews the path", async () => {
-    mockVaultApi({ "doc:pathPreview": () => "atlas-api/rate-limiting-at-the-edge.md" });
+    mockMarascaApi({ "doc:pathPreview": () => "atlas-api/rate-limiting-at-the-edge.md" });
     useApp.setState({ config });
     const { result } = renderHook(() => useEditorDraft(KEY));
     expect(result.current.dirty).toBe(false);
@@ -35,7 +35,7 @@ describe("useEditorDraft", () => {
   });
 
   it("an explicit title wins over the heading", () => {
-    mockVaultApi({ "doc:pathPreview": () => "" });
+    mockMarascaApi({ "doc:pathPreview": () => "" });
     const { result } = renderHook(() => useEditorDraft(KEY));
     act(() => result.current.setBody("# From heading"));
     act(() => result.current.setMeta({ title: "Typed title" }));
@@ -57,7 +57,7 @@ describe("useEditorDraft", () => {
       size: 0,
       orphan: false,
     };
-    const { invoke } = mockVaultApi({
+    const { invoke } = mockMarascaApi({
       "doc:pathPreview": () => "atlas-api/doc.md",
       "doc:save": () => ({ path: "atlas-api/doc.md", meta, committed: true }),
     });
@@ -81,7 +81,7 @@ describe("useEditorDraft", () => {
   });
 
   it("surfaces a save failure and stays dirty", async () => {
-    mockVaultApi({ "doc:pathPreview": () => "", "doc:save": new Error("git is not installed") });
+    mockMarascaApi({ "doc:pathPreview": () => "", "doc:save": new Error("git is not installed") });
     const { result } = renderHook(() => useEditorDraft(KEY));
     act(() => result.current.setBody("text"));
     await act(async () => {
@@ -95,7 +95,7 @@ describe("useEditorDraft", () => {
     // CodeMirror's Mod-Enter and the menu's accelerator can both fire. For a new document
     // the second save used to write a second file.
     let finish: (v: unknown) => void = () => undefined;
-    const { invoke } = mockVaultApi({
+    const { invoke } = mockMarascaApi({
       "doc:pathPreview": () => "",
       "doc:save": () => new Promise((r) => (finish = r)),
     });
@@ -119,7 +119,7 @@ describe("useEditorDraft", () => {
   });
 
   it("says why an empty document can't be saved, instead of doing nothing", async () => {
-    const { invoke } = mockVaultApi({ "doc:pathPreview": () => "" });
+    const { invoke } = mockMarascaApi({ "doc:pathPreview": () => "" });
     const { result } = renderHook(() => useEditorDraft(KEY));
     act(() => result.current.setBody("   "));
     await act(async () => {
@@ -133,7 +133,7 @@ describe("useEditorDraft", () => {
     // Every new window used to park under "new": the second opened with the first one's
     // text, and saving either cleared the other's.
     vi.useFakeTimers();
-    const { invoke } = mockVaultApi({ "doc:pathPreview": () => "" });
+    const { invoke } = mockMarascaApi({ "doc:pathPreview": () => "" });
     const a = renderHook(() => useEditorDraft("untitled:a"));
     const b = renderHook(() => useEditorDraft("untitled:b"));
     act(() => a.result.current.setBody("first window"));
@@ -159,7 +159,7 @@ describe("useEditorDraft", () => {
   });
 
   it("loadDraft pre-fills from the capture payload and the last-used project", () => {
-    mockVaultApi({ "doc:pathPreview": () => "" });
+    mockMarascaApi({ "doc:pathPreview": () => "" });
     useApp.setState({ config });
     const { result } = renderHook(() => useEditorDraft(KEY));
     act(() => result.current.loadDraft({ body: "# Pasted", frontmatter: { source: "chatgpt" } }));
@@ -172,7 +172,7 @@ describe("useEditorDraft", () => {
 describe("an unsaved draft", () => {
   it("is parked outside the vault while you type, and cleared once it is saved", async () => {
     vi.useFakeTimers();
-    const { invoke } = mockVaultApi({
+    const { invoke } = mockMarascaApi({
       "doc:save": {
         path: "p/note.md",
         meta: { path: "p/note.md", created: "x", mtime: 1, title: "Note" },
@@ -197,7 +197,7 @@ describe("an unsaved draft", () => {
   });
 
   it("comes back when the document is opened again", async () => {
-    mockVaultApi({ "draft:load": { body: "what I was writing", meta: {}, at: "2026-01-01" } });
+    mockMarascaApi({ "draft:load": { body: "what I was writing", meta: {}, at: "2026-01-01" } });
     const { result } = renderHook(() => useEditorDraft(KEY));
     await act(() => result.current.recoverDraft(KEY));
     expect(result.current.body).toBe("what I was writing");
@@ -205,7 +205,7 @@ describe("an unsaved draft", () => {
   });
 
   it("never overwrites text already typed in this window", async () => {
-    mockVaultApi({ "draft:load": { body: "the old one", meta: {}, at: "2026-01-01" } });
+    mockMarascaApi({ "draft:load": { body: "the old one", meta: {}, at: "2026-01-01" } });
     const { result } = renderHook(() => useEditorDraft(KEY));
     act(() => result.current.setBody("what I am writing now"));
     await act(() => result.current.recoverDraft(KEY));

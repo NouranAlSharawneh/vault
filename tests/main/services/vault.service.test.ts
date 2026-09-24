@@ -296,9 +296,9 @@ describe("VaultService (800-doc fixture)", () => {
     expect(readFileSync(join(root, res.path), "utf8")).toContain(
       "![The landing page](assets/hero-flyin.gif)",
     );
-    // And the rewritten link is exactly what the reader turns into a `vault://` URL.
+    // And the rewritten link is exactly what the reader turns into a `marasca://` URL.
     expect(resolveAssetUrl("assets/hero-flyin.gif", res.path)).toBe(
-      "vault://asset/concorde/assets/hero-flyin.gif",
+      "marasca://asset/concorde/assets/hero-flyin.gif",
     );
     expect(existsSync(join(root, "concorde", "assets", "hero-flyin.gif"))).toBe(true);
     rmSync(workspace, { recursive: true, force: true });

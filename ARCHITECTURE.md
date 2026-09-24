@@ -1,4 +1,4 @@
-# Vault — Architecture
+# Marasca — Architecture
 
 > Desktop app that captures markdown and commits it straight to a GitHub repo you own. No database, no server, no account beyond GitHub. Everything free.
 
@@ -45,7 +45,7 @@
 └──────────────┬───────────────────────────────┘
                │ typed IPC (invoke/handle + push events)
 ┌──────────────┴───────────────────────────────┐
-│ preload      exposes `window.vault.*` API    │
+│ preload      exposes `window.marasca.*` API    │
 ├──────────────────────────────────────────────┤
 │ renderer (React)                             │
 │  routes: onboarding · main (3-pane) · editor │
@@ -62,7 +62,7 @@ Rules:
 
 ## 4. Data model — the file _is_ the record
 
-Content first, metadata last. Vault writes its fields as a fenced YAML block at the **end** of the
+Content first, metadata last. Marasca writes its fields as a fenced YAML block at the **end** of the
 file under a rule, so GitHub's preview shows the document itself first and the fields as a small
 code block below it (a head `---` block would render as a table above the title).
 
@@ -83,12 +83,12 @@ starred: true # omitted when false
 ```
 ````
 
-Files with classic head frontmatter (Obsidian, Jekyll, older Vault files) are still read; they move
-to the trailing layout the next time Vault saves them. Parsing only touches the two ends of the
+Files with classic head frontmatter (Obsidian, Jekyll, older Marasca files) are still read; they move
+to the trailing layout the next time Marasca saves them. Parsing only touches the two ends of the
 file: a small file is read whole, a big one reads the head (excerpt, legacy block) and the last 4 KB.
 
 Images and media referenced from a doc (`![hero](assets/hero.png)`) resolve GitHub-style against the
-doc's folder and load through the app's `vault://asset/<path>` protocol, which serves known media
+doc's folder and load through the app's `marasca://asset/<path>` protocol, which serves known media
 types from inside the vault only. `https:` images load directly.
 
 ### Raw HTML, and why the preview matches GitHub's warts
@@ -108,16 +108,16 @@ preview that renders _better_ than the real thing breaks that promise.
 
 One thing is taken away: `<source>`. GitHub READMEs swap in dark-mode assets with
 `<picture><source media="(prefers-color-scheme: dark)">`, and that query follows the OS, not
-Vault — which is light-only. Sanitize unwraps a disallowed element rather than deleting its
+Marasca — which is light-only. Sanitize unwraps a disallowed element rather than deleting its
 subtree, so dropping `<source>` leaves the `<picture>` holding just its `<img>` fallback: the
-light variant, by convention. Put `<source>` back when Vault grows a dark theme.
+light variant, by convention. Put `<source>` back when Marasca grows a dark theme.
 
 Repo layout: `README.md` (generated index), `<project-slug>/<title-slug>.md`, `_inbox/` for no-project docs, `.trash/` (scanner skips), `.vault/views.yml`, `.vault/templates/`.
 
 ## 5. Index & cache (D3 from the PRD)
 
 - **Cold start**: walk `*.md`, read only the ends of each file (trailing metadata block, or a legacy head block), build `DocMeta[]`. Body text indexed lazily in a background pass in chunks of 50 files via `setImmediate`.
-- **Warm start**: load `~/Library/Application Support/Vault/index-<repoId>.json` `{ headSha, files: {path: {mtime,size,meta}} }`, then `git diff --name-status <headSha> HEAD` + a stat pass for uncommitted edits; re-parse only those.
+- **Warm start**: load `~/Library/Application Support/Marasca/index-<repoId>.json` `{ headSha, files: {path: {mtime,size,meta}} }`, then `git diff --name-status <headSha> HEAD` + a stat pass for uncommitted edits; re-parse only those.
 - **Live**: chokidar on the vault folder (ignoring `.git`, `.trash`), debounced 300 ms, plus `Rescan` action.
 - Cache is disposable; deleting it costs one cold scan. Nothing lives there that isn't derivable from the repo.
 
@@ -145,7 +145,7 @@ Repo layout: `README.md` (generated index), `<project-slug>/<title-slug>.md`, `_
 
 ## 9. Decisions I'm making beyond the PRD
 
-- Delete = `git mv` into `.trash/` + commit (Q5). Purge from settings. Trashing moves the `.md` only, leaving its `assets/` where they are so a restore can find them again (the `vault://` handler falls back to the original folder for a trashed doc). Purging is therefore the one moment those files can go, and it takes the ones nothing else still refers to — every other `.md` in the vault, the rest of the trash included, is checked first, and an emptied `assets/` folder goes with them.
+- Delete = `git mv` into `.trash/` + commit (Q5). Purge from settings. Trashing moves the `.md` only, leaving its `assets/` where they are so a restore can find them again (the `marasca://` handler falls back to the original folder for a trashed doc). Purging is therefore the one moment those files can go, and it takes the ones nothing else still refers to — every other `.md` in the vault, the rest of the trash included, is checked first, and an emptied `assets/` folder goes with them.
 - Push cadence = commit now, push on 3 s debounce (Q6).
 - Tailwind + CSS variables for the palette; fonts: Geist / Geist Mono / Newsreader loaded locally (OFL, free).
 - Search grammar parsed into an AST (`project:`, `tags:`, `created:`, `source:`, `is:`) and applied as MiniSearch filters, so saved views are just query strings.
