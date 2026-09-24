@@ -4,6 +4,7 @@ export { Kbd } from "./kbd/kbd.component";
 export { Button } from "./button/button.component";
 export { Dot } from "./dot/dot.component";
 export { SectionLabel } from "./section-label/section-label.component";
+export { SettingGroup } from "./setting-group/setting-group.component";
 export { Empty } from "./empty/empty.component";
 export { Card } from "./card/card.component";
 export { Stat } from "./stat/stat.component";

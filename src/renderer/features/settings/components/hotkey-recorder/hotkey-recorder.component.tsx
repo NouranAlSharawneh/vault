@@ -15,10 +15,7 @@ export function HotkeyRecorder({ value, onChange, busy }: HotkeyRecorderProps) {
   return (
     <Button
       variant="outline"
-      className={cx(
-        "h-8 min-w-36 justify-center font-mono",
-        r.recording && "border-cherry bg-cherry-tint",
-      )}
+      className={cx("w-42 justify-center font-mono", r.recording && "border-cherry bg-cherry-tint")}
       onClick={r.start}
       onBlur={r.stop}
       onKeyDown={r.onKeyDown}
