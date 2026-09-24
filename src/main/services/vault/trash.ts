@@ -57,7 +57,7 @@ export async function restoreFromTrash(ctx: VaultContext, path: string): Promise
   ctx.schedulePush();
   ctx.emit("index", ctx.index.snapshot());
 
-  return { path: target, meta, committed: true };
+  return { path: target, meta, committed: true, changed: true };
 }
 
 /**

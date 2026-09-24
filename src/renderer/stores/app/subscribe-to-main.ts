@@ -10,7 +10,7 @@ export function subscribeToMain(): void {
   on("index:changed", (index) => {
     // An index only arrives from a vault that is open, whatever failed before.
     useApp.setState({ index, vaultError: null });
-    fire(useApp.getState().refreshTrash(), "Couldn't refresh the trash");
+    fire(useApp.getState().refreshTrash(), "Couldn’t refresh the trash");
   });
   on("index:progress", (progress) => useApp.setState({ progress }));
   on("sync:status", (sync) => useApp.setState({ sync }));

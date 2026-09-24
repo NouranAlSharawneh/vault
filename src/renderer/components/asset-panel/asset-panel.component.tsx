@@ -41,7 +41,7 @@ export function AssetPanel({ plan, dark, className }: AssetPanelProps) {
               {plan.missing > 0 && ` · ${plan.missing} missing`}
             </>
           ) : (
-            "couldn't find these images — pick the folder they live in, or save without them"
+            "couldn’t find these images — pick the folder they live in, or save without them"
           )}
         </span>
         <Button

@@ -120,6 +120,30 @@ export interface SaveResult {
   assets?: string[];
   meta: DocMeta;
   committed: boolean;
+  /**
+   * False when the save left the document exactly as it was — same text, same place, and
+   * (for a commit) nothing new to record. Saying "Saved" then would claim work that did
+   * not happen.
+   */
+  changed: boolean;
+}
+
+/**
+ * What an editor save did, carried to the main window with the document. The editor
+ * closes the moment it saves, so the main window is the only place left to say so.
+ */
+export interface SavedNotice {
+  title: string;
+  outcome: "added" | "updated" | "moved" | "unchanged";
+  committed: boolean;
+  /** The file had changed elsewhere; that version is one entry back in its history. */
+  keptOtherVersion: boolean;
+}
+
+/** Select a document in the main window; `saved` when an editor save is why. */
+export interface DocReveal {
+  path: string;
+  saved?: SavedNotice;
 }
 
 export interface CommitInfo {

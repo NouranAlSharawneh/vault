@@ -26,6 +26,7 @@ export function useTrashActions(doc: DocMeta | null, select: (path: string | nul
           const res = await api("trash:restore", trashed.path);
           await refreshTrash();
           select(res.path);
+          show(`Restored “${res.meta.title}”`);
         },
       });
     } catch (e) {

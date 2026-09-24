@@ -10,6 +10,7 @@ import { parentDir, plural } from "@/helpers";
 import { api, fire, fireQuietly } from "@/lib/api";
 import { useApp } from "@/stores/app";
 import { countWords } from "@shared/helpers";
+import type { SavedNotice } from "@shared/types";
 import { EditorFooter } from "./components/editor-footer/editor-footer.component";
 import { MarkdownEditor } from "./components/markdown-editor/markdown-editor.component";
 import { MetadataBar } from "./components/metadata-bar/metadata-bar.component";
@@ -45,7 +46,8 @@ export function Editor() {
   useDocumentEdited(d.dirty);
   /**
    * Save, then close at once. This used to hold the window open for the "Saved" flash,
-   * which read as the window refusing to go; the main window shows the result anyway.
+   * which read as the window refusing to go — so what the save did travels with the
+   * document to the main window, which says it there.
    */
   const saveAndClose = useCallback(
     (mode: SaveMode) => {
@@ -54,8 +56,24 @@ export function Editor() {
       fire(
         d.save(mode, plan.request).then((r) => {
           if (!r) return;
-          // Same as the capture sheet: hand the new doc to the main window on the way out.
-          fire(api("window:revealDoc", r.path), "Saved, but couldn't reveal it");
+          const before = d.existingPath;
+          const saved: SavedNotice = {
+            title: r.meta.title,
+            outcome: !r.changed
+              ? "unchanged"
+              : !before
+                ? "added"
+                : r.path !== before
+                  ? "moved"
+                  : "updated",
+            committed: r.committed,
+            keptOtherVersion: !!r.preservedExternalEdit,
+          };
+          // Same as the capture sheet: hand the doc to the main window on the way out.
+          fire(
+            api("window:revealDoc", r.path, saved),
+            "Saved, but couldn’t show it in the main window",
+          );
           guard.closeNow();
         }),
       );

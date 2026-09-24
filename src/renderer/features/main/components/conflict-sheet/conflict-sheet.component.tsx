@@ -1,8 +1,9 @@
 import { Laptop, X } from "lucide-react";
 import { useRef, useState } from "react";
 import { Button, DialogShell, Empty, GitHubMark, SectionLabel, Spinner } from "@/components/ui";
-import { cx, errorMessage, plural } from "@/helpers";
+import { cx, describeResolution, errorMessage, plural } from "@/helpers";
 import { api } from "@/lib/api";
+import { useToast } from "@/stores/toast";
 import { relativeTime } from "@shared/helpers";
 import type { ConflictChoice } from "@shared/types";
 import type {
@@ -105,7 +106,13 @@ function ConflictRow({ pair, onResolved }: ConflictRowProps) {
     setBusy(choice);
     setFailed(null);
     void api("conflicts:resolve", pair.theirs.path, choice)
-      .then(onResolved)
+      .then(() => {
+        // The row just vanishes otherwise, and which way it went is the thing to confirm.
+        useToast
+          .getState()
+          .show(describeResolution(choice, pair.mine.title, fileName(pair.theirs.path)));
+        onResolved();
+      })
       .catch((e: unknown) => {
         setFailed(errorMessage(e));
         setBusy(null);

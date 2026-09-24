@@ -21,7 +21,7 @@ export function AuthExpiredBanner({ className }: AuthExpiredBannerProps) {
       <Button
         variant="link"
         className="ml-auto"
-        onClick={() => fire(api("window:openMain", "onboarding?signin"), "Couldn't open sign-in")}
+        onClick={() => fire(api("window:openMain", "onboarding?signin"), "Couldn’t open sign-in")}
       >
         Sign in again
       </Button>
