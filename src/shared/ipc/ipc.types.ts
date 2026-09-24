@@ -9,8 +9,10 @@ import type {
   DeviceCodeSession,
   DevicePollStatus,
   DocContent,
+  DocReveal,
   DocMeta,
   EditorDraft,
+  SavedNotice,
   GitHubRepo,
   GitHubUser,
   PullResult,
@@ -116,7 +118,7 @@ export interface IpcInvoke {
 
   "window:openMain": (route?: string) => void;
   /** Bring the main window forward with this document selected. */
-  "window:revealDoc": (path: string) => void;
+  "window:revealDoc": (path: string, saved?: SavedNotice) => void;
   "window:openEditor": (path?: string) => void;
   /**
    * The text an editor window was opened with (from the capture sheet), handed over once.
@@ -151,8 +153,8 @@ export interface IpcEvents {
   "capture:shown": ClipboardCapture;
   /** The sheet went away (Esc, blur, save or the hotkey): drop anything still pending. */
   "capture:hidden": null;
-  /** Select this document in the main window, clearing filters so it is in the list. */
-  "doc:reveal": string;
+  /** Select this document in the main window, clearing filters if it isn't in the list. */
+  "doc:reveal": DocReveal;
   shortcut: Shortcut;
   navigate: string;
 }

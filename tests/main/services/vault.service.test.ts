@@ -326,6 +326,39 @@ describe("VaultService (800-doc fixture)", () => {
     expect(hist[0].message).toBe("move: Rate limiting at the edge");
   });
 
+  it("records nothing, and rewrites no commit, when a save changes nothing", async () => {
+    // A commit with nothing staged used to go on to amend the commit before it — often
+    // one already on GitHub, so the next push was rejected.
+    const p = "edge-pops/rate-limiting-at-the-edge.md";
+    const same = {
+      body: "# Rate limiting at the edge\n\nWe currently rate-limit inside the application layer. Moved.\n",
+      frontmatter: {
+        title: "Rate limiting at the edge",
+        project: "Edge POPs",
+        tags: ["infra"],
+        source: "claude" as const,
+      },
+      existingPath: p,
+    };
+    const head = (await vault.git.git.log()).latest?.hash;
+    const committed = await vault.save({ ...same, commit: true });
+    expect(committed).toMatchObject({ path: p, committed: false, changed: false });
+    expect((await vault.git.git.log()).latest?.hash).toBe(head);
+    expect(await vault.save({ ...same, commit: false })).toMatchObject({ changed: false });
+
+    // Written but not committed, then committed as it stands: the commit is the change.
+    const edited = { ...same, body: same.body + "\nOne more line.\n" };
+    expect(await vault.save({ ...edited, commit: false })).toMatchObject({
+      committed: false,
+      changed: true,
+    });
+    expect(await vault.save({ ...edited, commit: true })).toMatchObject({
+      committed: true,
+      changed: true,
+    });
+    expect((await vault.git.git.log()).latest?.message).toBe("update: Rate limiting at the edge");
+  });
+
   it("full-text search finds body terms and ranks titles first", async () => {
     await new Promise((r) => setTimeout(r, 800)); // lazy body pass
     expect(vault.search("ratelimit").length).toBeGreaterThan(50);
