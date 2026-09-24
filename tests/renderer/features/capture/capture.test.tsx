@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { act, render, screen, waitFor } from "@testing-library/react";
+import { act, render, screen, waitFor, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it } from "vitest";
 import { Capture } from "@/features/capture/capture.component";
 import { useApp } from "@/stores/app";
@@ -79,10 +79,50 @@ describe("capture sheet", () => {
     expect(screen.queryByText("Clipboard is empty")).toBeNull();
   });
 
-  it("shows both save chords", async () => {
-    mockVaultApi({ "capture:readClipboard": () => clip, "doc:pathPreview": () => "" });
+  it("keeps the bar to save and Actions, with every other action in the ⌘K menu", async () => {
+    mockVaultApi({
+      "capture:readClipboard": () => clip,
+      "doc:pathPreview": () => "_inbox/pasted-spec.md",
+    });
     render(<Capture />);
     await screen.findByLabelText("Clipboard preview");
-    expect(screen.getByText("saves and opens it in Vault")).toBeTruthy();
+    // The caption line for the third action is gone; where the doc goes is said in words.
+    expect(screen.queryByText("saves and opens it in Vault")).toBeNull();
+    await screen.findByText("pasted-spec.md");
+    expect(screen.getByText("Inbox")).toBeTruthy();
+    expect(screen.queryByRole("menu")).toBeNull();
+
+    act(() => screen.getByRole("button", { name: /Actions/ }).click());
+    const menu = screen.getByRole("menu", { name: "Actions" });
+    const items = within(menu)
+      .getAllByRole("menuitem")
+      .map((i) => i.textContent);
+    expect(items).toEqual([
+      expect.stringMatching(/^Save/),
+      expect.stringMatching(/^Save and open in Vault/),
+      expect.stringMatching(/^Open in editor/),
+      expect.stringMatching(/^Discard/),
+    ]);
+  });
+
+  it("closes the menu on Escape without discarding the capture", async () => {
+    const { invoke } = mockVaultApi({
+      "capture:readClipboard": () => clip,
+      "doc:pathPreview": () => "",
+    });
+    render(<Capture />);
+    await screen.findByLabelText("Clipboard preview");
+    const sheet = screen.getByRole("dialog");
+    act(() => {
+      sheet.dispatchEvent(new KeyboardEvent("keydown", { key: "k", metaKey: true, bubbles: true }));
+    });
+    const menu = screen.getByRole("menu");
+    act(() => {
+      menu.dispatchEvent(
+        new KeyboardEvent("keydown", { key: "Escape", bubbles: true, cancelable: true }),
+      );
+    });
+    expect(screen.queryByRole("menu")).toBeNull();
+    expect(invoke).not.toHaveBeenCalledWith("capture:hide");
   });
 });

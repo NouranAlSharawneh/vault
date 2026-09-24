@@ -12,7 +12,9 @@ const press = (init: KeyboardEventInit & { consumed?: boolean }) => {
 describe("capture sheet keys", () => {
   it("hides on Escape", () => {
     const onHide = vi.fn();
-    renderHook(() => useCaptureKeys({ onSave: vi.fn(), onOpenEditor: vi.fn(), onHide }));
+    renderHook(() =>
+      useCaptureKeys({ onSave: vi.fn(), onOpenEditor: vi.fn(), onActions: vi.fn(), onHide }),
+    );
     press({ key: "Escape" });
     expect(onHide).toHaveBeenCalled();
   });
@@ -21,22 +23,37 @@ describe("capture sheet keys", () => {
     // The tag input consumes Escape to clear what you half-typed. Before this check, the
     // same keystroke also discarded the clipboard capture and everything you had set.
     const onHide = vi.fn();
-    renderHook(() => useCaptureKeys({ onSave: vi.fn(), onOpenEditor: vi.fn(), onHide }));
+    renderHook(() =>
+      useCaptureKeys({ onSave: vi.fn(), onOpenEditor: vi.fn(), onActions: vi.fn(), onHide }),
+    );
     press({ key: "Escape", consumed: true });
     expect(onHide).not.toHaveBeenCalled();
   });
 
   it("saves on ⌘↵ without asking to open Vault", () => {
     const onSave = vi.fn();
-    renderHook(() => useCaptureKeys({ onSave, onOpenEditor: vi.fn(), onHide: vi.fn() }));
+    renderHook(() =>
+      useCaptureKeys({ onSave, onOpenEditor: vi.fn(), onActions: vi.fn(), onHide: vi.fn() }),
+    );
     press({ key: "Enter", metaKey: true });
     expect(onSave).toHaveBeenCalledWith(false);
   });
 
   it("saves and asks to open Vault on ⌥⌘↵", () => {
     const onSave = vi.fn();
-    renderHook(() => useCaptureKeys({ onSave, onOpenEditor: vi.fn(), onHide: vi.fn() }));
+    renderHook(() =>
+      useCaptureKeys({ onSave, onOpenEditor: vi.fn(), onActions: vi.fn(), onHide: vi.fn() }),
+    );
     press({ key: "Enter", metaKey: true, altKey: true });
     expect(onSave).toHaveBeenCalledWith(true);
+  });
+
+  it("toggles the actions menu on ⌘K", () => {
+    const onActions = vi.fn();
+    renderHook(() =>
+      useCaptureKeys({ onSave: vi.fn(), onOpenEditor: vi.fn(), onActions, onHide: vi.fn() }),
+    );
+    press({ key: "k", metaKey: true });
+    expect(onActions).toHaveBeenCalledTimes(1);
   });
 });
