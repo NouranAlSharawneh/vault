@@ -4,14 +4,22 @@
 
 A macOS desktop app that catches every markdown file you'd hate to lose and commits it straight to a GitHub repository you own. **No database, no account, no lock-in** — the git repo _is_ the database.
 
+## Install
+
+Paste this into Terminal:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/NouranAlSharawneh/vault/main/install.sh | bash
+```
+
+It downloads the latest release, checks its checksum, installs **Marasca** into `/Applications` and opens it. Run it again any time to update. You need macOS 13+ on an Apple Silicon Mac.
+
+If you'd rather install by hand, download the `.dmg` from [Releases](https://github.com/NouranAlSharawneh/vault/releases/latest). [docs/INSTALL.md](docs/INSTALL.md) has the walkthrough.
+
 - ⌃⌥V anywhere → clipboard captured → tagged → committed to `main` in under five seconds.
 - ⌘K finds any document by title, frontmatter or body text.
 - Every save is a commit, so version history and restore come for free.
 - The vault stays fully usable if this app disappears: it's just `.md` files with YAML frontmatter.
-
-## Install
-
-Download the `.dmg` from Releases and drag Marasca to Applications. The app isn't notarized by Apple yet, so macOS asks you to confirm it once. [docs/INSTALL.md](docs/INSTALL.md) has the two-click walkthrough.
 
 ## Stack
 
