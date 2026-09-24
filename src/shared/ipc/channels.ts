@@ -67,6 +67,7 @@ export const INVOKE_CHANNELS = [
   "editor:setPath",
   "window:setEdited",
   "app:version",
+  "app:checkForUpdates",
   "app:platform",
   "hotkey:status",
   "app:openExternal",

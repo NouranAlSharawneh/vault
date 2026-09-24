@@ -30,6 +30,15 @@ npm run verify:sign  # check the built app's signature (macOS)
 
 GitHub auth: the OAuth device flow ("Continue with GitHub") when `MAIN_VITE_GITHUB_CLIENT_ID` is set at build time — register a free OAuth App at github.com/settings/developers and tick **Enable Device Flow** — or a pasted fine-grained personal access token (Contents: read/write on the vault repo). Only the client ID is ever used. Never put the client secret in `.env`: anything in the build can be read back out of the `.app`, and the device flow doesn't need it.
 
+## Releasing
+
+1. Add a `## [x.y.z] - YYYY-MM-DD` section to [CHANGELOG.md](CHANGELOG.md).
+2. On a clean `main`, run `npm run release -- patch` (or `minor`, `major`, `x.y.z`, or `current` to tag the version already in `package.json`).
+3. Run `git push --follow-tags`. The **Release** workflow checks that the tag matches `package.json`, runs the checks, builds the ad-hoc signed DMG on an Apple Silicon runner, and opens a **draft** release with the changelog section as notes.
+4. Review the draft on GitHub and click **Publish**.
+
+The build takes the client ID from the Actions variable `MAIN_VITE_GITHUB_CLIENT_ID`. Without it, the app offers only the paste-a-token sign-in.
+
 ## Repo layout of a vault
 
 ```

@@ -21,6 +21,8 @@ let mine: string;
 let other: string;
 let cache: string;
 let vault: VaultService;
+/** Any extra service a test opens, closed in afterEach even when the test fails or times out. */
+const extra: VaultService[] = [];
 
 const config = (root: string): VaultConfig => ({
   root,
@@ -88,15 +90,19 @@ beforeEach(async () => {
 });
 
 afterEach(async () => {
-  await vault.close();
+  // Every service is closed before any folder goes: one left open (a test that timed out
+  // before its own close) kept writing into mine/.git and the rmdir failed with ENOTEMPTY.
+  await Promise.allSettled([vault, ...extra.splice(0)].map((v) => v.close()));
   // `close` stops the push timer but not a push already under way, which can still be
   // writing into `origin` here. Retrying outlasts it.
   for (const d of [origin, mine, other, cache]) {
-    rmSync(d, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
+    rmSync(d, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 });
   }
 });
 
-describe("sync conflicts", () => {
+// Real git repos, clones, pushes and rebases: seconds each on a CI runner, not the
+// 5s-per-test default.
+describe("sync conflicts", { timeout: 30_000 }, () => {
   it("keeps both versions, mine where it was and theirs beside it", async () => {
     await raceOnTheSameDoc(
       doc("Rate limiting", "Written on this machine."),
@@ -133,12 +139,12 @@ describe("sync conflicts", () => {
     // second one indexes it.
     await vault.close();
     const fresh = new VaultService(config(mine), cache, () => null);
+    extra.push(fresh);
     await fresh.open();
     const pairs = await fresh.conflicts();
     expect(pairs.map((p) => [p.mine.path, p.theirs.path])).toEqual([
       [DOC, DOC.replace(".md", "-from-github.md")],
     ]);
-    await fresh.close();
   });
 
   it("keeping mine sends the other version to the trash rather than deleting it", async () => {

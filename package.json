@@ -1,7 +1,7 @@
 {
   "name": "marasca",
   "productName": "Marasca",
-  "version": "0.1.0",
+  "version": "0.0.1",
   "description": "Catches every markdown file you'd hate to lose and commits it straight to a GitHub repo you own.",
   "main": "./out/main/index.js",
   "author": "Nouran Sharawneh",
@@ -24,7 +24,9 @@
     "format:check": "prettier --check .",
     "prepare": "husky || true",
     "reset": "node scripts/reset-app-data.mjs",
-    "verify:sign": "codesign --verify --deep --strict --verbose=2 \"release/mac-arm64/Marasca.app\" && codesign -dv \"release/mac-arm64/Marasca.app\""
+    "verify:sign": "codesign --verify --deep --strict --verbose=2 \"release/mac-arm64/Marasca.app\" && codesign -dv \"release/mac-arm64/Marasca.app\"",
+    "release": "node scripts/release.mjs",
+    "release:notes": "node scripts/release-notes.mjs"
   },
   "dependencies": {
     "@codemirror/commands": "^6.8.1",
@@ -108,8 +110,10 @@
       "icon": "resources/icon.png",
       "identity": "-",
       "hardenedRuntime": false,
-      "gatekeeperAssess": false
-    }
+      "gatekeeperAssess": false,
+      "minimumSystemVersion": "13.0"
+    },
+    "artifactName": "${productName}-${version}-${arch}.${ext}"
   },
   "lint-staged": {
     "*.{ts,tsx,js,mjs}": [

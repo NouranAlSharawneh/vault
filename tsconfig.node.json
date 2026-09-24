@@ -16,6 +16,7 @@
     "vitest.config.ts",
     "tests/main/**/*.ts",
     "tests/shared/**/*.ts",
-    "tests/setup/**/*.ts"
+    "tests/setup/**/*.ts",
+    "tests/scripts/**/*.ts"
   ]
 }

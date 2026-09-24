@@ -4,6 +4,8 @@ Marasca is free and isn't notarized by Apple (that needs a paid Apple Developer 
 
 ## First install
 
+Marasca needs macOS 13 (Ventura) or later on an Apple Silicon Mac (M1 or newer).
+
 1. Download `Marasca-<version>-arm64.dmg` from the [Releases page](https://github.com/NouranAlSharawneh/vault/releases).
 2. Open the DMG and drag **Marasca** into **Applications**.
 3. Open Marasca from Applications. macOS says it _"could not verify Marasca is free of malware"_. Click **Done**. Don't click Move to Trash.

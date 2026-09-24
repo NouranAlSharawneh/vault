@@ -355,6 +355,13 @@ export interface HotkeyStatus {
   active: boolean;
 }
 
+/** What "Check for updates" found on the app's GitHub Releases. */
+export type UpdateCheck =
+  | { status: "up-to-date"; current: string; latest: string }
+  | { status: "available"; current: string; latest: string; url: string }
+  /** No published release to compare against (none yet, or the repo isn't public). */
+  | { status: "none"; current: string };
+
 /** Enough about the stored credential to explain a sign-out, with no secret in it. */
 export interface TokenStatus {
   present: boolean;

@@ -1,0 +1,75 @@
+name: Release
+
+# Push a tag like v0.0.1 (npm run release does this) → build the DMG on an Apple Silicon
+# runner → draft GitHub Release with the CHANGELOG section as notes. You review the draft
+# and click Publish.
+on:
+  push:
+    tags: ["v*.*.*"]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Existing tag to (re)build, e.g. v0.0.1"
+        required: true
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-${{ github.event.inputs.tag || github.ref_name }}
+  cancel-in-progress: false
+
+jobs:
+  mac:
+    runs-on: macos-14
+    timeout-minutes: 30
+    env:
+      TAG: ${{ github.event.inputs.tag || github.ref_name }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.TAG }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Tag matches package.json and has release notes
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          if [ "v$VERSION" != "$TAG" ]; then
+            echo "::error::Tag $TAG does not match package.json version $VERSION"; exit 1
+          fi
+          node scripts/release-notes.mjs "$VERSION" > release-notes.md
+          echo "VERSION=$VERSION" >> "$GITHUB_ENV"
+
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run lint
+      - run: npm test
+
+      - name: Build DMG (ad-hoc signed)
+        run: npm run dist -- --publish never
+        env:
+          # Public by design; set under Settings ▸ Secrets and variables ▸ Actions ▸ Variables.
+          MAIN_VITE_GITHUB_CLIENT_ID: ${{ vars.MAIN_VITE_GITHUB_CLIENT_ID }}
+          CSC_IDENTITY_AUTO_DISCOVERY: "false"
+
+      - name: Verify signature
+        run: npm run verify:sign
+
+      - name: Checksums
+        working-directory: release
+        run: shasum -a 256 *.dmg | tee SHA256SUMS.txt
+
+      - name: Draft GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release upload "$TAG" release/*.dmg release/SHA256SUMS.txt --clobber
+          else
+            gh release create "$TAG" release/*.dmg release/SHA256SUMS.txt \
+              --draft --verify-tag --title "Marasca $VERSION" --notes-file release-notes.md \
+              $([[ "$VERSION" == 0.* ]] && echo --prerelease)
+          fi

@@ -38,6 +38,14 @@ export interface RawDeviceToken {
   interval?: number;
 }
 
+/** One entry of GET /repos/{owner}/{repo}/releases (only the fields we read). */
+export interface RawRelease {
+  tag_name: string;
+  html_url: string;
+  draft: boolean;
+  prerelease: boolean;
+}
+
 export interface RefreshParams {
   clientId: string;
   refreshToken: string;
