@@ -355,6 +355,30 @@ input {
 .prose-doc ol {
   padding-left: 1.4em;
 }
+/* Tailwind's preflight sets `list-style: none` on every list, so a doc's bullets and
+   numbers vanish unless they're put back. These are GitHub's markers, nesting included. */
+.prose-doc ul {
+  list-style: disc;
+}
+.prose-doc ol {
+  list-style: decimal;
+}
+.prose-doc :is(ul, ol) ul {
+  list-style-type: circle;
+}
+.prose-doc :is(ul, ol) :is(ul, ol) ul {
+  list-style-type: square;
+}
+.prose-doc :is(ul, ol) ol {
+  list-style-type: lower-roman;
+}
+.prose-doc :is(ul, ol) :is(ul, ol) ol {
+  list-style-type: lower-alpha;
+}
+/* A `- [ ]` item shows its checkbox, not a bullet as well. */
+.prose-doc .task-list-item {
+  list-style-type: none;
+}
 .prose-doc li + li {
   margin-top: 0.25em;
 }
