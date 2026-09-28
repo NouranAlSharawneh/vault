@@ -1,8 +1,8 @@
 import { createHash } from "node:crypto";
-import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import type { DocMeta } from "@shared/types";
-import type { CacheEntry, CacheFile } from "./indexer.types";
+import { CACHE_VERSION, type CacheEntry, type CacheFile } from "./indexer.types";
 
 /**
  * The index on disk, so a second launch doesn't re-read the whole vault. Best-effort
@@ -25,7 +25,7 @@ export class IndexCache {
     try {
       const c = JSON.parse(readFileSync(this.path(), "utf8")) as CacheFile;
 
-      return c.version === 1 ? c : null;
+      return c.version === CACHE_VERSION ? c : null;
     } catch {
       return null;
     }
@@ -37,8 +37,11 @@ export class IndexCache {
       const files: Record<string, CacheEntry> = {};
       for (const [p, m] of docs)
         files[p] = { mtime: m.mtime, size: m.size, meta: { ...m, unpushed: undefined } };
-      const cache: CacheFile = { version: 1, headSha, files };
-      writeFileSync(this.path(), JSON.stringify(cache));
+      const cache: CacheFile = { version: CACHE_VERSION, headSha, files };
+      // Written beside and renamed over, so a quit mid-write leaves the old cache whole.
+      const tmp = `${this.path()}.tmp`;
+      writeFileSync(tmp, JSON.stringify(cache));
+      renameSync(tmp, this.path());
     } catch {
       /* cache is best-effort */
     }

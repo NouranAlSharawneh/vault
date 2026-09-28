@@ -12,13 +12,17 @@ export function composeDoc(
   extra: Record<string, unknown> = {},
 ): string {
   const scalar = (v: unknown): string => stringifyYaml(v, { lineWidth: 0 }).trimEnd();
+  // Tags are a flow sequence, so they need flow quoting: a `]`, `[` or `,` in a tag
+  // written as a plain scalar broke the whole block, and the file lost its metadata.
+  const flow = (v: unknown): string =>
+    stringifyYaml(v, { flow: true, lineWidth: 0, flowCollectionPadding: false }).trimEnd();
   const lines: string[] = [
     `title: ${scalar(fm.title)}`,
     `project: ${scalar(fm.project)}`,
-    `tags: [${fm.tags.map((t) => scalar(t)).join(", ")}]`,
-    `created: ${scalar(fm.created)}`,
-    `source: ${fm.source}`,
+    `tags: ${flow(fm.tags)}`,
   ];
+  if (fm.created) lines.push(`created: ${scalar(fm.created)}`);
+  lines.push(`source: ${fm.source}`);
   if (fm.starred) lines.push("starred: true");
   // Written out by hand as a flow mapping so the stamp stays one readable line in the
   // document, rather than three that churn the diff of a file you are already unsure about.

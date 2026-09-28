@@ -159,7 +159,12 @@ export class IndexerService extends EventEmitter {
 
         return this.snapshot();
       } catch {
-        /* fall through to cold */
+        // Fall through to cold — from nothing. The warm start had already filled the index
+        // from the cache, and a cold scan only adds: every cached path that no longer
+        // exists stayed listed, and went into the README the next save pushed.
+        this.docs.clear();
+        this.bodies.clear();
+        this.search = IndexerService.newSearch();
       }
     }
     await this.coldStart();
@@ -271,8 +276,12 @@ export class IndexerService extends EventEmitter {
   }
 
   private async warmStart(cache: CacheFile, currentHead: string): Promise<void> {
-    // 1. trust the cache
-    for (const [path, e] of Object.entries(cache.files)) this.docs.set(path, e.meta);
+    // 1. trust the cache — and make it findable by title straight away, rather than only
+    // once the background body pass reaches each document.
+    for (const [path, e] of Object.entries(cache.files)) {
+      this.docs.set(path, e.meta);
+      this.upsertSearch(e.meta, "");
+    }
     // 2. ask git what changed since the cached commit
     const changed =
       cache.headSha === currentHead ? [] : await this.git!.changedSince(cache.headSha!);
