@@ -178,6 +178,7 @@ export function Main() {
             trashed={isTrashed(doc?.meta.path ?? null)}
             onRestore={() => fire(trashActions.restore())}
             onPurge={() => fire(trashActions.purge())}
+            trashBusy={trashActions.busy}
             onOpenDoc={openLinkedDoc}
           />
         }

@@ -86,9 +86,37 @@ describe("useTrashActions", () => {
   });
 
   it("shows the error when main refuses", async () => {
-    mockMarascaApi({ "doc:trash": new Error("git is busy") });
+    const { invoke } = mockMarascaApi({ "doc:trash": new Error("git is busy") });
     const { result } = renderHook(() => useTrashActions(meta, vi.fn()));
     await act(() => result.current.trash());
     expect(useToast.getState().toasts.at(-1)?.message).toBe("git is busy");
+    // A failure lets go of the guard, or the button would spin, disabled, for good.
+    expect(result.current.busy).toBeNull();
+    await act(() => result.current.trash());
+    expect(invoke).toHaveBeenCalledTimes(2);
+  });
+
+  it("trashes once while the first trash is still in flight", async () => {
+    const answers: ((t: typeof trashed) => void)[] = [];
+    const { invoke } = mockMarascaApi({
+      "doc:trash": () => new Promise((resolve) => answers.push(resolve)),
+      "trash:list": () => [trashed],
+    });
+    const { result } = renderHook(() => useTrashActions(meta, vi.fn()));
+    let clicks!: Promise<void>[];
+    // A double-click, or ⌘⌫ then the palette — both before main has answered, and before
+    // React has re-rendered the button as disabled.
+    act(() => {
+      clicks = [result.current.trash(), result.current.trash()];
+    });
+    expect(result.current.busy).toBe("trash");
+    expect(invoke.mock.calls.filter(([channel]) => channel === "doc:trash")).toHaveLength(1);
+
+    await act(async () => {
+      for (const answer of answers) answer(trashed);
+      await Promise.all(clicks);
+    });
+    expect(result.current.busy).toBeNull();
+    expect(useToast.getState().toasts.at(-1)?.message).toBe("Moved “Spec” to trash");
   });
 });
