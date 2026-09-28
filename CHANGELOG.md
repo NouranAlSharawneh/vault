@@ -4,6 +4,13 @@ All notable changes to Marasca. The format follows [Keep a Changelog](https://ke
 
 To release: add a section for the new version here, run `npm run release -- <patch|minor|major>`, then `git push --follow-tags`. The tag builds the DMG and opens a draft release with this section as its notes.
 
+## [0.0.2] - 2026-09-28
+
+### Fixed
+
+- **Move to trash only works once per click.** The button spins and stays disabled until the document is in the trash, so a double-click or a repeated ⌘⌫ no longer ends in an error. Restore and Delete forever work the same way.
+- **Lists in documents show their bullets and numbers again**, nested lists included, the way GitHub draws them. Task lists keep just their checkboxes.
+
 ## [0.0.1] - 2026-09-24
 
 First public build. macOS 13+ on Apple Silicon.
