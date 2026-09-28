@@ -1,5 +1,5 @@
 import { existsSync } from "node:fs";
-import { GIT_NOT_READY, TOKEN_REFRESH_SKEW_MS } from "@shared/constants";
+import { GIT_NOT_READY, QUIT_PUSH_WAIT_MS, TOKEN_REFRESH_SKEW_MS } from "@shared/constants";
 import type { AuthMethod, AuthState, GitHubUser, VaultConfig } from "@shared/types";
 import { fire } from "../../lib/fire";
 import { NetworkError } from "../../network/axios";
@@ -217,6 +217,22 @@ class Session {
     await this.vaultService?.close();
     this.vaultService = null;
     this.openFailure = null;
+  }
+
+  /**
+   * For a quit: push whatever is still waiting on the debounce — a save made in the last
+   * few seconds used to stay on this machine until the next launch — then close. Capped,
+   * because a quit must not hang on a network that isn't there.
+   */
+  async shutdown(): Promise<void> {
+    const vault = this.vaultService;
+    if (vault) {
+      await Promise.race([
+        vault.flush().catch(() => undefined),
+        new Promise((r) => setTimeout(r, QUIT_PUSH_WAIT_MS)),
+      ]);
+    }
+    await this.closeVault();
   }
 
   /** Restore token + vault from a previous run. Never throws. */

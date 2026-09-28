@@ -27,7 +27,14 @@ export async function renameProject(
   const fromSlug = projectSlug(from);
   const toSlug = projectSlug(to);
   if (fromSlug === INBOX_SLUG) throw new Error("Inbox cannot be renamed");
-  const docs = ctx.index.all().filter((d) => d.projectSlug === fromSlug);
+  // By name, not by folder: two projects can share a slug, and renaming one rewrote the
+  // other's documents too. A file with no metadata has no name but its folder.
+  const name = from.trim().toLowerCase();
+  const docs = ctx.index
+    .all()
+    .filter(
+      (d) => d.projectSlug === fromSlug && (d.orphan || d.project.trim().toLowerCase() === name),
+    );
   if (!docs.length) return { moved: 0 };
   await fs.mkdir(join(ctx.root, toSlug), { recursive: true });
   const touched: string[] = [];
@@ -53,8 +60,11 @@ export async function renameProject(
   }
   for (const p of touched) await ctx.index.refreshFile(p);
   await ctx.writeReadme();
-  // git detects the moves as renames on its own; one commit covers both folders.
-  await ctx.git.git.add(["-A", "--", fromSlug, toSlug, README_FILE]);
+  // git detects the moves as renames on its own; one commit covers both folders — and
+  // every old path by name, since a doc of this project can live outside its folder.
+  await ctx.git.stage([
+    ...new Set([fromSlug, toSlug, README_FILE, ...docs.map((d) => d.path), ...touched]),
+  ]);
   await ctx.git.git.commit(`rename project: ${from} → ${to}`);
   ctx.schedulePush();
   ctx.emit("index", ctx.index.snapshot());

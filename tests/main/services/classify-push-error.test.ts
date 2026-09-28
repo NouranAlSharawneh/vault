@@ -2,6 +2,20 @@ import { describe, expect, it } from "vitest";
 import { classifyPushError } from "@main/services/vault/classify-push-error";
 
 describe("classifyPushError", () => {
+  it("knows GitHub refusing the commits is not a race to rebase and retry", () => {
+    expect(
+      classifyPushError(
+        "! [remote rejected] main -> main (push declined due to repository rule violations)\nGH013",
+      ),
+    ).toBe("blocked");
+    expect(classifyPushError("remote: error: GH001: Large files detected.")).toBe("blocked");
+  });
+
+  it("does not call a GitHub outage being offline, or a lost repo a permission problem", () => {
+    expect(classifyPushError("The requested URL returned error: 502")).toBe("other");
+    expect(classifyPushError("remote: Repository not found.")).toBe("not-found");
+  });
+
   it("calls a dead token bad-credentials", () => {
     expect(
       classifyPushError("fatal: Authentication failed for 'https://github.com/n/v.git/'"),

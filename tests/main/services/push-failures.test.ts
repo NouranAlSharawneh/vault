@@ -25,6 +25,11 @@ function engine(pushFails: () => Error | null) {
     aheadBehind: async () => ({ ahead, behind: 0 }),
     unpushedPaths: async () => new Set<string>(),
     pullRebase: vi.fn(async () => []),
+    exclusive: <T>(work: () => Promise<T>) => work(),
+    rebaseInProgress: () => false,
+    abortRebase: vi.fn(async () => undefined),
+    headSha: async () => "abc1234",
+    autostashConflicts: async () => [],
   };
   const host = {
     config: { remote: "nunu/vault" },

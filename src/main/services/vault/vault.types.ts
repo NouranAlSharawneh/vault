@@ -45,7 +45,8 @@ export interface VaultContext {
   readonly index: IndexerService;
   emit(event: string, payload?: unknown): boolean;
   schedulePush(): void;
-  writeReadme(): Promise<void>;
+  /** Regenerate the README when it is Marasca's own; true when it was written. */
+  writeReadme(): Promise<boolean>;
   uniquePath(wanted: string, keep?: string): string;
 }
 
@@ -55,6 +56,8 @@ export interface ConflictHost {
   read(relPath: string): Promise<DocContent>;
   save(req: SaveRequest): Promise<SaveResult>;
   trash(relPath: string): Promise<TrashedDoc>;
+  /** Undo a trash that a failed resolution already made. */
+  restoreFromTrash(path: string): Promise<SaveResult>;
   refreshSyncStatus(): Promise<SyncStatus>;
 }
 
@@ -65,4 +68,6 @@ export interface ExistingDoc {
   created: string | undefined;
   /** Frontmatter keys Marasca doesn't own, kept as they were. */
   extra: Record<string, unknown>;
+  /** The file's own star, when it changed after the editor loaded it; else undefined. */
+  starred: boolean | undefined;
 }

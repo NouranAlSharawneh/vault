@@ -26,18 +26,37 @@ export class ViewsStore {
 
   async list(): Promise<SavedView[]> {
     try {
-      const data = parseYaml(await fs.readFile(this.path(), "utf8")) as
-        { views?: SavedView[] } | SavedView[] | null;
-      const arr = Array.isArray(data) ? data : (data?.views ?? []);
-
-      return arr.filter((v) => v && typeof v.name === "string" && typeof v.query === "string");
+      return await this.read();
     } catch {
       return [];
     }
   }
 
+  /**
+   * The saved views, or a throw when the file is there but unreadable. Writes go through
+   * this: reading a hand-broken file as "no views" and then writing one view back threw
+   * every other view away.
+   */
+  private async read(): Promise<SavedView[]> {
+    let text: string;
+    try {
+      text = await fs.readFile(this.path(), "utf8");
+    } catch {
+      return [];
+    }
+    let data: { views?: SavedView[] } | SavedView[] | null;
+    try {
+      data = parseYaml(text) as typeof data;
+    } catch {
+      throw new Error(`${VAULT_DIR}/views.yml can’t be read — fix or delete it first`);
+    }
+    const arr = Array.isArray(data) ? data : (data?.views ?? []);
+
+    return arr.filter((v) => v && typeof v.name === "string" && typeof v.query === "string");
+  }
+
   async save(view: SavedView): Promise<SavedView[]> {
-    const views = (await this.list()).filter((v) => v.name !== view.name);
+    const views = (await this.read()).filter((v) => v.name !== view.name);
     views.push(view);
     await this.write(views, `view: ${view.name}`);
 
@@ -45,7 +64,7 @@ export class ViewsStore {
   }
 
   async remove(name: string): Promise<SavedView[]> {
-    const views = (await this.list()).filter((v) => v.name !== name);
+    const views = (await this.read()).filter((v) => v.name !== name);
     await this.write(views, `remove view: ${name}`);
 
     return views;

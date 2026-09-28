@@ -64,7 +64,19 @@ app.on("window-all-closed", () => {
   if (!IS_MAC) app.quit();
 });
 
-app.on("will-quit", () => {
+/**
+ * Held once, after every window has closed — so an editor that cancelled the quit to ask
+ * about unsaved text has had its say — to push what is still waiting and close the vault
+ * properly. Firing the close and letting the process go cut both off mid-way.
+ */
+let shutDown = false;
+app.on("will-quit", (e) => {
   globalShortcut.unregisterAll();
-  fire(session.closeVault(), "closing the vault");
+  if (shutDown) return;
+  shutDown = true;
+  e.preventDefault();
+  fire(
+    session.shutdown().finally(() => app.quit()),
+    "closing the vault",
+  );
 });

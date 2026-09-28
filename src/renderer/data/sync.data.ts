@@ -37,6 +37,8 @@ export const UNKNOWN_PRESENTATION: SyncPresentation = {
  */
 export const FAILURE_PRESENTATION: Partial<Record<PushFailure, SyncPresentation>> = {
   "no-permission": { label: () => "can’t push — no write access", dot: "bg-cherry" },
+  blocked: { label: () => "GitHub refused a commit", dot: "bg-cherry" },
+  "not-found": { label: () => "repo not found on GitHub", dot: "bg-cherry" },
 };
 
 /** Said after a push asked for by hand fails. The badge says the rest. */
@@ -44,6 +46,9 @@ export const PUSH_FAILURE_MESSAGE: Record<PushFailure, string> = {
   offline: "Couldn’t reach GitHub — your commits will push once you’re online",
   "bad-credentials": "GitHub signed you out — sign in again to push",
   "no-permission": "Can’t push — this account has no write access to the repo",
+  blocked:
+    "GitHub refused a commit — usually a secret it recognised, or a file over 100 MB. Your commits are safe here",
+  "not-found": "GitHub can’t find the repo — it was renamed, deleted, or this account lost access",
   other: "Couldn’t push to GitHub — your commits are safe here",
 };
 
@@ -52,5 +57,7 @@ export const PULL_FAILURE_MESSAGE: Record<PushFailure, string> = {
   offline: "Couldn’t reach GitHub — pull again once you’re online",
   "bad-credentials": "GitHub signed you out — sign in again to pull",
   "no-permission": "This account can’t read the repo on GitHub",
+  blocked: "GitHub refused the request — documents here are unchanged",
+  "not-found": "GitHub can’t find the repo — it was renamed, deleted, or this account lost access",
   other: "Couldn’t pull from GitHub — documents here are unchanged",
 };
