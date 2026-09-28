@@ -27,6 +27,7 @@ export function DocumentReader({
   trashed,
   onRestore,
   onPurge,
+  trashBusy,
   onOpenDoc,
 }: DocumentReaderProps) {
   const meta = doc?.meta ?? null;
@@ -44,6 +45,7 @@ export function DocumentReader({
         trashed={trashed}
         onRestore={onRestore}
         onPurge={onPurge}
+        trashBusy={trashBusy}
       />
       {doc && meta ? (
         <>

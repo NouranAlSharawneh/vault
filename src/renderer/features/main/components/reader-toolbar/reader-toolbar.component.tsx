@@ -18,6 +18,7 @@ export function ReaderToolbar({
   trashed,
   onRestore,
   onPurge,
+  trashBusy,
 }: ReaderToolbarProps) {
   const remote = useApp((s) => s.config?.remote);
   const branch = useApp((s) => s.config?.branch ?? "main");
@@ -44,10 +45,23 @@ export function ReaderToolbar({
       </div>
       {trashed ? (
         <div className="flex items-center gap-1.5">
-          <Button variant="outline" size="sm" onClick={onRestore}>
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={!!trashBusy}
+            loading={trashBusy === "restore"}
+            onClick={onRestore}
+          >
             <RotateCcw size={11} /> Restore
           </Button>
-          <Button variant="danger" size="sm" onClick={onPurge} tooltip="Permanently, everywhere">
+          <Button
+            variant="danger"
+            size="sm"
+            disabled={!!trashBusy}
+            loading={trashBusy === "purge"}
+            onClick={onPurge}
+            tooltip="Permanently, everywhere"
+          >
             <Trash2 size={11} /> Delete forever
           </Button>
         </div>
@@ -109,12 +123,15 @@ export function ReaderToolbar({
             variant="ghost"
             size="sm"
             className="w-7 px-0"
+            disabled={!!trashBusy}
+            loading={trashBusy === "trash"}
             onClick={onTrash}
             tooltip="Move to trash"
             tooltipKeys={`${MOD_KEY}⌫`}
             aria-label="move to trash"
           >
-            <Trash2 size={12} />
+            {/* The spinner takes the icon's place: there is no room here for both. */}
+            {trashBusy !== "trash" && <Trash2 size={12} />}
           </Button>
         </div>
       )}
