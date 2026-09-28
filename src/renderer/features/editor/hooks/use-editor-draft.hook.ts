@@ -30,6 +30,7 @@ export function useEditorDraft(untitledKey: string | null) {
     dirty: false,
     sourcePath: null,
     baseMtime: null,
+    baseHash: null,
   });
   const [saving, setSaving] = useState<SaveMode | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -40,12 +41,21 @@ export function useEditorDraft(untitledKey: string | null) {
   const effectiveTitle = state.meta.title.trim() || inferredTitle;
 
   useEffect(() => {
-    api("doc:pathPreview", state.meta.project, effectiveTitle || "untitled")
+    api(
+      "doc:pathPreview",
+      state.meta.project,
+      effectiveTitle || "untitled",
+      state.existingPath ?? undefined,
+    )
       .then(setPathPreview)
       .catch(() => undefined);
-  }, [state.meta.project, effectiveTitle]);
+  }, [state.meta.project, effectiveTitle, state.existingPath]);
 
-  const setBody = useCallback((body: string) => setState((s) => ({ ...s, body, dirty: true })), []);
+  // The same text again is not an edit.
+  const setBody = useCallback(
+    (body: string) => setState((s) => (s.body === body ? s : { ...s, body, dirty: true })),
+    [],
+  );
   const setMeta = useCallback(
     (patch: Partial<DraftMeta>) =>
       setState((s) => ({ ...s, meta: { ...s.meta, ...patch }, dirty: true })),
@@ -62,6 +72,7 @@ export function useEditorDraft(untitledKey: string | null) {
       dirty: false,
       sourcePath: null,
       baseMtime: doc.meta.mtime,
+      baseHash: doc.hash ?? null,
     });
     setLastSaved(null);
   }, []);
@@ -85,6 +96,7 @@ export function useEditorDraft(untitledKey: string | null) {
         sourcePath: draft.sourcePath ?? null,
         // A seeded draft is not a file on disk yet, so there is nothing to be newer than.
         baseMtime: null,
+        baseHash: null,
       });
     },
     [config?.lastProject, defaultSource],
@@ -137,28 +149,39 @@ export function useEditorDraft(untitledKey: string | null) {
       inFlight.current = true;
       setSaving(mode);
       setError(null);
+      const sent = { body: state.body, meta: state.meta };
       try {
         const res = await api("doc:save", {
-          body: state.body,
+          body: sent.body,
           frontmatter: {
-            ...state.meta,
+            ...sent.meta,
             title: effectiveTitle,
             created: state.created ?? undefined,
           },
           existingPath: state.existingPath ?? undefined,
           baseMtime: state.baseMtime ?? undefined,
+          baseHash: state.baseHash ?? undefined,
           commit: mode === "commit",
           assets,
         });
         setState((s) => ({
           ...s,
+          // Where the file is now, even when the commit after it failed: a retry has to
+          // carry on from here, not write a second copy or move it from where it was.
           existingPath: res.path,
           created: res.meta.created,
           meta: { ...s.meta, title: res.meta.title },
-          dirty: false,
+          // Still dirty if anything changed while the save was out, or it didn't commit.
+          dirty: !!res.commitError || s.body !== sent.body || s.meta !== sent.meta,
           // The file on disk is ours again as of this write.
           baseMtime: res.meta.mtime,
+          baseHash: res.hash ?? null,
         }));
+        if (res.commitError) {
+          setError(`Saved to disk, but the commit failed: ${res.commitError}`);
+
+          return null;
+        }
         setLastSaved(res);
         // Saved text is not a draft any more, under either key it might have had.
         if (draftKey) void api("draft:clear", draftKey).catch(() => undefined);

@@ -2,7 +2,7 @@ import { defaultKeymap, history, historyKeymap, indentWithTab } from "@codemirro
 import { markdown, markdownLanguage } from "@codemirror/lang-markdown";
 import { HighlightStyle, syntaxHighlighting } from "@codemirror/language";
 import { languages } from "@codemirror/language-data";
-import { EditorState, Compartment } from "@codemirror/state";
+import { Annotation, Compartment, EditorState, Transaction } from "@codemirror/state";
 import { EditorView, keymap, placeholder as placeholderExt, drawSelection } from "@codemirror/view";
 import { tags } from "@lezer/highlight";
 import { useEffect, useRef } from "react";
@@ -28,13 +28,28 @@ const vaultTheme = EditorView.theme({
   ".cm-cursor, .cm-dropCursor": { borderLeftColor: "var(--color-cherry)" },
 });
 
+/**
+ * Marks a change that came from `value`, not from the person typing. Loading a document
+ * is one: reported back as an edit, it marked every document dirty the moment it opened —
+ * the unsaved prompt on every close, the untouched file parked as a draft, and a crash
+ * draft overwritten by the file it was meant to rescue.
+ */
+const FromValue = Annotation.define<boolean>();
+
 type Options = Pick<
   MarkdownEditorProps,
-  "value" | "onChange" | "onSubmit" | "placeholder" | "autoFocus"
+  "value" | "onChange" | "onSubmit" | "placeholder" | "autoFocus" | "readOnly"
 >;
 
 /** Mounts a CodeMirror 6 markdown editor into the returned ref and keeps it in sync with `value`. */
-export function useCodeMirror({ value, onChange, onSubmit, placeholder, autoFocus }: Options) {
+export function useCodeMirror({
+  value,
+  onChange,
+  onSubmit,
+  placeholder,
+  autoFocus,
+  readOnly = false,
+}: Options) {
   const host = useRef<HTMLDivElement>(null);
   const view = useRef<EditorView | null>(null);
   const onChangeRef = useRef(onChange);
@@ -44,9 +59,10 @@ export function useCodeMirror({ value, onChange, onSubmit, placeholder, autoFocu
     onSubmitRef.current = onSubmit;
   });
 
+  const editable = useRef(new Compartment());
+
   useEffect(() => {
     if (!host.current) return;
-    const submitKeys = new Compartment();
     const state = EditorState.create({
       doc: value,
       extensions: [
@@ -60,26 +76,29 @@ export function useCodeMirror({ value, onChange, onSubmit, placeholder, autoFocu
           spellcheck: "true",
           autocorrect: "off",
           autocapitalize: "off",
+          "aria-label": "Markdown",
+          "aria-multiline": "true",
         }),
         EditorView.lineWrapping,
         markdown({ base: markdownLanguage, codeLanguages: languages }),
         syntaxHighlighting(mdHighlight),
         placeholderExt(placeholder ?? ""),
-        submitKeys.of(
-          keymap.of([
-            {
-              key: "Mod-Enter",
-              run: () => {
-                onSubmitRef.current?.();
+        keymap.of([
+          {
+            key: "Mod-Enter",
+            run: () => {
+              onSubmitRef.current?.();
 
-                return true;
-              },
+              return true;
             },
-          ]),
-        ),
+          },
+        ]),
         keymap.of([...defaultKeymap, ...historyKeymap, indentWithTab]),
+        editable.current.of(EditorState.readOnly.of(readOnly)),
         EditorView.updateListener.of((u) => {
-          if (u.docChanged) onChangeRef.current(u.state.doc.toString());
+          if (!u.docChanged) return;
+          if (u.transactions.every((t) => t.annotation(FromValue))) return;
+          onChangeRef.current(u.state.doc.toString());
         }),
       ],
     });
@@ -99,8 +118,22 @@ export function useCodeMirror({ value, onChange, onSubmit, placeholder, autoFocu
     const v = view.current;
     if (!v) return;
     const current = v.state.doc.toString();
-    if (current !== value) v.dispatch({ changes: { from: 0, to: current.length, insert: value } });
+    if (current === value) return;
+    v.dispatch({
+      changes: { from: 0, to: current.length, insert: value },
+      // Neither an edit to report nor a step to undo: ⌘Z straight after opening used to
+      // "undo" the load and leave an empty document.
+      annotations: [FromValue.of(true), Transaction.addToHistory.of(false)],
+    });
   }, [value]);
+
+  // Read-only while a save is on its way: text typed then was dropped when the save
+  // came back, marked the document clean and closed the window.
+  useEffect(() => {
+    view.current?.dispatch({
+      effects: editable.current.reconfigure(EditorState.readOnly.of(readOnly)),
+    });
+  }, [readOnly]);
 
   return host;
 }

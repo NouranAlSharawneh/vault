@@ -21,6 +21,8 @@ export interface DraftState {
   sourcePath: string | null;
   /** The file's mtime when it was loaded, so a save can tell if anything else wrote it. */
   baseMtime: number | null;
+  /** Fingerprint of the text as loaded or last saved; see `SaveRequest.baseHash`. */
+  baseHash: string | null;
 }
 
 export type SaveMode = "local" | "commit";
