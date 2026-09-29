@@ -8,6 +8,9 @@ export interface ToastsProps {
   /** The newest message, written into the always-present live region. */
   announced: Toast | null;
   onDismiss: (id: number) => void;
+  /** Pointer or focus arrived on the stack, or left it: the toasts wait meanwhile. */
+  onHold?: () => void;
+  onRelease?: () => void;
   /** Where the stack sits. Default "bottom". */
   placement?: ToastPlacement;
   /** Drawn over a dark surface (the capture sheet), where the usual ink pill disappears. */

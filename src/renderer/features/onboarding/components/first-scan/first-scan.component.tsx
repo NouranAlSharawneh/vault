@@ -30,7 +30,14 @@ export function FirstScan({ onDone, onBack }: FirstScanProps) {
         </div>
       ) : (
         <>
-          <div className="mt-6 h-1.5 overflow-hidden rounded-full bg-paper-3">
+          <div
+            role="progressbar"
+            aria-label="Reading the vault"
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-valuenow={Math.round(percent)}
+            className="mt-6 h-1.5 overflow-hidden rounded-full bg-paper-3"
+          >
             <div
               className="h-full bg-cherry transition-all duration-300"
               style={{ width: `${percent}%` }}

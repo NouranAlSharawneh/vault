@@ -26,6 +26,8 @@ export function App() {
   const toasts = useToast((s) => s.toasts);
   const announced = useToast((s) => s.announced);
   const dismissToast = useToast((s) => s.dismiss);
+  const holdToasts = useToast((s) => s.hold);
+  const releaseToasts = useToast((s) => s.release);
 
   useEffect(() => {
     subscribeToMain();
@@ -42,6 +44,8 @@ export function App() {
         toasts={toasts}
         announced={announced}
         onDismiss={dismissToast}
+        onHold={holdToasts}
+        onRelease={releaseToasts}
         placement={TOAST_PLACEMENT[route]}
         onDark={route === "capture"}
       />

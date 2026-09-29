@@ -7,4 +7,6 @@ export interface TagInputProps {
   placeholder?: string;
   /** Where the list opens. The capture sheet grows to fit a list below; above, it was cut off. */
   placement?: "above" | "below";
+  /** The field's id, for the <label> that names it. */
+  id?: string;
 }

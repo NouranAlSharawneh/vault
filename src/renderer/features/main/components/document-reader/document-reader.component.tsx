@@ -47,9 +47,23 @@ export function DocumentReader({
   onOpenDoc,
   anchor,
   onAnchorShown,
+  focusDoc,
+  onDocFocused,
 }: DocumentReaderProps) {
   const root = useRef<HTMLElement>(null);
   const shownPath = current?.meta.path;
+  useEffect(() => {
+    if (!focusDoc || focusDoc !== shownPath) return;
+    // The document's own scroller (the preview side of a split), after it has painted.
+    const frame = requestAnimationFrame(() => {
+      root.current
+        ?.querySelector<HTMLElement>("[data-doc-scroller]")
+        ?.focus({ preventScroll: true });
+      onDocFocused?.();
+    });
+
+    return () => cancelAnimationFrame(frame);
+  }, [focusDoc, shownPath, onDocFocused]);
   useEffect(() => {
     if (!anchor || anchor.path !== shownPath) return;
     // After the document has painted, so the section exists to be found.
@@ -119,14 +133,23 @@ export function DocumentReader({
               className="min-h-0 flex-1"
               storageKey="reader-split"
               left={
-                <div className="min-h-0 flex-1 overflow-y-auto px-12 py-4">
+                <div
+                  tabIndex={0}
+                  aria-label="Markdown source"
+                  className="min-h-0 flex-1 overflow-y-auto px-12 py-4 -outline-offset-2"
+                >
                   <div className="mx-auto max-w-170">
                     <Raw body={doc.body} />
                   </div>
                 </div>
               }
               right={
-                <div className="min-h-0 flex-1 overflow-y-auto px-12 py-4 pb-16">
+                <div
+                  data-doc-scroller
+                  tabIndex={0}
+                  aria-label="Document"
+                  className="min-h-0 flex-1 overflow-y-auto px-12 py-4 pb-16 -outline-offset-2"
+                >
                   <article className="mx-auto max-w-170">
                     <Markdown source={doc.body} docPath={meta.path} onOpenDoc={onOpenDoc} />
                   </article>
@@ -137,9 +160,10 @@ export function DocumentReader({
             <div
               // Its own scroller per document: the next one opens at its top.
               key={meta.path}
+              data-doc-scroller
               tabIndex={0}
               aria-label="Document"
-              className="min-h-0 flex-1 overflow-y-auto px-12 pt-4 pb-16 outline-none"
+              className="min-h-0 flex-1 overflow-y-auto px-12 pt-4 pb-16 -outline-offset-2"
             >
               <article className="mx-auto max-w-170">
                 {view === "markdown" ? (

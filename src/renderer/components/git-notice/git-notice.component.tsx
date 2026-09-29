@@ -33,7 +33,6 @@ export function GitNotice({ hideWhenReady, className }: GitNoticeProps) {
 
   return (
     <div
-      role="status"
       className={cx(
         "flex gap-3 rounded-md border p-3.5 text-left",
         copy.tone === "alert" ? "border-cherry-tint-2 bg-cherry-tint" : "border-line bg-paper-2",
@@ -48,8 +47,12 @@ export function GitNotice({ hideWhenReady, className }: GitNoticeProps) {
         )}
       </span>
       <div className="flex min-w-0 flex-1 flex-col gap-1.5">
-        <div className="text-md font-medium text-ink">{copy.title}</div>
-        {copy.body && <div className="text-sm text-ink-3">{copy.body}</div>}
+        {/* The live region is the words: wrapped around the buttons as well, a change of
+            state read their labels out too. */}
+        <div role="status" className="flex flex-col gap-1.5">
+          <div className="text-md font-medium text-ink">{copy.title}</div>
+          {copy.body && <div className="text-sm text-ink-3">{copy.body}</div>}
+        </div>
         {copy.command && (
           <div className="flex items-center gap-2 overflow-x-auto rounded-sm bg-paper-3 py-1 pr-1 pl-2.5 font-mono text-xs text-ink-2">
             <span className="whitespace-nowrap">{copy.command}</span>

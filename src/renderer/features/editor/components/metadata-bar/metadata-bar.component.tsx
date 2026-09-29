@@ -1,3 +1,4 @@
+import { useId } from "react";
 import { SectionLabel } from "@/components/ui";
 import { ProjectCombobox } from "../project-combobox/project-combobox.component";
 import { SourceSelect } from "../source-select/source-select.component";
@@ -13,6 +14,9 @@ export function MetadataBar({
   tags,
   lastProject,
 }: MetadataBarProps) {
+  const id = useId();
+
+  // Every label is a <label> for its field: a click on "Project" focuses the project.
   return (
     <div className="grid grid-cols-metadata gap-3 border-t border-line bg-paper-2 px-5 py-3">
       <label className="block">
@@ -33,8 +37,11 @@ export function MetadataBar({
         </div>
       </label>
       <div>
-        <SectionLabel className="mb-1">Project</SectionLabel>
+        <SectionLabel as="label" htmlFor={`${id}-project`} className="mb-1">
+          Project
+        </SectionLabel>
         <ProjectCombobox
+          id={`${id}-project`}
           value={meta.project}
           onChange={(project) => onChange({ project })}
           projects={projects}
@@ -42,12 +49,25 @@ export function MetadataBar({
         />
       </div>
       <div>
-        <SectionLabel className="mb-1">From</SectionLabel>
-        <SourceSelect value={meta.source} onChange={(source) => onChange({ source })} />
+        <SectionLabel as="label" htmlFor={`${id}-source`} className="mb-1">
+          From
+        </SectionLabel>
+        <SourceSelect
+          id={`${id}-source`}
+          value={meta.source}
+          onChange={(source) => onChange({ source })}
+        />
       </div>
       <div>
-        <SectionLabel className="mb-1">Tags</SectionLabel>
-        <TagInput value={meta.tags} onChange={(t) => onChange({ tags: t })} suggestions={tags} />
+        <SectionLabel as="label" htmlFor={`${id}-tags`} className="mb-1">
+          Tags
+        </SectionLabel>
+        <TagInput
+          id={`${id}-tags`}
+          value={meta.tags}
+          onChange={(t) => onChange({ tags: t })}
+          suggestions={tags}
+        />
       </div>
     </div>
   );

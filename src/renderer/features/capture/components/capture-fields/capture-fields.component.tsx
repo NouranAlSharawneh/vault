@@ -1,3 +1,4 @@
+import { useId } from "react";
 import { SectionLabel } from "@/components/ui";
 import { ProjectCombobox } from "@/features/editor/components/project-combobox/project-combobox.component";
 import { SourceSelect } from "@/features/editor/components/source-select/source-select.component";
@@ -13,11 +14,16 @@ export function CaptureFields({
   lastProject,
   detected,
 }: CaptureFieldsProps) {
+  const id = useId();
+
   return (
     <div className="grid grid-cols-capture gap-3">
       <div>
-        <SectionLabel className="mb-1 text-overlay-ink-3">Project</SectionLabel>
+        <SectionLabel as="label" htmlFor={`${id}-project`} className="mb-1 text-overlay-ink-3">
+          Project
+        </SectionLabel>
         <ProjectCombobox
+          id={`${id}-project`}
           dark
           value={form.project}
           onChange={(project) => onChange({ project })}
@@ -27,8 +33,11 @@ export function CaptureFields({
         />
       </div>
       <div>
-        <SectionLabel className="mb-1 text-overlay-ink-3">From</SectionLabel>
+        <SectionLabel as="label" htmlFor={`${id}-source`} className="mb-1 text-overlay-ink-3">
+          From
+        </SectionLabel>
         <SourceSelect
+          id={`${id}-source`}
           dark
           value={form.source}
           onChange={(source) => onChange({ source })}
@@ -36,8 +45,11 @@ export function CaptureFields({
         />
       </div>
       <div>
-        <SectionLabel className="mb-1 text-overlay-ink-3">Tags</SectionLabel>
+        <SectionLabel as="label" htmlFor={`${id}-tags`} className="mb-1 text-overlay-ink-3">
+          Tags
+        </SectionLabel>
         <TagInput
+          id={`${id}-tags`}
           dark
           value={form.tags}
           onChange={(t) => onChange({ tags: t })}

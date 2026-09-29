@@ -37,14 +37,18 @@ export function EditorFooter({
         <div className="ml-auto flex shrink-0 items-center gap-2">
           {/* Someone else had written this file since it was opened here. Their version was
             committed before this one, so the only thing left to do is say where it went. */}
-          {keptOtherVersion && !dirty && (
-            <span className="flex items-center gap-1.5 text-warn-2">
-              <GitBranch size={12} /> This file had changed — the other version is in its history
-            </span>
-          )}
-          {persisted && !dirty && !error && !keptOtherVersion && (
-            <span className="text-ink-4">Saved</span>
-          )}
+          {/* Always there, so what appears in it is said: after ⌘S the window stays, and
+              "Saved" was only ever seen. */}
+          <span role="status" className="flex items-center gap-2">
+            {keptOtherVersion && !dirty && (
+              <span className="flex items-center gap-1.5 text-warn-2">
+                <GitBranch size={12} /> This file had changed — the other version is in its history
+              </span>
+            )}
+            {persisted && !dirty && !error && !keptOtherVersion && (
+              <span className="text-ink-4">Saved</span>
+            )}
+          </span>
           <Button
             variant="ghost"
             disabled={!canSave}

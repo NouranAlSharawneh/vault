@@ -7,10 +7,24 @@ import type { DiffHunk } from "@shared/types";
 import { useNow } from "../../hooks/use-now.hook";
 import type { HistoryDrawerProps } from "./history-drawer.types";
 import { useDocHistory } from "./hooks/use-doc-history.hook";
+import { useDrawerFocus } from "./hooks/use-drawer-focus.hook";
 
 /** ⌘Y: every commit that touched this document, what each changed, and a way back. */
-export function HistoryDrawer({ path, onClose, onRestored }: HistoryDrawerProps) {
+export function HistoryDrawer({
+  path,
+  onClose,
+  onRestored,
+  takeFocus = false,
+  onFocusTaken,
+}: HistoryDrawerProps) {
   const h = useDocHistory(path, onRestored);
+  const { list, onKeyDown } = useDrawerFocus(
+    h.commits,
+    h.selected,
+    h.select,
+    takeFocus,
+    onFocusTaken,
+  );
   // Worked out here against a clock that moves: said once by main, "just now" stayed.
   const now = useNow();
   const hunks = h.diff ? parseUnifiedDiff(h.diff) : [];
@@ -20,6 +34,7 @@ export function HistoryDrawer({ path, onClose, onRestored }: HistoryDrawerProps)
   return (
     <aside
       data-testid="history-drawer"
+      aria-label="Document history"
       // Its own inset card, like the reader beside it — wide enough for a diff, capped
       // at two fifths of the window so it never crushes the document.
       className="mr-2 mb-2 flex w-110 max-w-2/5 shrink-0 flex-col overflow-hidden rounded-lg border border-line bg-paper-2 shadow-pop"
@@ -41,10 +56,21 @@ export function HistoryDrawer({ path, onClose, onRestored }: HistoryDrawerProps)
         <div className="flex min-h-0 flex-1 flex-col">
           {/* The rows carry their own 2px margin, so this is the other 2px of an even
               4px above the first commit and below the last one. */}
-          <ul className="max-h-56 shrink-0 overflow-y-auto px-2 py-0.5">
+          <ul
+            ref={list}
+            aria-label="Commits"
+            onKeyDown={onKeyDown}
+            className="max-h-56 shrink-0 overflow-y-auto px-2 py-0.5"
+          >
             {h.commits.map((c) => (
               <li key={c.sha}>
-                <ListRow selected={c.sha === h.selected} onClick={() => h.select(c.sha)}>
+                <ListRow
+                  data-sha={c.sha}
+                  // One Tab stop: the chosen commit. The arrows move between them.
+                  tabIndex={c.sha === h.selected ? 0 : -1}
+                  selected={c.sha === h.selected}
+                  onClick={() => h.select(c.sha)}
+                >
                   <span className="min-w-0 flex-1 truncate leading-none">{c.message}</span>
                   <span
                     className="ml-auto shrink-0 font-mono text-2xs leading-none text-ink-4"
@@ -81,7 +107,11 @@ export function HistoryDrawer({ path, onClose, onRestored }: HistoryDrawerProps)
             )}
           </div>
 
-          <div className="min-h-0 flex-1 overflow-auto">
+          <div
+            tabIndex={0}
+            aria-label="What this commit changed"
+            className="min-h-0 flex-1 overflow-auto -outline-offset-2"
+          >
             {h.diffError ? (
               <div className="p-4 text-xs text-cherry">
                 Couldn’t show what this commit changed: {h.diffError}

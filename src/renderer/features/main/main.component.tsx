@@ -127,6 +127,10 @@ export function Main() {
   // A relative `.md` link in the reader. Checked against the index so a broken link says so
   // instead of blanking the reader. Its `#section` is kept for once the document is up —
   // it used to be dropped, and the link opened at the top.
+  // Opened from ⌘K or a link: focus goes to the document once it is up, so Space and
+  // Page Down read on. It used to go back to whatever had it before the palette.
+  const [focusDoc, setFocusDoc] = useState<string | null>(null);
+  const docFocused = useCallback(() => setFocusDoc(null), []);
   const [anchor, setAnchor] = useState<{ path: string; id: string } | null>(null);
   const clearAnchor = useCallback(() => setAnchor(null), []);
   const openLinkedDoc = useCallback(
@@ -137,18 +141,46 @@ export function Main() {
         return;
       }
       setAnchor(hash ? { path, id: hash } : null);
+      setFocusDoc(path);
       reveal(path);
     },
     [reveal, show],
   );
+  const openFromPalette = useCallback(
+    (path: string) => {
+      setFocusDoc(path);
+
+      return reveal(path);
+    },
+    [reveal],
+  );
+
+  // Back from Settings (or at launch), focus is on nothing: it goes to the list, so the
+  // arrows work at once and a screen reader says where you are.
+  useEffect(() => {
+    const frame = requestAnimationFrame(() => {
+      if (document.activeElement && document.activeElement !== document.body) return;
+      document.querySelector<HTMLElement>("[data-doc-list]")?.focus({ preventScroll: true });
+    });
+
+    return () => cancelAnimationFrame(frame);
+  }, []);
 
   const openPalette = useCallback(() => setPaletteOpen(true), []);
   // History is about one document: meaningless with none selected, or one in the trash —
   // and toggling it then left it open for the next document, unasked.
-  const canShowHistory = !!doc && !inTrash;
+  // It needs the path, not the loaded text: ⌘Y pressed while the next document was
+  // still loading — straight after an arrow key — used to be dropped without a word.
+  const canShowHistory = !!selected && !inTrash;
+  // Set when History is opened on purpose, so the drawer takes focus that once — not
+  // each time it remounts for the next document.
+  const [historyFocus, setHistoryFocus] = useState(false);
+  const takenHistoryFocus = useCallback(() => setHistoryFocus(false), []);
   const toggleHistory = useCallback(() => {
-    if (canShowHistory) setHistoryOpen((open) => !open);
-  }, [canShowHistory]);
+    if (!canShowHistory) return;
+    setHistoryFocus(!historyOpen);
+    setHistoryOpen((open) => !open);
+  }, [canShowHistory, historyOpen]);
   const openSettings = useCallback(() => (window.location.hash = "settings"), []);
   const trashNow = useCallback(() => fire(trashActions.trash()), [trashActions]);
   useHotkeyWarning(openSettings);
@@ -243,6 +275,8 @@ export function Main() {
             onOpenDoc={openLinkedDoc}
             anchor={anchor}
             onAnchorShown={clearAnchor}
+            focusDoc={focusDoc}
+            onDocFocused={docFocused}
             listEmpty={listed.length === 0}
           />
         }
@@ -287,9 +321,11 @@ export function Main() {
         {showHistory && (
           <HistoryDrawer
             // Remounts per document, so its state starts clean without an effect reset.
-            key={doc.meta.path}
-            path={doc.meta.path}
+            key={selected}
+            path={selected}
             onClose={() => setHistoryOpen(false)}
+            takeFocus={historyFocus}
+            onFocusTaken={takenHistoryFocus}
             onRestored={setSelected}
           />
         )}
@@ -299,7 +335,7 @@ export function Main() {
       {paletteOpen && (
         <CommandPalette
           onClose={() => setPaletteOpen(false)}
-          onOpenDoc={reveal}
+          onOpenDoc={openFromPalette}
           // Trash acts on the doc in the reader, so the action is offered with its title or not at all.
           {...(doc && !inTrash ? { onTrashDoc: trashNow, trashTitle: doc.meta.title } : {})}
           onReviewConflicts={() => setConflictsOpen(true)}

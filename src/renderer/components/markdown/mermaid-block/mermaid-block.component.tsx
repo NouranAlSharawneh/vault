@@ -47,7 +47,7 @@ export function MermaidBlock({ code }: MermaidBlockProps) {
                 disabled={z.isDefault}
                 onClick={z.reset}
                 title="Reset to 100%"
-                aria-label="reset zoom"
+                aria-label={`Reset zoom (${z.percent}%)`}
               >
                 {z.percent}%
               </Button>

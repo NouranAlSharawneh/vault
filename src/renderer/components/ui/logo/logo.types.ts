@@ -16,5 +16,8 @@ export interface LogoProps {
   tone?: "brand" | "mono";
   /** Loop the hop continuously. Only the large drawing has frames. */
   bounce?: boolean;
+  /** Beside words that already say "Marasca" (the wordmark, a heading, a labelled row):
+   *  hidden from screen readers, which otherwise heard the name twice. */
+  decorative?: boolean;
   className?: string;
 }

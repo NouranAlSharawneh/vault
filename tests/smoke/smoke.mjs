@@ -511,7 +511,7 @@ const widthOf = () =>
 const before = await widthOf();
 await win.click('button[aria-label="zoom in"]');
 await win.click('button[aria-label="zoom in"]');
-await win.waitForSelector('button[aria-label="reset zoom"]:has-text("150%")', { timeout: 5000 });
+await win.waitForSelector('button[aria-label^="Reset zoom"]:has-text("150%")', { timeout: 5000 });
 await win.waitForTimeout(200);
 const after = await widthOf();
 // The label moving is not enough: the diagram itself has to grow.
@@ -532,8 +532,8 @@ if (scrolled <= 0) throw new Error("drag did not pan the diagram, scrollLeft=" +
 console.log("mermaid pan scrollLeft:", Math.round(scrolled));
 await win.waitForTimeout(300);
 await win.screenshot({ path: join(out, "smoke-17-mermaid-zoom.png") });
-await win.click('button[aria-label="reset zoom"]');
-await win.waitForSelector('button[aria-label="reset zoom"]:has-text("100%")', { timeout: 5000 });
+await win.click('button[aria-label^="Reset zoom"]');
+await win.waitForSelector('button[aria-label^="Reset zoom"]:has-text("100%")', { timeout: 5000 });
 console.log("mermaid zoom: 150% then reset");
 // ---- M4: the ⌃⌥V sheet, driven through main (xvfb has no global hotkey)
 await app.evaluate(async ({ clipboard }) => {

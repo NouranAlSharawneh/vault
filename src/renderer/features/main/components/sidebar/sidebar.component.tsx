@@ -55,14 +55,20 @@ export function Sidebar({
 
           return (
             <ListRow key={c.key} selected={active} onClick={() => onCollection(c.key)}>
-              {c.key === "all" ? <Logo size={14} /> : <Icon size={14} className="text-ink-3" />}
+              {c.key === "all" ? (
+                <Logo size={14} decorative />
+              ) : (
+                <Icon size={14} className="text-ink-3" />
+              )}
               {c.label}
               <Count n={count} />
             </ListRow>
           );
         })}
 
-        <SectionLabel className="mt-5 mb-1 px-2">Projects</SectionLabel>
+        <SectionLabel as="h2" className="mt-5 mb-1 px-2">
+          Projects
+        </SectionLabel>
         {index?.projects.map((p) => (
           <ListRow
             key={p.slug}
@@ -76,7 +82,9 @@ export function Sidebar({
           </ListRow>
         ))}
 
-        <SectionLabel className="mt-5 mb-1 px-2">Tags</SectionLabel>
+        <SectionLabel as="h2" className="mt-5 mb-1 px-2">
+          Tags
+        </SectionLabel>
         {(index?.tags.length ?? 0) > 12 && (
           <input
             className="input input-sm mb-2 bg-paper-3/60"

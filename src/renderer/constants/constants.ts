@@ -20,6 +20,8 @@ export const CAPTURE_SAVED_FLASH_MS = 900;
 export const TOAST_MS = 6000;
 /** A toast with a button (Undo) stays up long enough to reach it. */
 export const TOAST_ACTION_MS = 10000;
+/** Time a toast still has once the pointer or focus leaves it, however little was left. */
+export const TOAST_RESUME_MS = 2000;
 /** Toasts on screen at once; the oldest plain one makes room for a new one. */
 export const TOAST_MAX = 3;
 export const ASSET_RESOLVE_DEBOUNCE_MS = 250;

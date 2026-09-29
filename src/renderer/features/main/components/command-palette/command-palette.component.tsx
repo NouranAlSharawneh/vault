@@ -15,6 +15,7 @@ import { useEffect, useId, useLayoutEffect, useMemo, useRef } from "react";
 import { Chip, DialogShell, Kbd, ListRow } from "@/components/ui";
 import type { PaletteActionKey } from "@/data/palette.data";
 import { PALETTE_HINTS } from "@/data/palette.data";
+import { plural } from "@/helpers";
 import { relativeTime } from "@shared/helpers";
 import type { CommandPaletteProps, PaletteItem } from "./command-palette.types";
 import { useCommandPalette } from "./hooks/use-command-palette.hook";
@@ -120,6 +121,10 @@ export function CommandPalette({
         />
         <Kbd dark>esc</Kbd>
       </div>
+      {/* The result count, said as it settles: the list itself is only seen. */}
+      <span role="status" className="sr-only">
+        {p.query.trim() ? resultsSaid(p.flat) : ""}
+      </span>
       <div className="grid min-h-0 flex-1 grid-cols-palette">
         <div className="min-h-0 overflow-y-auto py-2">
           {p.groups.length === 0 && (
@@ -233,4 +238,15 @@ export function CommandPalette({
       </div>
     </DialogShell>
   );
+}
+
+/** "3 documents, 1 action" — or "No matches". */
+function resultsSaid(items: PaletteItem[]): string {
+  const docs = new Set(items.filter((i) => i.kind !== "action").map((i) => i.doc.path)).size;
+  const actions = items.length - items.filter((i) => i.kind !== "action").length;
+  if (!docs && !actions) return "No matches";
+
+  return [docs && plural(docs, "document"), actions && plural(actions, "action")]
+    .filter(Boolean)
+    .join(", ");
 }

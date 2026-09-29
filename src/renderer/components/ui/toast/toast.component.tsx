@@ -22,6 +22,8 @@ export function Toasts({
   toasts,
   announced,
   onDismiss,
+  onHold,
+  onRelease,
   placement = "bottom",
   onDark,
 }: ToastsProps) {
@@ -32,6 +34,13 @@ export function Toasts({
       </div>
       {toasts.length > 0 && (
         <div
+          // Nothing leaves while it is being read or reached, by pointer or by keyboard.
+          onPointerEnter={onHold}
+          onPointerLeave={onRelease}
+          onFocus={onHold}
+          onBlur={(e) => {
+            if (!e.currentTarget.contains(e.relatedTarget as Node | null)) onRelease?.();
+          }}
           className={cx(
             // px-4: a long toast stops short of the window edge instead of running into it.
             "pointer-events-none absolute inset-x-0 z-40 flex flex-col items-center gap-2 px-4",

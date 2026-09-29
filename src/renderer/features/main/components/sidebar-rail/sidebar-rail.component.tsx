@@ -41,7 +41,7 @@ export function SidebarRail({
             selected={active}
             onClick={() => onCollection(c.key)}
           >
-            {c.key === "all" ? <Logo size={16} /> : <Icon size={14} />}
+            {c.key === "all" ? <Logo size={16} decorative /> : <Icon size={14} />}
           </ListRow>
         );
       })}

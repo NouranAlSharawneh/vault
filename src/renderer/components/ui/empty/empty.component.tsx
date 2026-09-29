@@ -31,7 +31,7 @@ export function Empty({
           (error ? (
             <AlertTriangle size={28} strokeWidth={1.5} className="text-cherry" aria-hidden />
           ) : (
-            <Logo size={36} tone="mono" className="text-line-2" />
+            <Logo size={36} tone="mono" decorative className="text-line-2" />
           ))}
       </div>
       <div className="max-w-md text-md font-medium text-balance text-ink-2">{title}</div>

@@ -6,6 +6,9 @@ export interface HistoryDrawerProps {
   onClose: () => void;
   /** A restore writes a new commit; the reader reloads from it. */
   onRestored: (path: string) => void;
+  /** Opened just now, on purpose: take focus onto the selected commit. */
+  takeFocus?: boolean;
+  onFocusTaken?: () => void;
 }
 
 export interface HistoryState {

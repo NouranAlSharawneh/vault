@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useId, useRef } from "react";
 import { Button, Card } from "@/components/ui";
 import { NEW_REPO_PATH, TOKEN_SETTINGS_PATH } from "@/data/onboarding.data";
 import { api, fire } from "@/lib/api";
@@ -9,6 +9,7 @@ import type { TokenFormProps } from "./token-form.types";
 export function TokenForm({ onBack }: TokenFormProps) {
   const { token, setToken, busy, error, submit, canSubmit } = useTokenSignIn();
   const ref = useRef<HTMLInputElement>(null);
+  const errorId = useId();
 
   useEffect(() => ref.current?.focus(), []);
 
@@ -53,13 +54,20 @@ export function TokenForm({ onBack }: TokenFormProps) {
         ref={ref}
         type="password"
         className="input mt-6 font-mono text-xs"
+        aria-label="GitHub token"
+        aria-invalid={!!error}
+        aria-describedby={error ? errorId : undefined}
         placeholder="github_pat_…"
         value={token}
         onChange={(e) => setToken(e.target.value)}
         onKeyDown={(e) => e.key === "Enter" && void submit()}
         spellCheck={false}
       />
-      {error && <div className="mt-2 text-xs text-cherry">{error}</div>}
+      {error && (
+        <div id={errorId} role="alert" className="mt-2 text-xs text-cherry">
+          {error}
+        </div>
+      )}
       <StepFooter onBack={onBack}>
         <Button
           variant="primary"

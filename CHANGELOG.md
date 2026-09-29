@@ -71,6 +71,13 @@ To release: add a section for the new version here, run `npm run release -- <pat
 - The editor's labels, text, find bar, metadata and footer start on one column, and the preview's first line sits level with the editor's. "last used" appears only on a new document's project.
 - Keys drawn on a button take the button's colour, and a dark key stays dark wherever it is.
 - Settings leaves room to scroll the Danger zone clear of a toast, and its nested rows no longer look like holes in the card.
+- **Toasts wait while you read them.** Resting the pointer on one, or tabbing to its Undo, stops every toast's clock; each gets at least two more seconds once you leave.
+- **Focus lands where you are going.** A document opened from ⌘K or a link takes focus, so Space and Page Down read on; History opens on its selected commit (↑/↓ move through the commits) and hands focus back when it closes; Settings arrives on its heading; each setup step arrives on its title; and coming back to the library puts you in the document list.
+- **⌘Y works straight after moving through the list.** Pressed while the next document was still loading, it did nothing.
+- **Screen readers hear what changes:** the list's name and count as filters change, how many results ⌘K found, "Saved" after ⌘S, the new-project and "last used" hints, and a setup progress bar that says how far it has got.
+- **Every field has a name that matches its label:** Project, From and Tags are real labels (a click focuses the field), settings rows name and describe their controls, the push delay is called what it says on screen, and the token and new-repo fields point at their errors. The new-repo name is no longer hidden inside a radio button, where assistive tech could skip it.
+- Settings groups, sidebar sections and the list title are headings, so you can jump between them. The logo is no longer read out twice beside the wordmark.
+- The reader, a conflict's two versions and a commit's diff can be scrolled from the keyboard, with a visible focus ring. The sort menu is a full-size target, and removing a tag keeps focus in the tags field.
 
 ### Changed
 

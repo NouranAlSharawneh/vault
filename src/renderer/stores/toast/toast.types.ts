@@ -19,4 +19,8 @@ export interface ToastState {
   show: (message: string, action?: ToastAction) => number;
   /** Take one toast down, or every toast with no id. */
   dismiss: (id?: number) => void;
+  /** Stop every clock while someone is reading or reaching a toast (pointer or focus on
+   *  the stack); `release` starts them again. */
+  hold: () => void;
+  release: () => void;
 }

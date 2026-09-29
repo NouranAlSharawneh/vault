@@ -1,5 +1,6 @@
 import { ArrowLeft, FolderOpen, RefreshCw, Trash2 } from "lucide-react";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
+import { usePageArrival } from "@/app/hooks/use-page-arrival.hook";
 import { Button, Empty, PathText, SettingGroup } from "@/components/ui";
 import { isEditableTarget, plural, shortPath } from "@/helpers";
 import { api, fire, rescanVault } from "@/lib/api";
@@ -19,6 +20,8 @@ export function Settings() {
   const s = useSettings();
   const config = s.config;
   const { back } = s;
+  const heading = useRef<HTMLHeadingElement>(null);
+  usePageArrival("Settings", heading);
   // Esc or ⌘[ goes back, the way every other page-like view on a Mac does. Not from a
   // field or an open select, where Escape already means something; the shortcut
   // recorder keeps its own Escape.
@@ -66,12 +69,19 @@ export function Settings() {
         <div className="mx-auto flex max-w-150 flex-col gap-7 pt-6 pb-24">
           {/* The header gets more room below it than the groups get between them, so it
               reads as the page's title rather than the first item in the list. */}
-          <header className="mb-3 flex flex-col gap-1">
-            <h1 className="font-serif text-4xl font-medium tracking-tight text-ink">Settings</h1>
+          {/* A div, not a second <header>: two banner landmarks on one page. */}
+          <div className="mb-3 flex flex-col gap-1">
+            <h1
+              ref={heading}
+              tabIndex={-1}
+              className="font-serif text-4xl font-medium tracking-tight text-ink outline-none"
+            >
+              Settings
+            </h1>
             <p className="text-md text-ink-3">
               How Marasca captures, syncs and stores your documents.
             </p>
-          </header>
+          </div>
 
           <SettingGroup title="Capture">
             <SettingRow

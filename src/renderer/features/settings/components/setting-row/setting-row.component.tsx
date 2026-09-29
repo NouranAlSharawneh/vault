@@ -1,3 +1,4 @@
+import { useId } from "react";
 import { cx } from "@/helpers";
 import type { SettingRowProps } from "./setting-row.types";
 
@@ -14,8 +15,15 @@ export function SettingRow({
   nested,
   children,
 }: SettingRowProps) {
+  const id = useId();
+
+  // A named group: moving onto a row's control, a screen reader says which setting it
+  // belongs to and reads its explanation. The label was a plain div, tied to nothing.
   return (
     <div
+      role="group"
+      aria-labelledby={`${id}-label`}
+      aria-describedby={description ? `${id}-description` : undefined}
       className={cx(
         "flex items-center justify-between gap-5 pr-3.5",
         // Half the page's tint: a full paper-2 read as a hole through the card to the page.
@@ -25,7 +33,7 @@ export function SettingRow({
       <div className="flex min-w-0 items-center gap-2.5">
         {leading}
         <div className="flex min-w-0 flex-col">
-          <div className={cx("text-base text-ink", !nested && "font-medium")}>
+          <div id={`${id}-label`} className={cx("text-base text-ink", !nested && "font-medium")}>
             {label}
             {count !== undefined && (
               <span className="ml-1.5 rounded-xs bg-paper-3 px-1.5 font-mono text-xs font-normal text-ink-3">
@@ -33,7 +41,11 @@ export function SettingRow({
               </span>
             )}
           </div>
-          {description && <div className="min-w-0 text-sm text-ink-3">{description}</div>}
+          {description && (
+            <div id={`${id}-description`} className="min-w-0 text-sm text-ink-3">
+              {description}
+            </div>
+          )}
         </div>
       </div>
       {children && <div className="flex shrink-0 items-center gap-1.5">{children}</div>}

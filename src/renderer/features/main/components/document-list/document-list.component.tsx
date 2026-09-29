@@ -107,6 +107,7 @@ export function DocumentList({
           ? {
               role: "listbox",
               "aria-label": title,
+              "data-doc-list": true,
               tabIndex: 0,
               "aria-activedescendant": selected ? rowId(selected) : undefined,
               onKeyDown,
