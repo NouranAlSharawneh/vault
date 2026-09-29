@@ -2,13 +2,17 @@ import { RotateCcw, X } from "lucide-react";
 import { Button, Empty, ListRow, SectionLabel } from "@/components/ui";
 import { cx, diffStat, parseUnifiedDiff } from "@/helpers";
 import { fire } from "@/lib/api";
+import { relativeTime } from "@shared/helpers";
 import type { DiffHunk } from "@shared/types";
+import { useNow } from "../../hooks/use-now.hook";
 import type { HistoryDrawerProps } from "./history-drawer.types";
 import { useDocHistory } from "./hooks/use-doc-history.hook";
 
 /** ⌘Y: every commit that touched this document, what each changed, and a way back. */
 export function HistoryDrawer({ path, onClose, onRestored }: HistoryDrawerProps) {
   const h = useDocHistory(path, onRestored);
+  // Worked out here against a clock that moves: said once by main, "just now" stayed.
+  const now = useNow();
   const hunks = h.diff ? parseUnifiedDiff(h.diff) : [];
   const stat = diffStat(hunks);
   const newest = h.commits[0]?.sha;
@@ -25,7 +29,7 @@ export function HistoryDrawer({ path, onClose, onRestored }: HistoryDrawerProps)
           them carries `leading-none`: a line box reserves room for descenders, so text
           that happens to have none — an all-caps label, a commit sha — floats above the
           band's middle and leans away from the icon or button beside it. */}
-      <header className="flex h-9 shrink-0 items-center justify-between gap-2 px-4">
+      <header className="flex h-11 shrink-0 items-center justify-between gap-2 px-4">
         <SectionLabel className="leading-none">History</SectionLabel>
         <Button
           variant="ghost"
@@ -57,8 +61,11 @@ export function HistoryDrawer({ path, onClose, onRestored }: HistoryDrawerProps)
               <li key={c.sha}>
                 <ListRow selected={c.sha === h.selected} onClick={() => h.select(c.sha)}>
                   <span className="min-w-0 flex-1 truncate leading-none">{c.message}</span>
-                  <span className="ml-auto shrink-0 font-mono text-2xs leading-none text-ink-4">
-                    {c.relative}
+                  <span
+                    className="ml-auto shrink-0 font-mono text-2xs leading-none text-ink-4"
+                    title={new Date(c.date).toLocaleString()}
+                  >
+                    {relativeTime(c.date, now)}
                   </span>
                 </ListRow>
               </li>
@@ -90,7 +97,11 @@ export function HistoryDrawer({ path, onClose, onRestored }: HistoryDrawerProps)
           </div>
 
           <div className="min-h-0 flex-1 overflow-auto">
-            {h.diff === null ? (
+            {h.diffError ? (
+              <div className="p-4 text-xs text-cherry">
+                Couldn’t show what this commit changed: {h.diffError}
+              </div>
+            ) : h.diff === null ? (
               <div className="p-4 text-xs text-ink-4">Loading diff…</div>
             ) : !hunks.length ? (
               <div className="p-4 text-xs text-ink-4">
@@ -100,7 +111,10 @@ export function HistoryDrawer({ path, onClose, onRestored }: HistoryDrawerProps)
               hunks.map((hunk, i) => (
                 <div key={i}>
                   <div className="flex h-5.5 items-center bg-paper-3/60 px-4 font-mono text-2xs leading-none text-ink-4">
-                    {hunk.heading || lineRange(hunk)}
+                    {/* git's own heading is the nearest line that looks like a function —
+                        in a document that's "flowchart LR" as often as a section. Only a
+                        markdown heading says where you are. */}
+                    {hunk.heading?.startsWith("#") ? hunk.heading : lineRange(hunk)}
                   </div>
                   <pre className="m-0 rounded-none border-0 bg-transparent p-0 font-mono text-xs leading-relaxed">
                     {hunk.lines.map((line, j) => (

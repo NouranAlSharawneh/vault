@@ -11,7 +11,7 @@ import {
   Upload,
   type LucideIcon,
 } from "lucide-react";
-import { useEffect, useId, useMemo, useRef } from "react";
+import { useEffect, useId, useLayoutEffect, useMemo, useRef } from "react";
 import { Chip, DialogShell, Kbd, ListRow } from "@/components/ui";
 import type { PaletteActionKey } from "@/data/palette.data";
 import { PALETTE_HINTS } from "@/data/palette.data";
@@ -44,6 +44,7 @@ export function CommandPalette({
 }: CommandPaletteProps) {
   const p = useCommandPalette(onOpenDoc, onClose, onTrashDoc, onReviewConflicts, trashTitle);
   const input = useRef<HTMLInputElement>(null);
+  const rows = useRef(new Map<number, HTMLElement>());
 
   // Arrows and Enter are the palette's whole interaction, and they used to live on the
   // input alone — so clicking a group heading or the preview blurred it and the palette
@@ -64,6 +65,12 @@ export function CommandPalette({
   }, [p]);
 
   const activeDoc = p.active && p.active.kind !== "action" ? p.active.doc : null;
+  const activeRow = p.flat.length ? Math.min(p.cursor, p.flat.length - 1) : -1;
+  // The highlighted row stays in view: arrowing past the visible rows left it off-screen.
+  useLayoutEffect(() => {
+    if (activeRow < 0) return;
+    rows.current.get(activeRow)?.scrollIntoView({ block: "nearest" });
+  }, [activeRow]);
   // Focus stays in the input; the highlighted row is announced through
   // aria-activedescendant. Clamped the same way `active` is, so what is announced (and
   // highlighted) is what Enter opens.
@@ -96,7 +103,14 @@ export function CommandPalette({
           placeholder="Search titles, tags and text…"
           value={p.query}
           onChange={(e) => p.setQuery(e.target.value)}
-          onKeyDown={p.onKeyDown}
+          onKeyDown={(e) =>
+            p.onKeyDown({
+              key: e.key,
+              preventDefault: () => e.preventDefault(),
+              isComposing: e.nativeEvent.isComposing,
+              keyCode: e.keyCode,
+            })
+          }
           aria-label="search"
           role="combobox"
           aria-autocomplete="list"
@@ -142,10 +156,15 @@ export function CommandPalette({
                     return (
                       <ListRow
                         id={`${listId}-${i}`}
+                        ref={(el: HTMLButtonElement | null) => {
+                          if (el) rows.current.set(i, el);
+                          else rows.current.delete(i);
+                        }}
                         kind="palette"
                         key={itemKey(item)}
                         selected={selected}
-                        onMouseEnter={() => p.setCursor(i)}
+                        // Moves, not enters: rows scrolling under a still pointer stole the cursor.
+                        onMouseMove={() => i !== activeIndex && p.setCursor(i)}
                         onClick={() => p.choose(item)}
                       >
                         <Icon size={13} className="mt-0.5 shrink-0 text-overlay-ink-3" />

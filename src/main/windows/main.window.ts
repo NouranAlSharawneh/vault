@@ -40,11 +40,26 @@ export function openMainWindow(route?: string): BrowserWindow {
   return mainWin;
 }
 
-/** Bring the main window forward with one document selected. */
+let revealSeq = 0;
+/** The reveal the library hasn't picked up yet. See `takeReveal`. */
+let pendingReveal: DocReveal | null = null;
+
+/**
+ * Bring the main window forward with one document selected. The reveal is kept until the
+ * library takes it, and also sent: a window that is already showing the library hears it
+ * straight away; one still booting asks for it when it mounts.
+ */
 export function revealDoc(path: string, saved?: SavedNotice): void {
   const win = openMainWindow("main");
-  const reveal: DocReveal = saved ? { path, saved } : { path };
-  const send = () => win.webContents.send("doc:reveal", reveal);
-  if (win.webContents.isLoading()) win.webContents.once("did-finish-load", send);
-  else send();
+  const reveal: DocReveal = saved ? { id: ++revealSeq, path, saved } : { id: ++revealSeq, path };
+  pendingReveal = reveal;
+  if (!win.webContents.isLoading()) win.webContents.send("doc:reveal", reveal);
+}
+
+/** Hand the waiting reveal over, once. */
+export function takeReveal(): DocReveal | null {
+  const reveal = pendingReveal;
+  pendingReveal = null;
+
+  return reveal;
 }

@@ -1,5 +1,5 @@
 export { broadcast } from "./broadcast";
-export { getMainWindow, openMainWindow, revealDoc } from "./main.window";
+export { getMainWindow, openMainWindow, revealDoc, takeReveal } from "./main.window";
 export {
   openEditorWindow,
   editorWindowCount,

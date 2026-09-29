@@ -157,6 +157,8 @@ export interface SavedNotice {
 
 /** Select a document in the main window; `saved` when an editor save is why. */
 export interface DocReveal {
+  /** Counts up per reveal, so the event and the pull for the same one are handled once. */
+  id: number;
   path: string;
   saved?: SavedNotice;
 }

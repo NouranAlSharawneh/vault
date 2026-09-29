@@ -4,6 +4,10 @@ import { describe, expect, it, vi } from "vitest";
 import { DocumentList } from "@/features/main/components/document-list/document-list.component";
 
 const props = {
+  collection: "all" as const,
+  project: null,
+  scrollKey: "k",
+  onOpen: vi.fn(),
   docs: [],
   selected: null,
   onSelect: vi.fn(),
@@ -18,15 +22,21 @@ const props = {
 describe("an empty document list", () => {
   it("does not blame a filter that is not there", () => {
     // Starred with nothing starred used to read "No documents match this filter."
-    render(<DocumentList {...props} title="Starred" />);
+    render(<DocumentList {...props} title="Starred" collection="starred" />);
     expect(screen.getByText("Nothing here yet")).toBeTruthy();
     expect(screen.getByText(/Star a document from the reader/)).toBeTruthy();
     expect(screen.queryByText(/match this filter/)).toBeNull();
   });
 
-  it("tells a new vault what to do instead", () => {
-    render(<DocumentList {...props} title="All documents" />);
-    expect(screen.getByText(/Capture something with the hotkey/)).toBeTruthy();
+  it("tells a new vault what to do instead, naming the shortcut", () => {
+    render(<DocumentList {...props} title="All documents" hotkey="Control+Alt+V" />);
+    expect(screen.getByText(/press (⌃⌥V|Ctrl\+Alt\+V) to capture it/)).toBeTruthy();
+  });
+
+  it("gives a project called Recent a project's hint, not Recent's", () => {
+    // The hint was picked by the title, so the name of a project could borrow another's.
+    render(<DocumentList {...props} title="Recent" project="recent" />);
+    expect(screen.getByText("Nothing in Recent yet.")).toBeTruthy();
   });
 
   it("names the filter when there is one, and offers to clear it", () => {
@@ -35,6 +45,7 @@ describe("an empty document list", () => {
       <DocumentList
         {...props}
         title="Atlas API"
+        project="atlas-api"
         activeTags={["spec", "infra"]}
         onClearTags={onClearTags}
       />,
@@ -45,8 +56,9 @@ describe("an empty document list", () => {
     expect(onClearTags).toHaveBeenCalled();
   });
 
-  it("still lets a caller say something of its own", () => {
-    render(<DocumentList {...props} title="Trash" emptyHint="Deleted documents wait here." />);
-    expect(screen.getByText("Deleted documents wait here.")).toBeTruthy();
+  it("says the trash is empty in so many words", () => {
+    render(<DocumentList {...props} title="Trash" collection="trash" />);
+    expect(screen.getByText("Trash is empty")).toBeTruthy();
+    expect(screen.getByText(/Deleted documents wait here/)).toBeTruthy();
   });
 });

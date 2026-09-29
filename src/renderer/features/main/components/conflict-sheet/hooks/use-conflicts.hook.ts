@@ -16,7 +16,12 @@ export function useConflicts(): {
   useEffect(() => {
     let live = true;
     void api("conflicts:list")
-      .then((p) => live && setPairs(p))
+      .then((p) => {
+        if (!live) return;
+        // A failed load is not for good: the next one that works clears it.
+        setError(null);
+        setPairs(p);
+      })
       .catch((e: unknown) => live && setError(errorMessage(e)));
 
     return () => {

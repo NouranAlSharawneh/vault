@@ -54,8 +54,8 @@ describe("SyncBadge", () => {
     render(<SyncBadge />);
     expect(screen.getByText("checking…")).toBeTruthy();
     expect(screen.queryByText("pushed")).toBeNull();
-    // Nothing is known to be waiting, so there is nothing to push either.
-    await userEvent.click(screen.getByRole("button"));
+    // Nothing is known to be waiting, so there is nothing to push, and nothing to press.
+    expect(screen.queryByRole("button")).toBeNull();
     expect(invoke).not.toHaveBeenCalledWith("sync:pushNow");
   });
 
@@ -115,16 +115,35 @@ describe("SyncBadge", () => {
     vi.useRealTimers();
   });
 
-  it("pushes now when clicked in a pending state, not when already synced", async () => {
-    const { invoke } = mockMarascaApi();
+  it("pushes now when clicked in a pending state, and is plain text once synced", async () => {
+    const { invoke } = mockMarascaApi({ "sync:pushNow": status("synced") });
     useApp.setState({ config, sync: status("pending", 2) });
-    render(<SyncBadge />);
+    const { unmount } = render(<SyncBadge />);
     await userEvent.click(screen.getByRole("button"));
     expect(invoke).toHaveBeenCalledWith("sync:pushNow");
-    invoke.mockClear();
+    unmount();
+    // A green "pushed" that looked like a button and did nothing when pressed.
     useApp.setState({ sync: status("synced") });
     render(<SyncBadge />);
-    await userEvent.click(screen.getAllByRole("button")[1]);
+    expect(screen.queryByRole("button")).toBeNull();
+  });
+
+  it("pulls what is waiting on GitHub when that is all there is to do", async () => {
+    const { invoke } = mockMarascaApi({
+      "sync:pull": { conflicts: [], pulled: 2, failure: null },
+    });
+    useApp.setState({ config, sync: { ...status("synced"), behind: 2 } });
+    render(<SyncBadge />);
+    await userEvent.click(screen.getByRole("button"));
+    expect(invoke).toHaveBeenCalledWith("sync:pull");
+  });
+
+  it("sends a dead token to sign-in rather than pushing again", async () => {
+    const { invoke } = mockMarascaApi();
+    useApp.setState({ config, sync: { ...status("error", 1), failure: "bad-credentials" } });
+    render(<SyncBadge />);
+    await userEvent.click(screen.getByRole("button"));
+    expect(invoke).toHaveBeenCalledWith("window:openMain", "onboarding?signin");
     expect(invoke).not.toHaveBeenCalledWith("sync:pushNow");
   });
 });

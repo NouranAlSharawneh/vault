@@ -35,6 +35,22 @@ To release: add a section for the new version here, run `npm run release -- <pat
 - The update check tells "rate limited" from "offline", and knows a beta comes before its release.
 - Settings are written so a crash can't leave half a file, and an unreadable one is kept as `config.json.bak`.
 - The error screen can be dragged, copied from, and — off the main page — left for the vault.
+- **The document list works from the keyboard.** It is one Tab stop: ↑/↓, Home/End and Page Up/Down move through it, Enter (or a double-click) opens the document in the editor, and the selected row stays in view — including after ⌘K, a link or a capture selects something far down the list.
+- **Recent respects the tags you've turned on**, like every other list.
+- **Settings and back no longer resets the library.** The selected document, filter, sort, reader view and scroll are where you left them; sort and view are remembered across launches.
+- **Moving a document to the trash selects the next one** instead of leaving the reader blank, and the reader keeps the last document up while the next one loads rather than flashing "Select a document". A document that can't be read says so, with Try again.
+- **Trash has a place in the sidebar** once something is in it.
+- **The title bar can drag the window from anywhere empty**, and at the narrowest window size the search field shrinks instead of pushing New off the edge.
+- **The sync badge does what it says:** it pushes when something is waiting, pulls when GitHub has changes, sends a signed-out account to sign-in and a read-only repo to the repo picker, answers every click, and is plain text when there's nothing to do.
+- **⌘K:** the highlighted result stays in view, titles match as you type, filters apply before results are cut to the top hundred, Enter no longer fires mid-IME composition, and Esc no longer closes the conflict sheet underneath.
+- **Shortcuts don't reach the library while a dialog is open** — ⌘⌫ from the conflict sheet no longer trashes the document behind it.
+- **Resolving conflicts is one at a time**, errors clear themselves, and the sheet closes when the last pair is settled.
+- **Links in documents:** `other.md#section` opens at that section, `<a name>` anchors work, links inside trashed documents resolve, and Open on GitHub is encoded and waits until the document has been pushed.
+- **A playing video no longer restarts** whenever a push or a star updates the library.
+- History shows what a moved document's commit really changed, keeps working when one diff can't be read, and its times stay current.
+- Titles sort naturally (Doc 2 before Doc 10), the tag filter ignores case, more than 40 tags get "Show all", and the rail scrolls past its ninth project.
+- `created:2026-03-14` means that day in your time zone; `created:>1` no longer means 2001.
+- The split between list and reader can be moved with the arrow keys, remembers a double-click reset, and stays within sensible widths.
 
 ## [0.0.2] - 2026-09-28
 

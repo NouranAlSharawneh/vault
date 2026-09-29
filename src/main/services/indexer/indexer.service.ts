@@ -15,6 +15,7 @@ import {
 } from "@shared/constants";
 import { parseDoc } from "@shared/frontmatter";
 import { countWords } from "@shared/helpers";
+import { matchesFilters, parseQuery } from "@shared/query";
 import type {
   DocMeta,
   IndexSnapshot,
@@ -115,12 +116,25 @@ export class IndexerService extends EventEmitter {
     return [...this.docs.values()];
   }
 
-  /** Free-text search → ranked paths with a snippet from the body. */
-  query(text: string, limit = SEARCH_LIMIT): SearchHit[] {
+  /**
+   * Free-text search → ranked paths with a snippet from the body. `filters` (a query
+   * string: `project:… tags:…`) is applied before the limit, not after: filtering the top
+   * hundred afterwards dropped real matches whenever more than a hundred other documents
+   * also matched the words.
+   */
+  query(text: string, limit = SEARCH_LIMIT, filters?: string): SearchHit[] {
     if (!text.trim()) return [];
+    const parsed = filters ? parseQuery(filters) : null;
+    const filter = parsed
+      ? (r: { id: unknown }) => {
+          const meta = this.docs.get(r.id as string);
+
+          return !!meta && matchesFilters(meta, parsed);
+        }
+      : undefined;
 
     return this.search
-      .search(text)
+      .search(text, filter ? { filter } : undefined)
       .slice(0, limit)
       .map((r) => ({
         path: r.id as string,

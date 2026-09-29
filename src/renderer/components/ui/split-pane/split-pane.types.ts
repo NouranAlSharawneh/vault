@@ -7,6 +7,12 @@ export interface SplitPaneProps {
   defaultRatio?: number;
   minRatio?: number;
   maxRatio?: number;
+  /** The left pane never narrower than this, in pixels. */
+  minPx?: number;
+  /** …nor wider than this. */
+  maxPx?: number;
+  /** What the divider resizes, for a screen reader. */
+  label?: string;
   /** localStorage key; omit to not persist. */
   storageKey?: string;
   /** `line` draws a hairline; `gap` is an invisible 8px gutter that only shows while dragging. */

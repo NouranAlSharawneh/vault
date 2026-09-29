@@ -17,7 +17,13 @@ function scrollParent(el: Element): HTMLElement | null {
  */
 export function scrollToAnchor(root: Element, id: string, prefix: string): boolean {
   const withIds = [...root.querySelectorAll("[id]")];
-  const target = withIds.find((el) => el.id === prefix + id) ?? withIds.find((el) => el.id === id);
+  // `<a name="…">` is how older READMEs mark a spot; GitHub honours it, so this does too.
+  const named = [...root.querySelectorAll("a[name]")];
+  const target =
+    withIds.find((el) => el.id === prefix + id) ??
+    withIds.find((el) => el.id === id) ??
+    named.find((el) => el.getAttribute("name") === prefix + id) ??
+    named.find((el) => el.getAttribute("name") === id);
   if (!target) return false;
   const container = scrollParent(target);
   if (!container) return false;

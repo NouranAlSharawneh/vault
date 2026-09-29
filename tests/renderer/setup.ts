@@ -14,5 +14,11 @@ if (dom) {
   }
 }
 
+// jsdom lays nothing out, so it has no scrollIntoView; lists that keep their selection in
+// view call it on every move.
+if (typeof Element !== "undefined" && !Element.prototype.scrollIntoView) {
+  Element.prototype.scrollIntoView = () => undefined;
+}
+
 // Unmount rendered trees between tests so `screen` queries never see stale DOM.
 afterEach(cleanup);

@@ -16,7 +16,15 @@ import { isTrashed } from "./use-document.hook";
  * already gone (or raced the first commit) and failed into an error toast. `busy` names
  * the one in flight so its button can say so.
  */
-export function useTrashActions(doc: DocMeta | null, select: (path: string | null) => void) {
+export function useTrashActions(
+  doc: DocMeta | null,
+  select: (path: string | null) => void,
+  /**
+   * Where the selection goes once the document leaves the list: the next one down. It
+   * used to go nowhere — a blank reader after every ⌘⌫, and focus dropped on the page.
+   */
+  neighbour: (path: string) => string | null = () => null,
+) {
   const show = useToast((s) => s.show);
   const refreshTrash = useApp((s) => s.refreshTrash);
   const [busy, setBusy] = useState<TrashAction | null>(null);
@@ -44,8 +52,9 @@ export function useTrashActions(doc: DocMeta | null, select: (path: string | nul
   const trash = useCallback(async () => {
     if (!doc || isTrashed(doc.path)) return;
     await once("trash", async () => {
+      const next = neighbour(doc.path);
       const trashed = await api("doc:trash", doc.path);
-      select(null);
+      select(next);
       await refreshTrash();
       show(`Moved “${trashed.meta.title}” to trash`, {
         label: "Undo",
@@ -57,31 +66,33 @@ export function useTrashActions(doc: DocMeta | null, select: (path: string | nul
         },
       });
     });
-  }, [doc, once, select, refreshTrash, show]);
+  }, [doc, once, select, refreshTrash, show, neighbour]);
 
   const restore = useCallback(async () => {
     if (!doc || !isTrashed(doc.path)) return;
     await once("restore", async () => {
+      const next = neighbour(doc.path);
       const res = await api("trash:restore", doc.path);
-      select(null);
+      select(next);
       await refreshTrash();
       show(`Restored “${res.meta.title}”`);
     });
-  }, [doc, once, select, refreshTrash, show]);
+  }, [doc, once, select, refreshTrash, show, neighbour]);
 
   const purge = useCallback(async () => {
     if (!doc || !isTrashed(doc.path)) return;
     await once("purge", async () => {
+      const next = neighbour(doc.path);
       const { removed, assets } = await api("trash:purge", doc.path);
       // Main asks for confirmation first. Saying no has to leave everything as it was —
       // including the selection, which used to be cleared either way.
       if (!removed) return;
-      select(null);
+      select(next);
       await refreshTrash();
       const images = assets.length ? ` and ${plural(assets.length, "image")}` : "";
-      show(`Deleted “${doc.title}”${images} forever`);
+      show(`Deleted “${doc.title}”${images} from the vault`);
     });
-  }, [doc, once, select, refreshTrash, show]);
+  }, [doc, once, select, refreshTrash, show, neighbour]);
 
   return { trash, restore, purge, busy };
 }

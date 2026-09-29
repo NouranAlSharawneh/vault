@@ -16,7 +16,8 @@ describe("ListRow", () => {
         </>,
       );
       const on = screen.getByRole("button", { name: "on" });
-      expect(on.getAttribute("aria-current")).toBe("true");
+      // "page": these rows are navigation, and the selected one is where you are.
+      expect(on.getAttribute("aria-current")).toBe("page");
       expect(on.hasAttribute("aria-selected")).toBe(false);
       expect(screen.getByRole("button", { name: "off" }).hasAttribute("aria-current")).toBe(false);
     },

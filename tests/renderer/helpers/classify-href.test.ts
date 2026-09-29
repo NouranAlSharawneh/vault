@@ -15,13 +15,22 @@ describe("classifyHref", () => {
       kind: "doc",
       path: "atlas-api/specs/overview.md",
     });
+    // The #section travels with it, so the link opens where it points.
     expect(classifyHref("../notes/a%20b.md#usage", DOC)).toEqual({
       kind: "doc",
       path: "atlas-api/notes/a b.md",
+      hash: "usage",
     });
     expect(classifyHref("/research-log/log.MD", DOC)).toEqual({
       kind: "doc",
       path: "research-log/log.MD",
+    });
+  });
+
+  it("resolves a trashed doc's links against where it used to live", () => {
+    expect(classifyHref("overview.md", `.trash/${DOC}`)).toEqual({
+      kind: "doc",
+      path: "atlas-api/specs/overview.md",
     });
   });
 

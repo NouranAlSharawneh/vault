@@ -4,6 +4,8 @@ import type { DocContent, DocMeta } from "@shared/types";
 export interface LoadedDocument {
   path: string;
   doc: DocContent | null;
+  /** Why it couldn't be read, when it couldn't. */
+  error: string | null;
 }
 
 /** ⌘\ cycles full → rail → hidden. */

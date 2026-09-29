@@ -1,4 +1,4 @@
-import { memo } from "react";
+import { memo, useEffect, useMemo, useRef } from "react";
 import type { MouseEvent } from "react";
 import ReactMarkdown from "react-markdown";
 import type { Options } from "react-markdown";
@@ -11,6 +11,7 @@ import { remarkAlert } from "remark-github-blockquote-alert";
 import { MARKDOWN_ID_PREFIX, MARKDOWN_SANITIZE_SCHEMA } from "@/data/markdown.data";
 import { classifyHref, cx, scrollToAnchor } from "@/helpers";
 import { api, fire } from "@/lib/api";
+import { useToast } from "@/stores/toast";
 import { CodeBlock, PreBlock } from "../code-block/code-block.component";
 import { DocImage } from "../doc-image/doc-image.component";
 import type { MarkdownProps } from "./markdown.types";
@@ -42,44 +43,59 @@ export const Markdown = memo(function Markdown({
   className,
   onOpenDoc,
 }: MarkdownProps) {
-  const follow = (e: MouseEvent<HTMLAnchorElement>, href: string | undefined) => {
-    e.preventDefault();
-    if (!href) return;
-    const target = classifyHref(href, docPath);
-    switch (target.kind) {
-      case "anchor": {
-        const root = e.currentTarget.closest(".prose-doc");
-        if (root) scrollToAnchor(root, target.id, MARKDOWN_ID_PREFIX);
-        break;
+  // Read when a link is clicked, not built into the renderers below: a new callback every
+  // time the index changed made new `img` and `a` components, and React threw away every
+  // image and video in the document and built them again — a playing video restarted
+  // whenever a push landed.
+  const openDoc = useRef(onOpenDoc);
+  useEffect(() => {
+    openDoc.current = onOpenDoc;
+  });
+
+  const components = useMemo<NonNullable<Options["components"]>>(() => {
+    const follow = (e: MouseEvent<HTMLAnchorElement>, href: string | undefined) => {
+      e.preventDefault();
+      if (!href) return;
+      const say = useToast.getState().show;
+      const target = classifyHref(href, docPath);
+      switch (target.kind) {
+        case "anchor": {
+          const root = e.currentTarget.closest(".prose-doc");
+          if (root && !scrollToAnchor(root, target.id, MARKDOWN_ID_PREFIX))
+            say("That section isn’t in this document");
+          break;
+        }
+        case "doc":
+          if (openDoc.current) openDoc.current(target.path, target.hash);
+          break;
+        case "external":
+          fire(api("app:openExternal", target.url), "Couldn’t open that link");
+          break;
+        case "none":
+          // Silence read as a broken click.
+          say("Marasca follows links to documents and web pages — this one is neither");
+          break;
       }
-      case "doc":
-        onOpenDoc?.(target.path);
-        break;
-      case "external":
-        fire(api("app:openExternal", target.url), "Couldn’t open that link");
-        break;
-      case "none":
-        break;
-    }
-  };
+    };
+
+    return {
+      code: CodeBlock,
+      pre: PreBlock,
+      img: (props) => <DocImage {...props} docPath={docPath} />,
+      // Everything the sanitizer kept travels with the link: `id` gives a footnote's "back to
+      // text" somewhere to land, `aria-label` names that ↩ for a screen reader, `title` is
+      // the tooltip the author wrote, `name` is an old-style anchor.
+      a: ({ node: _node, href, children, ...rest }) => (
+        <a {...rest} href={href} onClick={(e) => follow(e, href)}>
+          {children}
+        </a>
+      ),
+    };
+  }, [docPath]);
 
   return (
-    <div className={cx("prose-doc", className)}>
-      <ReactMarkdown
-        remarkPlugins={REMARK}
-        rehypePlugins={REHYPE}
-        components={{
-          code: CodeBlock,
-          pre: PreBlock,
-          img: (props) => <DocImage {...props} docPath={docPath} />,
-          // `id` is kept so a footnote's "back to text" link has somewhere to land.
-          a: ({ href, id, children }) => (
-            <a href={href} id={id} onClick={(e) => follow(e, href)}>
-              {children}
-            </a>
-          ),
-        }}
-      >
+    <div className={cx("prose-doc", className)} dir="auto">
+      <ReactMarkdown remarkPlugins={REMARK} rehypePlugins={REHYPE} components={components}>
         {source}
       </ReactMarkdown>
     </div>

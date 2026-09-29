@@ -1,6 +1,7 @@
-import type { ButtonHTMLAttributes } from "react";
+import type { ButtonHTMLAttributes, Ref } from "react";
 
 export interface ListRowProps extends ButtonHTMLAttributes<HTMLButtonElement> {
+  ref?: Ref<HTMLButtonElement>;
   selected?: boolean;
   /**
    * nav — compact sidebar row · item — bordered list entry · option — radio-like row

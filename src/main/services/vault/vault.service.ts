@@ -463,8 +463,8 @@ export class VaultService extends EventEmitter {
 
   // ---- search ---------------------------------------------------------------------
 
-  search(text: string): SearchHit[] {
-    return this.index.query(text);
+  search(text: string, filters?: string): SearchHit[] {
+    return this.index.query(text, undefined, filters);
   }
 
   // ---- sync ------------------------------------------------------------------------

@@ -1,8 +1,8 @@
 import type { Collection, ReaderView, SortOrder } from "@/features/main/main.types";
 
 /**
- * Rows at the top of the sidebar. Trash is deliberately not one of them: it is reached from
- * Settings › Vault › Trash (`#main?trash`), so the sidebar stays about what you keep.
+ * Rows at the top of the sidebar. Trash is not one of them: it sits apart at the bottom,
+ * and only once something is in it, so the top stays about what you keep.
  */
 export interface CollectionData {
   key: Exclude<Collection, "trash">;
@@ -14,6 +14,9 @@ export const COLLECTIONS: CollectionData[] = [
   { key: "recent", label: "Recent" },
   { key: "starred", label: "Starred" },
 ];
+
+/** Tags the sidebar lists before offering "Show all". */
+export const SIDEBAR_TAG_LIMIT = 40;
 
 export const SORT_OPTIONS: { key: SortOrder; label: string }[] = [
   { key: "newest", label: "Newest" },

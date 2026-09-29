@@ -36,6 +36,7 @@ import {
   openMainWindow,
   resizeCaptureWindow,
   revealDoc,
+  takeReveal,
   setEditorPath,
   takeEditorSeed,
   whileCaptureDialogOpen,
@@ -298,7 +299,7 @@ export function registerIpcHandlers(): void {
   handle("views:save", (v) => session.requireVault().saveView(v));
   handle("views:delete", (n) => session.requireVault().deleteView(n));
   handle("templates:list", () => session.requireVault().listTemplates());
-  handle("search:query", (text) => session.vault?.search(text) ?? []);
+  handle("search:query", (text, filters) => session.vault?.search(text, filters) ?? []);
 
   // ---- capture
   handle("assets:resolve", (baseDir, refs) =>
@@ -333,6 +334,7 @@ export function registerIpcHandlers(): void {
   // ---- windows
   handle("window:openMain", (route) => void openMainWindow(route));
   handle("window:revealDoc", (path, saved) => revealDoc(path, saved));
+  handle("window:takeReveal", () => takeReveal());
   handleFrom("window:setEdited", (sender, edited) => {
     if (IS_MAC) sender?.setDocumentEdited(edited);
   });

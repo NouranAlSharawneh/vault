@@ -24,22 +24,29 @@ interface Handlers {
 const ECHO_MS = 300;
 
 /** Menu shortcuts routed to the main window (⌘K search, ⌘N new, ⌘⌫ trash, ⌘, settings). */
-export function useMainShortcuts({ onSearch, onTrash, onSettings, onHistory }: Handlers) {
+export function useMainShortcuts(handlers: Handlers) {
   const lastFired = useRef<Partial<Record<Shortcut, number>>>({});
+  // The latest handlers, read when a key arrives. Depending on them re-registered both
+  // listeners on every render of the library.
+  const latest = useRef(handlers);
+  useEffect(() => {
+    latest.current = handlers;
+  });
 
-  const dispatch = useCallback(
-    (shortcut: Shortcut) => {
-      const now = Date.now();
-      if (now - (lastFired.current[shortcut] ?? 0) < ECHO_MS) return;
-      lastFired.current[shortcut] = now;
-      if (shortcut === "search") onSearch();
-      if (shortcut === "new") fire(api("window:openEditor"));
-      if (shortcut === "trash") onTrash();
-      if (shortcut === "settings") onSettings();
-      if (shortcut === "history") onHistory();
-    },
-    [onSearch, onTrash, onSettings, onHistory],
-  );
+  const dispatch = useCallback((shortcut: Shortcut) => {
+    // Nothing reaches the library while a dialog is up: ⌘⌫ with focus on a button in the
+    // conflict sheet trashed the document behind it, and ⌘K stacked the palette on top.
+    if (document.querySelector('[role="dialog"][aria-modal="true"]')) return;
+    const now = Date.now();
+    if (now - (lastFired.current[shortcut] ?? 0) < ECHO_MS) return;
+    lastFired.current[shortcut] = now;
+    const h = latest.current;
+    if (shortcut === "search") h.onSearch();
+    if (shortcut === "new") fire(api("window:openEditor"));
+    if (shortcut === "trash") h.onTrash();
+    if (shortcut === "settings") h.onSettings();
+    if (shortcut === "history") h.onHistory();
+  }, []);
 
   // The menu accelerator fires whatever has focus, so the menu path needs the same
   // "are you typing?" check the keydown path makes: ⌘⌫ in the tag filter or the palette

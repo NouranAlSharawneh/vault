@@ -6,13 +6,12 @@ import {
   SEARCH_DEBOUNCE_MS,
 } from "@/constants";
 import { PALETTE_ACTIONS, type PaletteActionKey } from "@/data/palette.data";
-import { PULL_FAILURE_MESSAGE, PUSH_FAILURE_MESSAGE } from "@/data/sync.data";
-import { plural } from "@/helpers";
+import { describePull, describePush, plural } from "@/helpers";
 import { api, fire, rescanVault } from "@/lib/api";
 import { useApp } from "@/stores/app";
 import { useToast } from "@/stores/toast";
 import { matchesFilters, parseQuery } from "@shared/query";
-import type { DocMeta, PullResult, SearchHit, SyncStatus } from "@shared/types";
+import type { DocMeta, SearchHit, SyncStatus } from "@shared/types";
 import type { PaletteGroup, PaletteItem } from "../command-palette.types";
 
 interface ActionContext {
@@ -67,30 +66,58 @@ function availableActions({
   );
 }
 
-/** What a pull asked for by hand did. It used to finish in silence, whatever happened. */
-function describePull({ pulled, conflicts, failure }: PullResult): string {
-  if (failure) return PULL_FAILURE_MESSAGE[failure];
-  const base =
-    pulled > 0
-      ? `Pulled ${plural(pulled, "change")} from GitHub`
-      : "Already up to date with GitHub";
+/**
+ * Words typed: title and tag hits, then hits in the text. Until the search has answered
+ * these words, titles are matched from the index, so something useful shows at once.
+ */
+function textGroups(
+  docs: DocMeta[],
+  text: string,
+  hits: SearchHit[],
+  answered: boolean,
+  passes: (d: DocMeta) => boolean,
+): PaletteGroup[] {
+  const byPath = new Map(docs.map((d) => [d.path, d]));
+  const titleHits: PaletteItem[] = [];
+  const textHits: PaletteItem[] = [];
+  const q = text.toLowerCase();
+  if (!answered)
+    for (const d of docs) {
+      if (titleHits.length >= PALETTE_MAX_DOCS) break;
+      if (passes(d) && d.title.toLowerCase().includes(q)) titleHits.push({ kind: "doc", doc: d });
+    }
+  for (const h of hits) {
+    const d = byPath.get(h.path);
+    if (!d || !passes(d)) continue;
+    if (d.title.toLowerCase().includes(q) || d.tags.some((t) => t.includes(q)))
+      titleHits.push({ kind: "doc", doc: d });
+    else if (h.snippet) textHits.push({ kind: "text", doc: d, snippet: h.snippet });
+    else titleHits.push({ kind: "doc", doc: d });
+  }
+  const out: PaletteGroup[] = [];
+  if (titleHits.length)
+    out.push({ title: "Documents", items: titleHits.slice(0, PALETTE_MAX_DOCS) });
+  if (textHits.length) out.push({ title: "In text", items: textHits.slice(0, PALETTE_MAX_TEXT) });
 
-  return conflicts.length ? `${base} · ${plural(conflicts.length, "document")} to review` : base;
+  return out;
 }
 
-/**
- * After "Push pending docs". The badge changes colour either way, but the palette has
- * closed and a colour is easy to miss; the action you asked for should answer.
- */
-function describePush(waiting: number, { state, failure, ahead }: SyncStatus): string {
-  if (failure) return PUSH_FAILURE_MESSAGE[failure];
-  if (state === "offline") return PUSH_FAILURE_MESSAGE.offline;
-  if (state === "pushing") return "Already pushing to GitHub";
-  if (ahead > 0) return `${plural(ahead, "commit")} still waiting to push`;
+/** Filters only (e.g. `tags:spec is:starred`) or nothing typed → newest matching docs. */
+function filterGroups(
+  docs: DocMeta[],
+  searching: boolean,
+  passes: (d: DocMeta) => boolean,
+): PaletteGroup[] {
+  const filtered = docs.filter(passes).slice(0, searching ? PALETTE_MAX_DOCS : PALETTE_MAX_RECENT);
 
-  return waiting > 0
-    ? `Pushed ${plural(waiting, "commit")} to GitHub`
-    : "Nothing to push — GitHub is up to date";
+  return filtered.length
+    ? [
+        {
+          title: searching ? "Matching" : "Recent",
+          items: filtered.map((doc) => ({ kind: "doc" as const, doc })),
+        },
+      ]
+    : [];
 }
 
 /** Query → grouped results (documents · in text · actions) with keyboard navigation. */
@@ -106,7 +133,12 @@ export function useCommandPalette(
   const hasRemote = useApp((s) => !!s.config?.remote);
   const show = useToast((s) => s.show);
   const [query, setQuery] = useState("");
-  const [hits, setHits] = useState<SearchHit[]>([]);
+  // Hits remember the query they answer. Grouped against newer text, the last answer
+  // showed old snippets under new words for a moment — and Enter could open one of them.
+  const [answered, setAnswered] = useState<{ query: string; hits: SearchHit[] }>({
+    query: "",
+    hits: [],
+  });
   const [cursor, setCursor] = useState(0);
 
   const text = parseQuery(query).text;
@@ -115,55 +147,33 @@ export function useCommandPalette(
     if (!text) return;
     let cancelled = false;
     const t = setTimeout(() => {
-      api("search:query", text)
-        .then((h) => !cancelled && setHits(h))
-        .catch(() => !cancelled && setHits([]));
+      api("search:query", text, query)
+        .then((h) => !cancelled && setAnswered({ query, hits: h }))
+        .catch(() => !cancelled && setAnswered({ query, hits: [] }));
     }, SEARCH_DEBOUNCE_MS);
 
     return () => {
       cancelled = true;
       clearTimeout(t);
     };
-  }, [text]);
+  }, [text, query]);
 
-  // Hits belong to the last text search; with no text the structured filters alone drive the list.
-  const liveHits = useMemo(() => (text ? hits : []), [text, hits]);
+  // With no text the structured filters alone drive the list. Until the search answers,
+  // titles are matched here, so something useful shows at once instead of "No matches".
+  const current = answered.query === query;
+  const liveHits = useMemo(() => (text && current ? answered.hits : []), [text, current, answered]);
 
   const groups = useMemo<PaletteGroup[]>(() => {
     const docs = index?.docs ?? [];
-    const byPath = new Map(docs.map((d) => [d.path, d]));
     const parsed = parseQuery(query);
     const passes = (d: DocMeta) => matchesFilters(d, parsed);
     const out: PaletteGroup[] = [];
 
-    if (parsed.text) {
-      const titleHits: PaletteItem[] = [];
-      const textHits: PaletteItem[] = [];
-      const q = parsed.text.toLowerCase();
-      for (const h of liveHits) {
-        const d = byPath.get(h.path);
-        if (!d || !passes(d)) continue;
-        if (d.title.toLowerCase().includes(q) || d.tags.some((t) => t.includes(q)))
-          titleHits.push({ kind: "doc", doc: d });
-        else if (h.snippet) textHits.push({ kind: "text", doc: d, snippet: h.snippet });
-        else titleHits.push({ kind: "doc", doc: d });
-      }
-      if (titleHits.length)
-        out.push({ title: "Documents", items: titleHits.slice(0, PALETTE_MAX_DOCS) });
-      if (textHits.length)
-        out.push({ title: "In text", items: textHits.slice(0, PALETTE_MAX_TEXT) });
-    } else {
-      // Filters only (e.g. `tags:spec is:starred`) or empty → newest matching docs.
-      const searching = !!query.trim();
-      const filtered = docs
-        .filter(passes)
-        .slice(0, searching ? PALETTE_MAX_DOCS : PALETTE_MAX_RECENT);
-      if (filtered.length)
-        out.push({
-          title: searching ? "Matching" : "Recent",
-          items: filtered.map((doc) => ({ kind: "doc", doc })),
-        });
-    }
+    out.push(
+      ...(parsed.text
+        ? textGroups(docs, parsed.text, liveHits, current, passes)
+        : filterGroups(docs, !!query.trim(), passes)),
+    );
 
     const visibleActions = availableActions({
       sync,
@@ -175,10 +185,11 @@ export function useCommandPalette(
     if (visibleActions.length) out.push({ title: "Actions", items: visibleActions });
 
     return out;
-  }, [index, liveHits, query, sync, hasRemote, onTrashDoc, trashTitle]);
+  }, [index, liveHits, current, query, sync, hasRemote, onTrashDoc, trashTitle]);
 
   const flat = useMemo(() => groups.flatMap((g) => g.items), [groups]);
-  const active = flat[Math.min(cursor, Math.max(0, flat.length - 1))] ?? null;
+  const at = Math.min(cursor, Math.max(0, flat.length - 1));
+  const active = flat[at] ?? null;
 
   const updateQuery = useCallback((q: string) => {
     setQuery(q);
@@ -247,19 +258,26 @@ export function useCommandPalette(
     [onOpenDoc, onClose, runAction],
   );
 
-  /** Takes a DOM event or React's wrapper: it only ever reads `key` and prevents default. */
-  const onKeyDown = (e: Pick<KeyboardEvent, "key" | "preventDefault">) => {
+  /**
+   * Takes a DOM event or React's wrapper. Moves from the row on screen — the cursor can
+   * point past a list that shrank under it, and stepping from there skipped or stuck.
+   * Escape is the dialog's to handle: handled here as well, one press closed the palette
+   * and the sheet beneath it.
+   */
+  const onKeyDown = (
+    e: Pick<KeyboardEvent, "key" | "preventDefault"> & { isComposing?: boolean; keyCode?: number },
+  ) => {
+    // Enter ending an IME composition is part of typing, not a choice.
+    if (e.isComposing || e.keyCode === 229) return;
     if (e.key === "ArrowDown") {
       e.preventDefault();
-      setCursor((c) => (flat.length ? (c + 1) % flat.length : 0));
+      setCursor(flat.length ? (at + 1) % flat.length : 0);
     } else if (e.key === "ArrowUp") {
       e.preventDefault();
-      setCursor((c) => (flat.length ? (c - 1 + flat.length) % flat.length : 0));
+      setCursor(flat.length ? (at - 1 + flat.length) % flat.length : 0);
     } else if (e.key === "Enter") {
       e.preventDefault();
       choose(active);
-    } else if (e.key === "Escape") {
-      onClose();
     }
   };
 

@@ -24,6 +24,10 @@ const edited: DocMeta = {
 };
 const props = {
   title: "Recent",
+  collection: "recent" as const,
+  project: null,
+  scrollKey: "k",
+  onOpen: vi.fn(),
   docs: [edited],
   selected: null,
   onSelect: vi.fn(),

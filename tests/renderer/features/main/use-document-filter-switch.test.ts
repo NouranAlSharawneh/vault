@@ -1,11 +1,12 @@
 // @vitest-environment jsdom
 import { act, renderHook } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   reconcileSelection,
   touchedAt,
   useDocumentFilter,
 } from "@/features/main/hooks/use-document-filter.hook";
+import { initialLibrary, useLibrary } from "@/stores/library";
 import type { DocMeta, IndexSnapshot, TrashedDoc } from "@shared/types";
 
 const doc = (path: string, over: Partial<DocMeta> = {}): DocMeta => ({
@@ -45,6 +46,9 @@ const trash: TrashedDoc[] = [
     trashedAt: "2026-09-03T00:00:00Z",
   },
 ];
+
+// The filter lives in the library store now, so it outlives each test's hook.
+beforeEach(() => useLibrary.setState(initialLibrary()));
 
 describe("reconcileSelection", () => {
   const docs = [doc("x"), doc("y")];
@@ -103,10 +107,22 @@ describe("what the list shows alongside the docs", () => {
     expect(hook.result.current.activeTags).toEqual(["spec"]);
   });
 
-  it("dates Recent's rows by last touch, and nothing else's", () => {
+  it("dates Recent's rows by last touch, Trash's by when they were trashed", () => {
     const hook = renderHook(() => useDocumentFilter(index, trash));
     expect(hook.result.current.dateOf).toBeUndefined();
     act(() => hook.result.current.selectCollection("recent"));
     expect(hook.result.current.dateOf).toBe(touchedAt);
+    act(() => hook.result.current.selectCollection("trash"));
+    // The list is ordered by when things were trashed; the rows used to show created.
+    expect(hook.result.current.dateOf?.(trash[0].meta)).toBe(trash[0].trashedAt);
+  });
+
+  it("keeps the list it had across a trip to Settings", () => {
+    // The library unmounts while Settings is up; its filter used to go with it.
+    const first = renderHook(() => useDocumentFilter(index, trash));
+    act(() => first.result.current.selectProject("research-log"));
+    first.unmount();
+    const again = renderHook(() => useDocumentFilter(index, trash));
+    expect(again.result.current.filter.project).toBe("research-log");
   });
 });

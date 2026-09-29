@@ -56,4 +56,24 @@ describe("query", () => {
   it("takes a source whatever case it was typed in", () => {
     expect(parseQuery("from:Claude", now).source).toEqual(["claude"]);
   });
+
+  it("reads a calendar date as a whole local day, and a bare one as that day", () => {
+    const q = parseQuery("created:2026-01-01", now);
+    expect(q.createdAfter).toBe(new Date(2026, 0, 1).getTime());
+    expect(q.createdBefore).toBe(new Date(2026, 0, 2).getTime() - 1);
+    // Written at 01:00 local on the first: inside, wherever the machine is.
+    const early = new Date(2026, 0, 1, 1).toISOString();
+    expect(matchesFilters(doc({ created: early }), q)).toBe(true);
+    expect(matchesFilters(doc({ created: early }), parseQuery("created:>=2026-01-01", now))).toBe(
+      true,
+    );
+    expect(matchesFilters(doc({ created: early }), parseQuery("created:>2026-01-01", now))).toBe(
+      false,
+    );
+  });
+
+  it("takes no date from a lone number", () => {
+    // `created:>1` used to parse as the year 2001.
+    expect(parseQuery("created:>1", now).createdAfter).toBeUndefined();
+  });
 });

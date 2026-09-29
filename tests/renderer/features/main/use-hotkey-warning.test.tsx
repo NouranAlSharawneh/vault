@@ -8,6 +8,7 @@ import { mockMarascaApi } from "../../helpers/mock-marasca-api";
 
 beforeEach(() => {
   useToast.getState().dismiss();
+  sessionStorage.clear();
 });
 
 describe("useHotkeyWarning", () => {
@@ -38,5 +39,19 @@ describe("useHotkeyWarning", () => {
       expect(useToast.getState().toasts).toEqual([]);
       unmount();
     }
+  });
+
+  it("says it once per window, not again on every return from Settings", async () => {
+    const { invoke } = mockMarascaApi({
+      "hotkey:status": { accelerator: "Control+Alt+V", active: false },
+    });
+    const first = renderHook(() => useHotkeyWarning(vi.fn()));
+    await vi.waitFor(() => expect(useToast.getState().toasts.length).toBe(1));
+    first.unmount();
+    invoke.mockClear();
+    renderHook(() => useHotkeyWarning(vi.fn()));
+    await act(async () => undefined);
+    expect(invoke).not.toHaveBeenCalledWith("hotkey:status");
+    expect(useToast.getState().toasts.length).toBe(1);
   });
 });
