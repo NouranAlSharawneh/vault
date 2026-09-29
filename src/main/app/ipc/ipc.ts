@@ -1,7 +1,7 @@
 import { existsSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
-import { app, BrowserWindow, dialog, ipcMain, shell } from "electron";
+import { app, BrowserWindow, dialog, ipcMain, Notification, shell } from "electron";
 import type { InvokeChannel, IpcInvoke } from "@shared/ipc";
 import type { DevicePollStatus } from "@shared/types";
 import { APP_REPO } from "../../data/menu.data";
@@ -15,6 +15,7 @@ import {
 } from "../../network/github";
 import { resolveAssets, stageImage } from "../../services/assets";
 import { readClipboard } from "../../services/capture/capture.service";
+import { notifyCaptureSaved } from "../../services/capture/notify-saved";
 import {
   currentGitStatus,
   installGitTools,
@@ -330,6 +331,21 @@ export function registerIpcHandlers(): void {
     if (!isCaptureVisible()) return;
     hideCaptureWindow("handoff");
     revealDoc(path);
+  });
+  handle("capture:saved", (path, title) => {
+    const notified = notifyCaptureSaved(path, title, {
+      Notification,
+      open: (p) => revealDoc(p),
+      undo: async (p) => {
+        await session.requireVault().trash(p);
+        notifyDocGone(p);
+      },
+    });
+    // Gone at once, focus back where the clip came from; the notification carries the
+    // news, and Open and Undo. Without notifications, the sheet flashes it as before.
+    if (notified) hideCaptureWindow("dismiss");
+
+    return notified;
   });
   handle("capture:resize", (height) => resizeCaptureWindow(height));
   handle("capture:openEditor", (draft) => {

@@ -1,5 +1,6 @@
+import { Plus } from "lucide-react";
 import { useId } from "react";
-import { SectionLabel } from "@/components/ui";
+import { Chip, SectionLabel } from "@/components/ui";
 import { ProjectCombobox } from "@/features/editor/components/project-combobox/project-combobox.component";
 import { SourceSelect } from "@/features/editor/components/source-select/source-select.component";
 import { TagInput } from "@/features/editor/components/tag-input/tag-input.component";
@@ -13,6 +14,9 @@ export function CaptureFields({
   tags,
   lastProject,
   detected,
+  shortcuts,
+  suggestedTags,
+  onAddTag,
 }: CaptureFieldsProps) {
   const id = useId();
 
@@ -30,6 +34,7 @@ export function CaptureFields({
           projects={projects}
           placement="below"
           hint={lastProject && form.project === lastProject ? "last used" : undefined}
+          shortcuts={shortcuts}
         />
       </div>
       <div>
@@ -56,6 +61,17 @@ export function CaptureFields({
           suggestions={tags}
           placement="below"
         />
+        {/* Tags the vault already has that this clip is about: one click each, instead of
+            typing them out — and remembering what they were called. */}
+        {suggestedTags.length > 0 && (
+          <div role="group" aria-label="Suggested tags" className="mt-1.5 flex flex-wrap gap-1">
+            {suggestedTags.map((tag) => (
+              <Chip key={tag} dark onClick={() => onAddTag(tag)} title={`Add #${tag}`}>
+                <Plus size={10} aria-hidden />#{tag}
+              </Chip>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

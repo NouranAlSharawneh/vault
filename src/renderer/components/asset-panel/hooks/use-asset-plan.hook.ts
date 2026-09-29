@@ -3,12 +3,22 @@ import { ASSET_RESOLVE_DEBOUNCE_MS } from "@/constants";
 import { api } from "@/lib/api";
 import { useApp } from "@/stores/app";
 import { ASSET_MAX_BYTES, ASSET_WARN_BYTES, INBOX_SLUG } from "@shared/constants";
-import { findAssetRefs, isPastedRef, projectSlug } from "@shared/helpers";
+import { findAssetRefs, hashText, isPastedRef, projectSlug } from "@shared/helpers";
 import type { AssetImport, AssetRef, AssetResolution } from "@shared/types";
 import type { AssetPlan, AssetPlanOptions } from "../asset-panel.types";
 
 /** How long a save waits for the images to be looked for before going on without them. */
 const SETTLE_WAIT_MS = 3000;
+/** Bodies whose folder and skipped images are remembered: the capture sheet's recent clips. */
+const CHOICES_KEPT = 20;
+const NO_OVERRIDES: Record<string, boolean> = {};
+
+/** `record` with `key` set to `value`, newest last, the oldest dropped past the limit. */
+function keep<T>(record: Record<string, T>, key: string, value: T): Record<string, T> {
+  const rest = Object.entries(record).filter(([k]) => k !== key);
+
+  return Object.fromEntries([...rest, [key, value]].slice(-CHOICES_KEPT));
+}
 
 /**
  * Relative images in a body, where they are on disk, and what to copy on save.
@@ -17,18 +27,19 @@ const SETTLE_WAIT_MS = 3000;
  * not the first step, and a hand-picked folder is remembered for the project.
  *
  * Everything chosen here belongs to one body. The capture sheet is never unmounted, so a
- * folder picked, or an image skipped, for one clip used to carry over to the next.
+ * folder picked, or an image skipped, for one clip used to carry over to the next; now
+ * each clip keeps its own, and gets them back when it is shown again.
  */
 export function useAssetPlan({ body, project, sourceDir, homeDir }: AssetPlanOptions): AssetPlan {
   const config = useApp((s) => s.config);
   const setConfig = useApp((s) => s.setConfig);
   const slug = projectSlug(project) || INBOX_SLUG;
   const remembered = config?.assetDirs?.[slug] ?? null;
-  const [picked, setPicked] = useState<{ body: string; dir: string } | null>(null);
-  const [toggled, setToggled] = useState<{ body: string; refs: Record<string, boolean> }>({
-    body,
-    refs: {},
-  });
+  // Choices belong to a body, and are kept for each: a clip dismissed with Esc and shown
+  // again gets back the folder picked and the images skipped for it.
+  const bodyKey = useMemo(() => hashText(body), [body]);
+  const [picked, setPicked] = useState<Record<string, string>>({});
+  const [toggled, setToggled] = useState<Record<string, Record<string, boolean>>>({});
   const [resolved, setResolved] = useState<{ key: string } & AssetResolution>({
     key: "",
     baseDir: null,
@@ -37,8 +48,8 @@ export function useAssetPlan({ body, project, sourceDir, homeDir }: AssetPlanOpt
   });
 
   const paths = useMemo(() => findAssetRefs(body), [body]);
-  const chosen = picked?.body === body ? picked.dir : null;
-  const overrides = useMemo(() => (toggled.body === body ? toggled.refs : {}), [toggled, body]);
+  const chosen = picked[bodyKey] ?? null;
+  const overrides = toggled[bodyKey] ?? NO_OVERRIDES;
   /** What we ask about; what comes back may be a folder main worked out on its own. */
   const asked = chosen ?? sourceDir ?? remembered;
   const key = `${asked ?? ""} ${paths.join(" ")}`;
@@ -72,10 +83,10 @@ export function useAssetPlan({ body, project, sourceDir, homeDir }: AssetPlanOpt
   const chooseFolder = useCallback(async () => {
     const dir = await api("assets:chooseFolder", baseDir ?? undefined);
     if (!dir) return;
-    setPicked({ body, dir });
+    setPicked((p) => keep(p, bodyKey, dir));
     const assetDirs = { ...(config?.assetDirs ?? {}), [slug]: dir };
     setConfig(await api("vault:updateConfig", { assetDirs }));
-  }, [baseDir, body, config?.assetDirs, slug, setConfig]);
+  }, [baseDir, bodyKey, config?.assetDirs, slug, setConfig]);
 
   /** Copied unless skipped; a large file waits to be asked for; one over GitHub's limit never goes. */
   const included = useCallback(
@@ -89,13 +100,12 @@ export function useAssetPlan({ body, project, sourceDir, homeDir }: AssetPlanOpt
   const toggle = useCallback(
     (ref: string) =>
       setToggled((t) => {
-        const refs = t.body === body ? t.refs : {};
         const r = resolved.refs.find((x) => x.ref === ref);
         const now = r ? included(r) : false;
 
-        return { body, refs: { ...refs, [ref]: !now } };
+        return keep(t, bodyKey, { ...(t[bodyKey] ?? {}), [ref]: !now });
       }),
-    [body, resolved.refs, included],
+    [bodyKey, resolved.refs, included],
   );
 
   const going = refs.filter(included);

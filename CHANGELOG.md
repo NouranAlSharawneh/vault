@@ -97,6 +97,13 @@ To release: add a section for the new version here, run `npm run release -- <pat
 - **Focus mode (⌥⌘P)** folds the preview away and gives the text the window; it is remembered for the next document.
 - **Jump to a heading (⇧⌘O):** the document's outline, filtered as you type.
 - The markdown pane says the length and reading time — or how much is selected — and its **?** lists every key the editor answers to.
+- **Capture names what it saves.** The title sits at the top of the sheet, guessed from the clip and yours to change.
+- **A copied web page keeps its formatting.** Headings, lists, links and tables come across as markdown, converted from the page itself; the text as copied is one click away.
+- **Capture into a recent project with ⌘1–⌘9.** Projects are listed most recent first, each with its shortcut. From the sheet, `#` goes to Tags and `@` to Project.
+- **Tags the clip is about are suggested** under the Tags field, from the ones your vault already uses — one click each.
+- **Esc no longer throws a capture away.** The title, project, tags and image choices you made come back when the same clip is captured again, until it is saved.
+- **Screenshots and copied pictures can be captured.** The image goes into the project's `assets/` folder, with a document that shows it.
+- **Saving a capture gets out of the way at once.** A notification says it was saved, with Open and Undo (Undo moves it to the trash).
 
 ## [0.0.2] - 2026-09-28
 

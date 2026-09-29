@@ -11,6 +11,7 @@ export function Chip({
   onRemove,
   removeLabel = "Remove",
   title,
+  dark = false,
   className,
 }: ChipProps) {
   const classes = cx(
@@ -19,7 +20,13 @@ export function Chip({
     selected && "bg-cherry text-paper",
     // A chip you can press looks pressable: it had no hover at all.
     onClick && "cursor-pointer transition-colors",
-    onClick && !selected && (tone === "tag" ? "hover:bg-cherry-tint-2" : "hover:bg-line"),
+    onClick &&
+      !selected &&
+      (dark
+        ? "hover:text-overlay-ink"
+        : tone === "tag"
+          ? "hover:bg-cherry-tint-2"
+          : "hover:bg-line"),
     onClick && selected && "hover:bg-cherry-2",
     onRemove && "pr-0.5",
     className,

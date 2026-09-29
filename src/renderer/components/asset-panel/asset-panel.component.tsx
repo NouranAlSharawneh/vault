@@ -14,7 +14,8 @@ import type { AssetPanelProps } from "./asset-panel.types";
  * quiet about a file that is about to be left behind, because the doc keeps the original
  * relative link either way and a link with nothing behind it renders as a broken image.
  */
-export function AssetPanel({ plan, dark, className }: AssetPanelProps) {
+export function AssetPanel({ plan, dark, baseLabel, className }: AssetPanelProps) {
+  const labelled = !!baseLabel && !!plan.baseDir;
   const muted = dark ? "text-overlay-ink-3" : "text-ink-4";
   const strong = dark ? "text-overlay-ink" : "text-ink";
   const frame = cx(
@@ -40,25 +41,22 @@ export function AssetPanel({ plan, dark, className }: AssetPanelProps) {
           {plural(plan.refs.length, "image")} referenced
         </span>
         {/* One line, however long the folder: the full path is a hover away. */}
-        <span className={cx("min-w-0 truncate", muted)} title={plan.baseDir ?? undefined}>
-          {plan.baseDir ? (
-            <>
-              {plan.found} found in <span className="font-mono">{shortPath(plan.baseDir)}</span>
-              {plan.detected && " (found for you)"}
-              {plan.missing > 0 && ` · ${plan.missing} missing`}
-            </>
-          ) : (
-            "couldn’t find these images — pick the folder they live in, or save without them"
-          )}
-        </span>
-        <Button
-          variant={dark ? "ghost" : "outline"}
-          size="sm"
-          className={cx("ml-auto shrink-0", dark && "text-overlay-ink-2 hover:bg-overlay-3")}
-          onClick={() => fire(plan.chooseFolder())}
+        <span
+          className={cx("min-w-0 truncate", muted)}
+          title={labelled ? undefined : (plan.baseDir ?? undefined)}
         >
-          <FolderOpen size={12} /> {plan.baseDir ? "Change folder" : "Choose folder…"}
-        </Button>
+          <Where plan={plan} baseLabel={labelled ? baseLabel : undefined} />
+        </span>
+        {!labelled && (
+          <Button
+            variant={dark ? "ghost" : "outline"}
+            size="sm"
+            className={cx("ml-auto shrink-0", dark && "text-overlay-ink-2 hover:bg-overlay-3")}
+            onClick={() => fire(plan.chooseFolder())}
+          >
+            <FolderOpen size={12} /> {plan.baseDir ? "Change folder" : "Choose folder…"}
+          </Button>
+        )}
       </div>
       <ul className="mt-1.5 max-h-20 space-y-0.5 overflow-y-auto">
         {plan.refs.map((r) => {
@@ -128,5 +126,20 @@ export function AssetPanel({ plan, dark, className }: AssetPanelProps) {
         </div>
       )}
     </div>
+  );
+}
+
+/** Where the images are: "2 found in ~/Coding/concorde · 1 missing", or "1 on the clipboard". */
+function Where({ plan, baseLabel }: Pick<AssetPanelProps, "plan" | "baseLabel">) {
+  if (baseLabel) return <>{`${plan.found} ${baseLabel}`}</>;
+  if (!plan.baseDir)
+    return <>couldn’t find these images — pick the folder they live in, or save without them</>;
+
+  return (
+    <>
+      {plan.found} found in <span className="font-mono">{shortPath(plan.baseDir)}</span>
+      {plan.detected && " (found for you)"}
+      {plan.missing > 0 && ` · ${plan.missing} missing`}
+    </>
   );
 }

@@ -1,6 +1,7 @@
 import { ChevronDown } from "lucide-react";
 import { useId, useRef } from "react";
-import { Dot, ListRow } from "@/components/ui";
+import { Dot, Kbd, ListRow } from "@/components/ui";
+import { MOD_KEY } from "@/constants";
 import { cx } from "@/helpers";
 import { INBOX_COLOR } from "@shared/constants";
 import { projectColor, projectSlug } from "@shared/helpers";
@@ -15,6 +16,7 @@ export function ProjectCombobox({
   hint,
   placement = "above",
   id,
+  shortcuts = [],
 }: ProjectComboboxProps) {
   const c = useCombobox(value, onChange, projects);
   const listId = useId();
@@ -84,22 +86,34 @@ export function ProjectCombobox({
             dark ? "border-overlay-line bg-overlay-2" : "border-line bg-paper",
           )}
         >
-          {c.matches.map((m, i) => (
-            <li key={m} role="presentation">
-              <ListRow
-                id={`${listId}-${i}`}
-                kind="menu"
-                dark={dark}
-                selected={i === c.cursor}
-                onMouseDown={(e) => {
-                  e.preventDefault();
-                  c.pick(m);
-                }}
-              >
-                <Dot color={projectColor(projectSlug(m))} /> {m}
-              </ListRow>
-            </li>
-          ))}
+          {c.matches.map((m, i) => {
+            const n = shortcuts.indexOf(m);
+
+            return (
+              <li key={m} role="presentation">
+                <ListRow
+                  id={`${listId}-${i}`}
+                  kind="menu"
+                  dark={dark}
+                  selected={i === c.cursor}
+                  onMouseDown={(e) => {
+                    e.preventDefault();
+                    c.pick(m);
+                  }}
+                >
+                  <Dot color={projectColor(projectSlug(m))} /> {m}
+                  {n >= 0 && n < 9 && (
+                    <span className="ml-auto" aria-hidden>
+                      <Kbd dark={dark}>
+                        {MOD_KEY}
+                        {n + 1}
+                      </Kbd>
+                    </span>
+                  )}
+                </ListRow>
+              </li>
+            );
+          })}
         </ul>
       )}
     </div>

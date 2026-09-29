@@ -1,13 +1,19 @@
 import { useEffect, useRef, useState } from "react";
-import { cx, shortPath } from "@/helpers";
+import { Segmented } from "@/components/ui";
+import { cx, formatBytes, shortPath } from "@/helpers";
 import type { CapturePreviewProps } from "./capture-preview.types";
 
 /** Lines drawn in the preview; the rest is counted, not drawn. It's a glance, not an editor. */
 const PREVIEW_LINES = 300;
 
+const VARIANTS = [
+  { value: "converted", label: "Converted" },
+  { value: "raw", label: "As copied" },
+] as const;
+
 /** The clipboard, monospace on the deep-stone surface, scrollable. */
-export function CapturePreview({ clip, compact }: CapturePreviewProps) {
-  const all = clip.text.split(/\r?\n/);
+export function CapturePreview({ clip, text, variant, onVariant, compact }: CapturePreviewProps) {
+  const all = text.split(/\r?\n/);
   const lines = all.slice(0, PREVIEW_LINES);
   const box = useRef<HTMLPreElement>(null);
   const [more, setMore] = useState(false);
@@ -16,7 +22,15 @@ export function CapturePreview({ clip, compact }: CapturePreviewProps) {
     const el = box.current;
     if (el) setMore(el.scrollTop + el.clientHeight < el.scrollHeight - 2);
   };
-  useEffect(measure, [clip.text, compact]);
+  useEffect(measure, [text, compact]);
+
+  const converted = !!clip.converted;
+  const unformatted = !converted && !clip.looksLikeMarkdown;
+  const origin = clip.image
+    ? `Image from the clipboard · ${clip.image.width} × ${clip.image.height} · ${formatBytes(clip.image.bytes)}`
+    : clip.sourcePath
+      ? `from ${shortPath(clip.sourcePath)}`
+      : null;
 
   return (
     <div>
@@ -56,11 +70,26 @@ export function CapturePreview({ clip, compact }: CapturePreviewProps) {
           />
         )}
       </div>
-      {(clip.sourcePath || !clip.looksLikeMarkdown) && (
-        <div className="mt-1.5 flex items-center justify-between text-2xs text-overlay-ink-3">
-          <span>{clip.sourcePath && <>from {shortPath(clip.sourcePath)}</>}</span>
-          {!clip.looksLikeMarkdown && (
-            <span className="text-warn">doesn't look like markdown — saved as-is</span>
+      {(origin || unformatted || converted) && (
+        <div className="mt-1.5 flex min-h-6 items-center justify-between gap-3 text-2xs text-overlay-ink-3">
+          <span className="min-w-0 truncate">{origin}</span>
+          {/* A copied web page: its plain text lost the headings, lists and links, which
+              the page's HTML still had. Converted is the default; as copied is a click. */}
+          {converted ? (
+            <span className="flex shrink-0 items-center gap-2">
+              <span>From the page’s formatting</span>
+              <Segmented
+                dark
+                label="Text to save"
+                options={VARIANTS}
+                value={variant}
+                onChange={onVariant}
+              />
+            </span>
+          ) : (
+            unformatted && (
+              <span className="shrink-0 text-warn">doesn't look like markdown — saved as-is</span>
+            )
           )}
         </div>
       )}

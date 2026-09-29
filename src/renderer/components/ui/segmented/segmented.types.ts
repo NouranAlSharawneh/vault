@@ -15,5 +15,7 @@ export interface SegmentedProps<T extends string> {
   label: string;
   /** Inside an `@container` narrower than `@md`, show each option's icon, not its label. */
   compact?: boolean;
+  /** On a dark surface (the capture sheet). */
+  dark?: boolean;
   className?: string;
 }

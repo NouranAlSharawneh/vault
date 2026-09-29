@@ -125,6 +125,11 @@ export interface IpcInvoke {
   /** Grow or shrink the capture sheet to the height its content actually needs. */
   "capture:resize": (height: number) => void;
   "capture:hide": () => void;
+  /**
+   * A ⌘↵ save landed: hide the sheet now and say so in a notification, with Open and
+   * Undo. False where notifications aren't available; the sheet then says it itself.
+   */
+  "capture:saved": (path: string, title: string) => boolean;
   "capture:openEditor": (draft: EditorDraft) => void;
 
   "window:openMain": (route?: string) => void;

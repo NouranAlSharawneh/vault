@@ -1,21 +1,62 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useAssetPlan } from "@/components/asset-panel";
 import { CAPTURE_SAVED_FLASH_MS } from "@/constants";
-import { errorMessage, parentDir } from "@/helpers";
+import { errorMessage, parentDir, recentProjects, suggestTags } from "@/helpers";
 import { api, fire, fireQuietly, on } from "@/lib/api";
 import { useApp } from "@/stores/app";
-import { inferTitle } from "@shared/helpers";
+import { hashText, inferTitle } from "@shared/helpers";
 import type { ClipboardCapture } from "@shared/types";
-import type { CaptureForm, CaptureState } from "../capture.types";
+import type { CaptureForm, CaptureState, ClipVariant } from "../capture.types";
 
 const EMPTY: CaptureState = {
   clip: null,
-  form: { project: "", source: "claude", tags: [] },
+  form: {
+    title: "",
+    titleEdited: false,
+    project: "",
+    source: "claude",
+    tags: [],
+    variant: "raw",
+  },
   phase: "loading",
   error: null,
   savedPath: null,
   pathPreview: "",
 };
+
+/** Forms left unsaved, by clip. The sheet is never unmounted, so this lives as long as it. */
+const remembered = new Map<string, CaptureForm>();
+const REMEMBER_MAX = 20;
+
+/** Which clip this is: the same text (from the same file) is the same clip. */
+function clipKey(clip: ClipboardCapture): string {
+  return hashText(`${clip.sourcePath ?? ""}\0${clip.text}`);
+}
+
+/** Every remembered form goes (for tests; nothing in the app needs to forget them all). */
+export function forgetUnsavedCaptures() {
+  remembered.clear();
+}
+
+function remember(key: string, form: CaptureForm) {
+  remembered.delete(key);
+  remembered.set(key, form);
+  // The oldest go first; a Map keeps insertion order.
+  while (remembered.size > REMEMBER_MAX) remembered.delete(remembered.keys().next().value!);
+}
+
+/** The text a variant stands for: the conversion, when there is one to stand for. */
+function textOf(clip: ClipboardCapture | null, variant: ClipVariant): string {
+  if (!clip) return "";
+
+  return variant === "converted" && clip.converted ? clip.converted : clip.text;
+}
+
+function titleOf(clip: ClipboardCapture, variant: ClipVariant): string {
+  return variant === "converted" && clip.converted
+    ? (inferTitle(clip.converted) ?? "")
+    : (clip.detectedTitle ?? inferTitle(clip.text) ?? "");
+}
 
 /**
  * The ⌃⌥V sheet: main pushes `capture:shown` with the analysed clipboard each
@@ -40,18 +81,36 @@ export function useCapture() {
     lastProject.current = config?.lastProject ?? null;
   }, [config?.lastProject]);
 
+  // The form as it was filled in, to tell one the user changed from one left alone.
+  const fresh = useRef<CaptureForm | null>(null);
   const load = useCallback((clip: ClipboardCapture) => {
+    const variant: ClipVariant = clip.converted ? "converted" : "raw";
+    const filled: CaptureForm = {
+      title: titleOf(clip, variant),
+      titleEdited: false,
+      project: lastProject.current ?? "",
+      source: clip.detectedSource,
+      tags: [],
+      variant,
+    };
+    fresh.current = filled;
+    // The same clip again after Esc (or the hotkey): the form comes back as it was left.
+    const kept = remembered.get(clipKey(clip));
     setState({
       ...EMPTY,
       clip,
       phase: clip.text.trim() ? "ready" : "empty",
-      form: { project: lastProject.current ?? "", source: clip.detectedSource, tags: [] },
+      form: kept ?? filled,
     });
   }, []);
 
   // Bumped on every show and hide, so an answer that arrives after the sheet has moved on
   // is dropped instead of painting over the newer state.
   const showing = useRef(0);
+  const latest = useRef(state);
+  useEffect(() => {
+    latest.current = state;
+  });
 
   // First paint may happen before main sends the event; ask once, then follow events.
   // Only when the sheet is on screen: it is made hidden at launch, and reading then put
@@ -84,6 +143,15 @@ export function useCapture() {
     const offHidden = on("capture:hidden", () => {
       showing.current++;
       cancelPending();
+      // Esc, a click elsewhere or the hotkey again used to throw away everything chosen.
+      // A form the user changed is kept for this clip; one left as filled in is not, so
+      // the next show still starts from the latest "last project".
+      const s = latest.current;
+      if (s.clip && (s.phase === "ready" || s.phase === "error")) {
+        const changed = JSON.stringify(s.form) !== JSON.stringify(fresh.current);
+        if (changed) remember(clipKey(s.clip), s.form);
+        else remembered.delete(clipKey(s.clip));
+      }
       // Start the next show blank rather than flashing whatever this one ended on.
       setState(EMPTY);
     });
@@ -95,12 +163,15 @@ export function useCapture() {
     };
   }, [load, cancelPending]);
 
+  const text = textOf(state.clip, state.form.variant);
   const title =
-    state.clip?.detectedTitle ?? (state.clip ? (inferTitle(state.clip.text) ?? "Untitled") : "");
+    state.form.title.trim() ||
+    (state.clip ? titleOf(state.clip, state.form.variant) || "Untitled" : "");
   const assets = useAssetPlan({
-    body: state.clip?.text ?? "",
+    body: text,
     project: state.form.project,
-    sourceDir: state.clip?.sourcePath ? parentDir(state.clip.sourcePath) : null,
+    sourceDir:
+      state.clip?.assetDir ?? (state.clip?.sourcePath ? parentDir(state.clip.sourcePath) : null),
   });
 
   useEffect(() => {
@@ -112,6 +183,39 @@ export function useCapture() {
 
   const setForm = (patch: Partial<CaptureForm>) =>
     setState((s) => ({ ...s, form: { ...s.form, ...patch } }));
+
+  /** A title typed by hand; an empty one goes back to following the text. */
+  const setTitle = (value: string) => setForm({ title: value, titleEdited: value.trim() !== "" });
+
+  /** Raw or converted: the title follows, unless it was typed. */
+  const setVariant = (variant: ClipVariant) =>
+    setState((s) => ({
+      ...s,
+      form: {
+        ...s.form,
+        variant,
+        title: s.form.titleEdited || !s.clip ? s.form.title : titleOf(s.clip, variant),
+      },
+    }));
+
+  const recents = useMemo(
+    () => recentProjects(index, config?.lastProject ?? null),
+    [index, config?.lastProject],
+  );
+  /** ⌘1–⌘9: the Nth most recent project. */
+  const pickProject = (n: number) => {
+    const project = recents[n - 1];
+    if (project) setForm({ project });
+  };
+
+  const suggestedTags = useMemo(
+    () => (state.clip ? suggestTags(text, index?.tags ?? [], state.form.tags) : []),
+    [state.clip, text, index?.tags, state.form.tags],
+  );
+  const addTag = (tag: string) =>
+    setState((s) =>
+      s.form.tags.includes(tag) ? s : { ...s, form: { ...s.form, tags: [...s.form.tags, tag] } },
+    );
 
   // Esc mid-save would hide a sheet whose save is still landing; it waits.
   const phase = state.phase;
@@ -145,7 +249,7 @@ export function useCapture() {
       }
       try {
         const res = await api("doc:save", {
-          body: clip.text,
+          body: text,
           frontmatter: {
             title,
             project: state.form.project,
@@ -155,9 +259,16 @@ export function useCapture() {
           commit: true,
           assets: latestAssets.current.request,
         });
+        remembered.delete(clipKey(clip));
         // The sheet was dismissed and shown again while this was saving: the answer
         // belongs to that earlier capture. It used to take over the new one and hide it.
         if (showing.current !== mine) return;
+        // ⌘↵: gone at once, with a notification to say so (and Open, and Undo). Where
+        // there are no notifications, the sheet says it itself, as below.
+        if (!reveal) {
+          const notified = await api("capture:saved", res.path, title).catch(() => false);
+          if (notified || showing.current !== mine) return;
+        }
         setState((s) => ({ ...s, phase: "saved", savedPath: res.path }));
         // Flash the committed path, then get out of the way.
         cancelPending();
@@ -172,7 +283,7 @@ export function useCapture() {
           setState((s) => ({ ...s, phase: "error", error: errorMessage(e) }));
       }
     },
-    [state.clip, state.phase, state.form, title, cancelPending],
+    [state.clip, state.phase, state.form, text, title, cancelPending],
   );
 
   const openInEditor = useCallback(() => {
@@ -185,7 +296,7 @@ export function useCapture() {
     }
     fire(
       api("capture:openEditor", {
-        body: state.clip.text,
+        body: text,
         sourcePath: state.clip.sourcePath,
         frontmatter: {
           title,
@@ -195,20 +306,27 @@ export function useCapture() {
         },
       }),
     );
-  }, [state.clip, state.form, title]);
+  }, [state.clip, state.form, text, title]);
 
   /** Try the save again, as it was asked for. */
   const retry = () => fire(save(false));
 
   return {
     ...state,
+    text,
     title,
     assets,
-    projects: index?.projects.filter((p) => p.slug !== "_inbox").map((p) => p.name) ?? [],
+    projects: recents,
+    recents,
     tags: index?.tags.map((t) => t.tag) ?? [],
+    suggestedTags,
     lastProject: config?.lastProject ?? null,
     hasRemote: !!config?.remote,
     setForm,
+    setTitle,
+    setVariant,
+    pickProject,
+    addTag,
     save,
     openInEditor,
     hide,

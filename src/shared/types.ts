@@ -374,6 +374,19 @@ export interface ClipboardCapture {
   detectedTitle: string | null;
   /** Set when the clipboard held a markdown *file* (copied in Finder) rather than text. */
   sourcePath?: string;
+  /**
+   * The same clip as markdown, converted from the HTML a browser put on the clipboard
+   * beside the plain text. Only when the text itself isn't markdown and the conversion
+   * has structure the text lost (headings, lists, links, tables).
+   */
+  converted?: string;
+  /**
+   * Where the clip's relative images are, when that isn't the copied file's own folder:
+   * an image on the clipboard is written to a folder of its own and linked from there.
+   */
+  assetDir?: string;
+  /** The clipboard held an image, not text: its size, for the sheet to say. */
+  image?: { width: number; height: number; bytes: number };
 }
 
 export interface EditorDraft {

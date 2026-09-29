@@ -18,3 +18,4 @@ export { splitCode } from "./split-code";
 export type { Segment } from "./split-code";
 export { normalizeRef } from "./normalize-ref";
 export { isPastedRef } from "./pasted-ref";
+export { hashText } from "./hash-text";

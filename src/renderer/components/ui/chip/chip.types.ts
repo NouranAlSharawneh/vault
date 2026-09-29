@@ -10,5 +10,7 @@ export interface ChipProps {
   /** Accessible name of the remove button, e.g. "Remove spec" — a bare "remove" says nothing about what goes. */
   removeLabel?: string;
   title?: string;
+  /** On a dark surface: a clickable chip brightens its text there, not its fill. */
+  dark?: boolean;
   className?: string;
 }
