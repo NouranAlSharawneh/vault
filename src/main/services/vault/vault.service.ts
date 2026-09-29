@@ -222,6 +222,7 @@ export class VaultService extends EventEmitter {
       changed,
       assets,
       preservedExternalEdit,
+      ...(body !== req.body ? { body } : {}),
       ...(commitError ? { commitError } : {}),
     };
   }

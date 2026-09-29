@@ -34,6 +34,10 @@ export interface EditorShortcutHandlers {
   onSaveClose: () => void;
   /** Escape: close a document with nothing to lose, or ask about one that has. */
   onEscape: () => void;
+  /** ⌥⌘P: fold the preview away, or bring it back. */
+  onFocusMode?: () => void;
+  /** ⇧⌘O: the outline, to jump to a heading. */
+  onOutline?: () => void;
 }
 
 /**

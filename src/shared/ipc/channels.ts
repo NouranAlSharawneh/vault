@@ -66,6 +66,7 @@ export const INVOKE_CHANNELS = [
   "window:openEditor",
   "editor:seed",
   "editor:setPath",
+  "editor:stageImage",
   "window:setEdited",
   "app:version",
   "app:checkForUpdates",

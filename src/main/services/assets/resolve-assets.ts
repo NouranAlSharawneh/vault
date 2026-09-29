@@ -4,6 +4,7 @@ import { ASSET_MIME } from "@shared/constants";
 import { normalizeRef } from "@shared/helpers";
 import type { AssetRef, AssetResolution } from "@shared/types";
 import { findAssetRoot } from "./find-asset-root";
+import { stagedImagePath } from "./staged-images";
 
 /**
  * Check each relative ref against a base folder: does it exist, how big, do we serve its type.
@@ -25,7 +26,10 @@ export async function resolveAssets(
     if (given.some((r) => r.status === "found") || !refs.length)
       return { baseDir, detected: false, refs: given };
   }
-  const detected = refs.length ? await findAssetRoot(refs, known) : null;
+  // A pasted image is found by its name, wherever the document is: it says nothing
+  // about which folder the other links belong to.
+  const loose = refs.filter((ref) => !stagedImagePath(ref));
+  const detected = loose.length ? await findAssetRoot(loose, known) : null;
   const dir = detected ?? baseDir;
 
   return {
@@ -45,6 +49,8 @@ export function refPath(baseDir: string, ref: string): string | null {
 
 async function describe(ref: string, baseDir: string | null): Promise<AssetRef> {
   const name = basename(ref);
+  const staged = stagedImagePath(ref);
+  if (staged) return { ref, name, status: "found", bytes: (await fs.stat(staged)).size };
   const ext = name.split(".").pop()?.toLowerCase() ?? "";
   if (!(ext in ASSET_MIME)) return { ref, name, status: "unsupported", bytes: 0 };
   if (!baseDir) return { ref, name, status: "unknown", bytes: 0 };

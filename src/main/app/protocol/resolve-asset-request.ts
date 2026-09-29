@@ -16,6 +16,7 @@ export function resolveAssetRequest(
   url: URL,
   exists: (path: string) => boolean,
   insideVault: (root: string, rel: string) => string | null,
+  staged: (name: string) => string | null = () => null,
 ): AssetResolution {
   if (url.host !== ASSET_HOST || !root) return { deny: 404 };
   const rel = decodeURIComponent(url.pathname).replace(/^\/+/, "");
@@ -25,6 +26,10 @@ export function resolveAssetRequest(
 
   const candidates = [abs];
   if (rel.startsWith(`${TRASH_DIR}/`)) candidates.push(join(root, rel.slice(TRASH_DIR.length + 1)));
+  // An image pasted into a document not saved yet: the preview asks for it next to the
+  // document, where it will be; until the save it is still waiting in app data.
+  const waiting = staged(rel.split("/").pop() ?? "");
+  if (waiting) candidates.push(waiting);
   const found = candidates.find(exists);
 
   return found ? { path: found, mime } : { deny: 404 };

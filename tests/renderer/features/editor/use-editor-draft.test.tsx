@@ -211,4 +211,42 @@ describe("an unsaved draft", () => {
     await act(() => result.current.recoverDraft(KEY));
     expect(result.current.body).toBe("what I am writing now");
   });
+
+  it("carries on from the text the save wrote, links and all", async () => {
+    // A pasted image's link is rewritten into assets/ by the save; kept on the old link,
+    // the next save imported the same image again.
+    const ref = "paste-0a1b2c3d4e5f.png";
+    const meta = {
+      title: "Doc",
+      project: "Atlas API",
+      projectSlug: "atlas-api",
+      tags: [],
+      created: "2026-09-10T00:00:00Z",
+      source: "claude" as const,
+      path: "atlas-api/doc.md",
+      excerpt: "",
+      words: 1,
+      mtime: 0,
+      size: 0,
+      orphan: false,
+    };
+    mockMarascaApi({
+      "doc:pathPreview": () => "atlas-api/doc.md",
+      "doc:save": (req: { body: string }) => ({
+        path: "atlas-api/doc.md",
+        meta,
+        committed: true,
+        changed: true,
+        body: req.body.replace(ref, `assets/${ref}`),
+      }),
+    });
+    useApp.setState({ config });
+    const { result } = renderHook(() => useEditorDraft(KEY));
+    act(() => result.current.setBody(`# Doc\n\n![image](${ref})`));
+    await act(async () => {
+      await result.current.save("commit");
+    });
+    expect(result.current.body).toBe(`# Doc\n\n![image](assets/${ref})`);
+    expect(result.current.dirty).toBe(false);
+  });
 });

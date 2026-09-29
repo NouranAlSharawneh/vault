@@ -17,5 +17,8 @@ export interface SplitPaneProps {
   storageKey?: string;
   /** `line` draws a hairline; `gap` is an invisible 8px gutter that only shows while dragging. */
   handle?: "line" | "gap";
+  /** The right pane folded away, the left one full width — still mounted, so what it
+   *  holds (an editor's cursor and undo history) survives the fold. */
+  collapsed?: boolean;
   className?: string;
 }

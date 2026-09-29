@@ -29,10 +29,33 @@ export function useEditorShortcuts(handlers: EditorShortcutHandlers) {
     [],
   );
 
+  // ⌥⌘P and ⇧⌘O, from anywhere in the window — the text included, which leaves them
+  // alone. By `code`: with ⌥ held, macOS turns P into "π".
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (!(e.metaKey || e.ctrlKey) || e.defaultPrevented) return;
+      const h = latest.current;
+      if (e.altKey && !e.shiftKey && e.code === "KeyP" && h.onFocusMode) {
+        e.preventDefault();
+        h.onFocusMode();
+      } else if (e.shiftKey && !e.altKey && e.code === "KeyO" && h.onOutline) {
+        e.preventDefault();
+        h.onOutline();
+      }
+    };
+    window.addEventListener("keydown", onKey);
+
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
+
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       // A combobox or tag field dismissing its own list consumes Escape first.
       if (e.key !== "Escape" || e.defaultPrevented) return;
+      // A dialog (the outline, the shortcuts, the unsaved prompt) closes itself on Escape;
+      // this listener was registered first, so it has to stand aside rather than close
+      // the window underneath.
+      if (document.querySelector('[role="dialog"][aria-modal="true"]')) return;
       if (e.target instanceof Element && e.target.closest(".cm-editor")) return;
       if (isEditableTarget(e.target)) return;
       latest.current.onEscape();

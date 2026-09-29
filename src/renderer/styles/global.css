@@ -201,8 +201,8 @@ body {
 /* Column recipes for the few grids whose columns are not equal. Named here so no
    component has to carry an arbitrary value. */
 @utility grid-cols-metadata {
-  /* title · project · source · tags */
-  grid-template-columns: 1.4fr 1fr 0.7fr 1.4fr;
+  /* project · source · tags · star */
+  grid-template-columns: 1fr 0.7fr 1.6fr auto;
 }
 @utility grid-cols-capture {
   /* project · source · tags */

@@ -1,21 +1,26 @@
-import { useCallback, useDeferredValue, useEffect, useMemo, useState } from "react";
+import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 import { AssetPanel, useAssetPlan } from "@/components/asset-panel";
 import { AuthExpiredBanner } from "@/components/auth-expired-banner/auth-expired-banner.component";
 import { Markdown } from "@/components/markdown";
 import { NoWriteAccessBanner } from "@/components/no-write-access-banner/no-write-access-banner.component";
 import { SyncBadge } from "@/components/sync-badge/sync-badge.component";
 import { SectionLabel, SplitPane } from "@/components/ui";
-import { EDITOR_LEAVE_HINT, EDITOR_PLACEHOLDER } from "@/data/editor.data";
-import { parentDir, plural } from "@/helpers";
+import { EDITOR_PLACEHOLDER } from "@/data/editor.data";
+import { parentDir, renameHint } from "@/helpers";
 import { api, fire, fireQuietly, on } from "@/lib/api";
 import { useApp } from "@/stores/app";
 import { countWords } from "@shared/helpers";
 import type { SavedNotice } from "@shared/types";
 import { EditorBanners } from "./components/editor-banners/editor-banners.component";
 import { EditorFooter } from "./components/editor-footer/editor-footer.component";
+import { EditorPanels } from "./components/editor-panels/editor-panels.component";
+import type { EditorPanel } from "./components/editor-panels/editor-panels.types";
 import { MarkdownEditor } from "./components/markdown-editor/markdown-editor.component";
+import type { MarkdownEditorHandle } from "./components/markdown-editor/markdown-editor.types";
+import { MarkdownPaneHeader } from "./components/markdown-pane-header/markdown-pane-header.component";
 import { MetadataBar } from "./components/metadata-bar/metadata-bar.component";
 import { OpenFailed } from "./components/open-failed/open-failed.component";
+import { TitleField } from "./components/title-field/title-field.component";
 import { useUnsavedGuard } from "./components/unsaved-guard/hooks/use-unsaved-guard.hook";
 import { UnsavedGuard } from "./components/unsaved-guard/unsaved-guard.component";
 import type { SaveMode } from "./editor.types";
@@ -23,6 +28,8 @@ import { useDocumentEdited } from "./hooks/use-document-edited.hook";
 import { useEditorDraft } from "./hooks/use-editor-draft.hook";
 import { readEditorTarget, useEditorOpen } from "./hooks/use-editor-open.hook";
 import { useEditorShortcuts } from "./hooks/use-editor-shortcuts.hook";
+import { useFocusMode } from "./hooks/use-focus-mode.hook";
+import { useImageStaging } from "./hooks/use-image-staging.hook";
 
 /** Full save window: raw markdown left, live preview right, metadata bar and actions below. */
 export function Editor() {
@@ -42,10 +49,22 @@ export function Editor() {
   // a large document each keystroke re-ran the whole markdown pipeline before it showed.
   const settledBody = useDeferredValue(d.body);
   const words = useMemo(() => countWords(settledBody), [settledBody]);
+  const [selectedWords, setSelectedWords] = useState(0);
+  const text = useRef<MarkdownEditorHandle>(null);
+  const stageImage = useImageStaging();
+  const { focusMode, toggleFocusMode } = useFocusMode();
+  const [panel, setPanel] = useState<EditorPanel | null>(null);
+  const closePanel = useCallback(() => setPanel(null), []);
+  const renameTo = useMemo(
+    () => renameHint(d.existingPath, d.pathPreview),
+    [d.existingPath, d.pathPreview],
+  );
+  const home = docFolder(config?.root, d.existingPath);
   const plan = useAssetPlan({
     body: settledBody,
     project: d.meta.project,
-    sourceDir: d.sourcePath ? parentDir(d.sourcePath) : docFolder(config?.root, d.existingPath),
+    sourceDir: d.sourcePath ? parentDir(d.sourcePath) : home,
+    homeDir: home,
   });
   const guard = useUnsavedGuard(d.dirty);
   useDocumentEdited(d.dirty);
@@ -100,6 +119,8 @@ export function Editor() {
     onSaveClose: commit,
     // Nothing to lose: go straight out. Otherwise ask, the same as clicking the X.
     onEscape: useCallback(() => (d.dirty ? guard.prompt() : guard.closeNow()), [d.dirty, guard]),
+    onFocusMode: toggleFocusMode,
+    onOutline: useCallback(() => setPanel("outline"), []),
   });
 
   // Main finds this window by its document, so opening that document again focuses it —
@@ -147,27 +168,40 @@ export function Editor() {
         />
       ) : (
         <>
+          <TitleField
+            value={d.meta.title}
+            inferredTitle={d.inferredTitle}
+            onChange={(title) => d.setMeta({ title })}
+            renameTo={renameTo}
+          />
           <SplitPane
-            className="flex-1"
+            className="flex-1 border-t border-line"
             storageKey="editor-split"
+            // Focus mode folds the preview away; the text stays mounted, cursor and all.
+            collapsed={focusMode}
             left={
-              <>
+              // A group, so the way out of the text shows only while you are in it.
+              <div className="group/md flex min-h-0 flex-1 flex-col">
                 {/* Labels start on the text's own column, in both panes. */}
-                <div className="flex h-8 shrink-0 items-center justify-between px-measure">
-                  <SectionLabel>Markdown</SectionLabel>
-                  <span className="text-2xs text-ink-4">
-                    {EDITOR_LEAVE_HINT} · {plural(words, "word")}
-                  </span>
-                </div>
+                <MarkdownPaneHeader
+                  words={words}
+                  selectedWords={selectedWords}
+                  focusMode={focusMode}
+                  onFocusMode={toggleFocusMode}
+                  onShortcuts={() => setPanel("shortcuts")}
+                />
                 <MarkdownEditor
+                  ref={text}
                   value={d.body}
                   onChange={d.setBody}
                   onSubmit={commit}
+                  onImage={stageImage}
+                  onSelectionWords={setSelectedWords}
                   placeholder={EDITOR_PLACEHOLDER}
                   readOnly={!!d.saving}
                   autoFocus
                 />
-              </>
+              </div>
             }
             right={
               <>
@@ -190,7 +224,6 @@ export function Editor() {
           <AssetPanel plan={plan} className="mx-5 mb-2" />
           <MetadataBar
             meta={d.meta}
-            inferredTitle={d.inferredTitle}
             onChange={d.setMeta}
             projects={projects}
             tags={tags}
@@ -212,6 +245,12 @@ export function Editor() {
           />
         </>
       )}
+      <EditorPanels
+        panel={panel}
+        body={d.body}
+        onJump={(line) => text.current?.jumpToLine(line)}
+        onClose={closePanel}
+      />
       <UnsavedGuard
         open={guard.prompting}
         onKeepEditing={guard.dismiss}

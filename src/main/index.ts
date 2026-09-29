@@ -1,6 +1,7 @@
+import { join } from "node:path";
 import { electronApp, optimizer } from "@electron-toolkit/utils";
 import { app, dialog, globalShortcut, nativeTheme } from "electron";
-import { APP_ID } from "@shared/constants";
+import { APP_ID, PASTED_DIR } from "@shared/constants";
 import { attachContextMenu } from "./app/context-menu/context-menu";
 import { registerHotkey } from "./app/hotkey/hotkey";
 import { registerIpcHandlers } from "./app/ipc/ipc";
@@ -10,8 +11,10 @@ import { showMainWindow } from "./app/session/launch-route";
 import { session } from "./app/session/session";
 import { fire } from "./lib/fire";
 import { configureNetwork } from "./network/axios";
+import { pruneStaged, setStagingDir } from "./services/assets";
 import { getSettings } from "./store/settings.store";
 import { loadToken } from "./store/token.store";
+import { userDataDir } from "./store/user-data-dir";
 import { getCaptureWindow, getMainWindow, hardenWebContents, IS_MAC } from "./windows";
 
 // The second launch hands over to the first and stops here. `quit()` alone let the rest of
@@ -39,6 +42,10 @@ const boot = app.whenReady().then(async () => {
   });
   registerIpcHandlers();
   registerAssetProtocol();
+  // Where images pasted into the editor wait for their document's save; the ones nobody
+  // saved are cleared out after a month.
+  setStagingDir(join(userDataDir(), PASTED_DIR));
+  fire(pruneStaged(), "clearing out old pasted images");
   await session.restore();
 
   const settings = getSettings();
