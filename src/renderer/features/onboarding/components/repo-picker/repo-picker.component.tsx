@@ -132,6 +132,9 @@ export function RepoPicker({ onDone, onBack, preferLocal }: RepoPickerProps) {
                   )}
                 />
                 <span className="truncate font-mono">{r.fullName}</span>
+                {p.isMarascaVault(r) && (
+                  <span className="chip chip-tag shrink-0">Marasca vault</span>
+                )}
                 <span className="ml-auto shrink-0 text-xs text-ink-4">
                   {r.private ? "private" : "public"}
                 </span>
@@ -166,6 +169,11 @@ export function RepoPicker({ onDone, onBack, preferLocal }: RepoPickerProps) {
           Change
         </Button>
       </div>
+      {p.folderWarning && (
+        <div className="mt-2 text-xs text-warn-2" role="note">
+          {p.folderWarning}
+        </div>
+      )}
       <GitNotice hideWhenReady className="mt-4" />
       {p.submitError && (
         <div className="mt-3 text-xs text-cherry" role="alert">
@@ -180,7 +188,8 @@ export function RepoPicker({ onDone, onBack, preferLocal }: RepoPickerProps) {
           disabled={!p.canSubmit}
           onClick={() => fire(p.submit())}
         >
-          Continue <ArrowRight size={14} />
+          {/* Says what it does: "Create nunu/vault", "Use nunu/notes", "Create local vault". */}
+          <span className="max-w-72 truncate">{p.continueLabel}</span> <ArrowRight size={14} />
         </Button>
       </StepFooter>
     </Card>

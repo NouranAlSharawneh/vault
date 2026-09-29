@@ -130,6 +130,8 @@ export const DEFAULT_PUSH_DEBOUNCE_MS = 3000;
 export const PUSH_RETRY_MIN_MS = 5_000;
 export const PUSH_RETRY_MAX_MS = 5 * 60_000;
 export const DEFAULT_BRANCH = "main";
+/** Waking, unlocking or getting a network back often arrive together: one retry for all. */
+export const SYNC_NUDGE_DEBOUNCE_MS = 2_000;
 
 // ---- app defaults -------------------------------------------------------------------
 /** ⌃⌥V — ⌥Space clashes with Raycast/Alfred/Spotlight on most Macs. */
@@ -137,6 +139,18 @@ export const DEFAULT_HOTKEY = "Control+Alt+V";
 /** Defaults we have shipped before; a saved hotkey equal to one of these follows the current default. */
 export const LEGACY_HOTKEYS = ["Alt+Space"] as const;
 export const DEFAULT_VAULT_NAME = "vault";
+/**
+ * The description Marasca gives a repo it creates. Setup finds it again by these words,
+ * so a second Mac is offered the vault it already has instead of a new one.
+ */
+export const MARASCA_REPO_DESCRIPTION = "Markdown vault — captured with Marasca";
+export const MARASCA_REPO_MARK = /captured with Marasca/i;
+/** Settings starts warning about a pasted token this long before GitHub retires it. */
+export const TOKEN_EXPIRY_WARN_MS = 7 * 24 * 60 * 60_000;
+/** Documents under "Recent" in the menu bar item. */
+export const TRAY_RECENT_COUNT = 5;
+/** A resize or a move is saved once it settles. */
+export const BOUNDS_SAVE_DEBOUNCE_MS = 500;
 export const APP_ID = "dev.nunu.marasca";
 export const GIT_IDENTITY = { name: "Marasca", email: "marasca@localhost" } as const;
 

@@ -37,6 +37,8 @@ export class SyncEngine {
     conflicts: 0,
     failure: null,
     failedOp: null,
+    lastPullAt: null,
+    nextRetryAt: null,
   };
 
   private pushTimer: NodeJS.Timeout | null = null;
@@ -75,6 +77,22 @@ export class SyncEngine {
       "checking what still needs pushing",
     );
     this.startPulling();
+  }
+
+  /**
+   * The Mac woke, the screen unlocked or the network came back: whatever was waiting on a
+   * back-off goes now, and GitHub is asked what changed meanwhile. A push that failed
+   * offline used to sit out up to five minutes of back-off after the network returned.
+   * Both run through the repo's lock like everything else.
+   */
+  async nudge(): Promise<void> {
+    if (!this.v.config.remote || this.stopped) return;
+    const waiting = this.pushTimer !== null || this.sync.ahead > 0 || this.sync.failedOp === "push";
+    if (waiting) {
+      this.retryDelay = PUSH_RETRY_MIN_MS;
+      await this.pushNow();
+    }
+    await this.pull();
   }
 
   stop(): void {
@@ -186,7 +204,7 @@ export class SyncEngine {
       this.pushTimer = null;
     }
     this.pushing = true;
-    this.setSync({ state: "pushing", lastError: null });
+    this.setSync({ state: "pushing", lastError: null, nextRetryAt: null });
     try {
       await this.freshenToken();
       await this.ensureRemote();
@@ -249,6 +267,8 @@ export class SyncEngine {
           () => fire(this.pushNow(), "the retried push"),
           this.retryDelay,
         );
+        // Said, so Settings can tell "trying again at 14:05" from "given up".
+        this.setSync({ nextRetryAt: Date.now() + this.retryDelay });
         this.retryDelay = Math.min(this.retryDelay * 2, PUSH_RETRY_MAX_MS);
       }
     } finally {
@@ -301,6 +321,7 @@ export class SyncEngine {
         this.v.emit("index", this.v.index.snapshot());
       }
       this.clearPullFailure();
+      this.setSync({ lastPullAt: Date.now() });
       await this.refreshSyncStatus();
 
       return {

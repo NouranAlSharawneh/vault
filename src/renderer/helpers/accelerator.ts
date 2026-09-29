@@ -2,6 +2,19 @@ import { IS_MAC } from "@/constants";
 
 const MOD_ORDER = ["Control", "Alt", "Shift", "Super"] as const;
 const MAC_GLYPH: Record<string, string> = { Control: "⌃", Alt: "⌥", Shift: "⇧", Super: "⌘" };
+/** The keys a Mac menu draws as symbols, so ⌘↩ and ⌘⌫ read as they do in the menus. */
+const MAC_KEY_GLYPH: Record<string, string> = {
+  Enter: "↩",
+  Return: "↩",
+  Backspace: "⌫",
+  Delete: "⌦",
+  Escape: "Esc",
+  Up: "↑",
+  Down: "↓",
+  Left: "←",
+  Right: "→",
+  Tab: "⇥",
+};
 const KEY_NAMES: Record<string, string> = {
   " ": "Space",
   ArrowUp: "Up",
@@ -80,5 +93,13 @@ export function acceleratorLabel(accelerator: string): string {
   if (!IS_MAC)
     return parts.map((p) => (p === "Super" ? "Win" : p === "Control" ? "Ctrl" : p)).join("+");
 
-  return parts.map((p) => MAC_GLYPH[p] ?? p).join("");
+  return parts.map((p) => MAC_GLYPH[p] ?? MAC_KEY_GLYPH[p] ?? p).join("");
+}
+
+/** "Up / Down" → "↑ / ↓": keys that do the same job, each labelled. */
+export function shortcutLabel(accelerator: string): string {
+  return accelerator
+    .split(" / ")
+    .map((a) => acceleratorLabel(a))
+    .join(" / ");
 }

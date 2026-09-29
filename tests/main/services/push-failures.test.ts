@@ -204,3 +204,52 @@ describe("a push that fails", () => {
     expect(sync.status().lastError).toBeNull();
   });
 });
+
+describe("when the network may be back", () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+  });
+
+  afterEach(() => {
+    vi.clearAllTimers();
+    vi.useRealTimers();
+  });
+
+  it("says when the next try is, while a push waits on its back-off", async () => {
+    const { sync } = engine(boom("fatal: unable to access: Could not resolve host: github.com"));
+    await sync.pushNow();
+
+    expect(sync.status().nextRetryAt).toBe(Date.now() + PUSH_RETRY_MIN_MS);
+  });
+
+  it("pushes at once when nudged, instead of sitting out the back-off, then pulls", async () => {
+    let offline = true;
+    const { sync, git } = engine(() =>
+      offline ? new Error("fatal: unable to access: Could not resolve host: github.com") : null,
+    );
+    const pull = vi
+      .spyOn(sync, "pull")
+      .mockResolvedValue({ conflicts: [], pulled: 0, failure: null });
+    await sync.pushNow();
+    offline = false;
+    await sync.nudge();
+
+    expect(git.push).toHaveBeenCalledTimes(2);
+    expect(sync.status().state).toBe("synced");
+    expect(sync.status().nextRetryAt).toBeNull();
+    expect(pull).toHaveBeenCalled();
+  });
+
+  it("only pulls when nothing is waiting to go up", async () => {
+    const { sync, git } = engine(() => null);
+    await sync.pushNow();
+    git.push.mockClear();
+    const pull = vi
+      .spyOn(sync, "pull")
+      .mockResolvedValue({ conflicts: [], pulled: 0, failure: null });
+    await sync.nudge();
+
+    expect(git.push).not.toHaveBeenCalled();
+    expect(pull).toHaveBeenCalled();
+  });
+});

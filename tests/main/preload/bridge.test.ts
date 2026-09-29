@@ -5,9 +5,11 @@ const electron = vi.hoisted(() => ({
   invoke: vi.fn(),
   on: vi.fn(),
   removeListener: vi.fn(),
+  pathFor: vi.fn(() => "/Users/nunu/notes/hi.md"),
 }));
 
 vi.mock("electron", () => ({
+  webUtils: { getPathForFile: electron.pathFor },
   contextBridge: {
     exposeInMainWorld: (key: string, value: unknown) => {
       electron.exposed[key] = value;
@@ -42,7 +44,20 @@ describe("the preload bridge", () => {
     await bridge();
 
     expect(Object.keys(electron.exposed)).toEqual(["marasca"]);
-    expect(Object.keys(electron.exposed.marasca as object).sort()).toEqual(["invoke", "on"]);
+    expect(Object.keys(electron.exposed.marasca as object).sort()).toEqual([
+      "invoke",
+      "on",
+      "pathForFile",
+    ]);
+  });
+
+  it("says where a dropped file is, and nothing more about the disk", async () => {
+    // Electron dropped `File.path`; a drop on a window needs the path to open the file.
+    const api = await bridge();
+    const file = new Blob(["# hi"]) as File;
+
+    expect(api.pathForFile(file)).toBe("/Users/nunu/notes/hi.md");
+    expect(electron.pathFor).toHaveBeenCalledWith(file);
   });
 
   it("forwards a known invoke channel untouched", async () => {

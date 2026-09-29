@@ -1,18 +1,17 @@
 import { ChevronDown } from "lucide-react";
-import { Button, Dot, SettingGroup } from "@/components/ui";
+import { Button, Dot, GitHubMark, SettingGroup } from "@/components/ui";
 import { PUSH_DEBOUNCE_LABELS } from "@/data/settings.data";
-import { describeToken } from "@/helpers";
-import { fire } from "@/lib/api";
+import { api, fire } from "@/lib/api";
 import { useApp } from "@/stores/app";
+import { AccountRow } from "../account-row/account-row.component";
 import { SettingRow } from "../setting-row/setting-row.component";
+import { SyncRow } from "../sync-row/sync-row.component";
 import type { GitHubGroupProps } from "./github-group.types";
 
 /** The account, the repo it pushes to, and how soon after a save. */
 export function GitHubGroup({ s, config }: GitHubGroupProps) {
   const sync = useApp((st) => st.sync);
-  const user = s.auth.user;
   const signedIn = s.auth.status === "signed-in";
-  const expired = s.auth.status === "expired";
   const delayError = s.errorFor("pushDebounceMs");
   // The dot says what the badge says, not always "fine".
   const repoTone =
@@ -26,42 +25,7 @@ export function GitHubGroup({ s, config }: GitHubGroupProps) {
 
   return (
     <SettingGroup title="GitHub">
-      {user ? (
-        <SettingRow
-          leading={
-            <img src={user.avatarUrl} alt="" className="size-7 shrink-0 rounded-full bg-paper-3" />
-          }
-          label={`@${user.login}`}
-          description={
-            expired ? (
-              <span className="text-cherry">
-                GitHub signed you out. Nothing is pushed until you sign in again.
-              </span>
-            ) : (
-              (describeToken(s.token, undefined, s.auth.method) ?? user.name ?? "Signed in")
-            )
-          }
-        >
-          {expired && (
-            <Button variant="primary" onClick={() => (window.location.hash = "onboarding?signin")}>
-              Sign in again
-            </Button>
-          )}
-          <Button
-            variant="outline"
-            loading={s.busy === "signOut"}
-            onClick={() => fire(s.signOut())}
-          >
-            Sign out
-          </Button>
-        </SettingRow>
-      ) : (
-        <SettingRow label="Account" description="Sign in to push your vault to GitHub.">
-          <Button variant="primary" onClick={() => (window.location.hash = "onboarding?signin")}>
-            Sign in
-          </Button>
-        </SettingRow>
-      )}
+      <AccountRow s={s} />
 
       {config.remote ? (
         <SettingRow
@@ -73,7 +37,14 @@ export function GitHubGroup({ s, config }: GitHubGroupProps) {
               <span className="shrink-0">· {config.branch}</span>
             </span>
           }
-        />
+        >
+          <Button
+            variant="outline"
+            onClick={() => fire(api("github:openInBrowser"), "Couldn’t open GitHub")}
+          >
+            <GitHubMark size={12} /> Open on GitHub
+          </Button>
+        </SettingRow>
       ) : (
         <SettingRow
           label="Repository"
@@ -90,6 +61,8 @@ export function GitHubGroup({ s, config }: GitHubGroupProps) {
           )}
         </SettingRow>
       )}
+
+      {config.remote && <SyncRow />}
 
       {config.remote && (
         <SettingRow

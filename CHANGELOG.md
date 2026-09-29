@@ -104,6 +104,16 @@ To release: add a section for the new version here, run `npm run release -- <pat
 - **Esc no longer throws a capture away.** The title, project, tags and image choices you made come back when the same clip is captured again, until it is saved.
 - **Screenshots and copied pictures can be captured.** The image goes into the project's `assets/` folder, with a document that shows it.
 - **Saving a capture gets out of the way at once.** A notification says it was saved, with Open and Undo (Undo moves it to the trash).
+- **A menu bar item.** Capture the clipboard, open Marasca, see at a glance whether everything has reached GitHub, and jump to the five documents captured last.
+- **Open at login** (Settings ▸ Capture), so the capture shortcut works from the moment the Mac starts. Started that way, Marasca opens no window — the menu bar item is how you know it's there.
+- **Help ▸ Keyboard Shortcuts (⌘/)**, read from the menus themselves — your capture shortcut included — with the keys that work inside a window. Also under Settings ▸ Capture.
+- **Check for Updates…** in the Marasca menu.
+- **Open markdown files from Finder**, or drop one on any window. A document in the vault opens as itself; one from elsewhere opens as a new document, and the original is never changed.
+- **Windows reopen where you left them** — the library on its screen (or the nearest one still attached), editors at the size you last used.
+- **Sync catches up when the Mac wakes, unlocks or gets its network back**, instead of waiting out a retry that could be minutes away.
+- **Settings ▸ GitHub:** a Sync row with when this Mac last pushed and pulled, when it tries again, and Push now; Open on GitHub beside the repository; and a warning a week before a pasted token expires, with a way to paste a new one.
+- **Copy diagnostics** (Settings ▸ Updates): versions, git, the vault and sync state and the last error, ready to paste into an issue — no token, and paths shortened to ~.
+- **Setup:** Continue says what it will do ("Create nunu/vault", "Use nunu/notes", "Create local vault"); a vault Marasca made before is found, marked and picked for you on a second Mac; the title bar shows which step you're on; the wrong GitHub account can sign out from there; the Done screen shows the first push as it happens; and a folder iCloud also syncs gets a warning before anything is created in it.
 
 ## [0.0.2] - 2026-09-28
 

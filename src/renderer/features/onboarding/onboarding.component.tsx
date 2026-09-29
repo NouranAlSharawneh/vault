@@ -1,11 +1,13 @@
 import { useEffect, useRef, useState } from "react";
 import { Button, Dot, Spinner } from "@/components/ui";
 import { isEditableTarget } from "@/helpers";
+import { api, fire } from "@/lib/api";
 import { useApp } from "@/stores/app";
 import { Done } from "./components/done/done.component";
 import { FirstScan } from "./components/first-scan/first-scan.component";
 import { RepoPicker } from "./components/repo-picker/repo-picker.component";
 import { SignIn } from "./components/sign-in/sign-in.component";
+import { StepIndicator } from "./components/step-indicator/step-indicator.component";
 import { Welcome } from "./components/welcome/welcome.component";
 import { useOnboardingStep } from "./hooks/use-onboarding-step.hook";
 import { useStepFocus } from "./hooks/use-step-focus.hook";
@@ -22,6 +24,11 @@ export function Onboarding() {
   // Came here from a vault that already exists (Settings, a banner): there is always a
   // way back to it, so changing your mind doesn't mean finishing the flow.
   const canLeave = hasVault && step !== "scan" && step !== "done";
+  const signOutHere = async () => {
+    await api("auth:signOut");
+    useApp.setState({ auth: await api("auth:state") });
+    setStep("signin");
+  };
   useEffect(() => {
     if (!canLeave) return;
     const onKey = (e: KeyboardEvent) => {
@@ -36,12 +43,18 @@ export function Onboarding() {
   return (
     <div className="flex h-full flex-col bg-paper">
       <div className="flex h-12 shrink-0 items-center justify-between gap-4 pr-4 pl-titlebar drag">
-        <div className="no-drag">
+        <div className="flex items-center gap-3">
           {canLeave && (
-            <Button variant="ghost" size="sm" onClick={() => (window.location.hash = "main")}>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="no-drag"
+              onClick={() => (window.location.hash = "main")}
+            >
               Cancel
             </Button>
           )}
+          <StepIndicator step={step} />
         </div>
         <div className="flex items-center gap-4">
           {/* Welcome shows the whole card; the repo step shows its own; the rest keep the
@@ -58,7 +71,12 @@ export function Onboarding() {
             <div className="flex items-center gap-1.5 text-xs text-ink-3 no-drag">
               {signedIn ? (
                 <>
-                  <Dot tone="bg-ok" size={6} /> Signed in as {user.login}
+                  <Dot tone="bg-ok" size={6} /> Signed in as {user.login} ·
+                  {/* The wrong account — a work login still in the browser — used to mean
+                      finishing setup, then finding Sign out in Settings. */}
+                  <Button variant="link" className="text-xs" onClick={() => fire(signOutHere())}>
+                    Not you? Sign out
+                  </Button>
                 </>
               ) : auth.status === "expired" ? (
                 <>

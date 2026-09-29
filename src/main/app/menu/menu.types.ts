@@ -9,6 +9,8 @@ export type MenuAction =
   | "resetApp"
   | "openSettings"
   | "search"
+  | "keyboardShortcuts"
+  | "checkForUpdates"
   | { shortcut: IpcEvents["shortcut"] };
 
 export type MenuItemData =

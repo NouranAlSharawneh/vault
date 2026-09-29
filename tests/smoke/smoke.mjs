@@ -100,7 +100,8 @@ await win.click("text=Use another method");
 await win.click("text=Start local, connect later");
 await win.waitForSelector("text=Where should the vault live?");
 await win.screenshot({ path: join(out, "smoke-2-repo.png") });
-await win.click('button:has-text("Continue")');
+// The button says what it does; for "Start local" that is creating a local vault.
+await win.click('button:has-text("Create local vault")');
 await win.waitForSelector("text=Your vault is ready", { timeout: 30000 });
 await win.waitForTimeout(500);
 await win.screenshot({ path: join(out, "smoke-3-done.png") });

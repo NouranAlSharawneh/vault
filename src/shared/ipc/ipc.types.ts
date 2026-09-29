@@ -19,11 +19,13 @@ import type {
   PullResult,
   HotkeyStatus,
   IndexSnapshot,
+  LoginItemState,
   SaveRequest,
   SaveResult,
   SavedView,
   ScanProgress,
   SearchHit,
+  ShortcutGroup,
   StoredDraft,
   SyncStatus,
   TokenStatus,
@@ -70,6 +72,8 @@ export interface IpcInvoke {
   "vault:index": () => IndexSnapshot;
   "vault:updateConfig": (patch: Partial<VaultConfig>) => VaultConfig;
   "vault:revealInFinder": (path?: string) => void;
+  /** Why a folder is a risky home for a vault (iCloud Drive syncing it too), or null. */
+  "vault:folderWarning": (path: string) => string | null;
   /** Open the configured vault again after it failed to open at launch. */
   "vault:reopen": () => IndexSnapshot;
 
@@ -100,6 +104,8 @@ export interface IpcInvoke {
   "sync:pushNow": () => SyncStatus;
   /** Fetch and rebase. Conflicts are kept as pairs, never left in the working tree. */
   "sync:pull": () => PullResult;
+  /** The network came back: retry whatever is waiting, once, after a short settle. */
+  "sync:nudge": () => void;
   "conflicts:list": () => ConflictPair[];
   /** `copyPath` is the stamped copy; the choice decides what ends up at the original path. */
   "conflicts:resolve": (copyPath: string, choice: ConflictChoice) => void;
@@ -165,6 +171,17 @@ export interface IpcInvoke {
   "hotkey:status": () => HotkeyStatus;
   "app:openExternal": (url: string) => void;
   "app:reset": () => void;
+  "app:loginItem": () => LoginItemState;
+  "app:setLoginItem": (openAtLogin: boolean) => LoginItemState;
+  /** What someone helping needs to know, copied to the clipboard; the same text returned. */
+  "app:copyDiagnostics": () => string;
+  /** Every menu shortcut, grouped as the menus are, with the capture shortcut among them. */
+  "app:shortcuts": () => ShortcutGroup[];
+  /**
+   * A markdown file from outside (dropped on a window): opened in an editor. One in the
+   * vault opens as itself; one elsewhere opens as a new document, the original untouched.
+   */
+  "file:open": (path: string) => void;
 }
 
 /** Main → renderer push events. */
@@ -179,7 +196,9 @@ export type Shortcut =
   /** ⌘↵: commit and close. */
   | "saveClose"
   | "trash"
-  | "settings";
+  | "settings"
+  /** Help ▸ Keyboard Shortcuts. */
+  | "shortcuts";
 
 export interface IpcEvents {
   "index:changed": IndexSnapshot;
@@ -209,4 +228,6 @@ export interface MarascaApi {
     ...args: Parameters<IpcInvoke[C]>
   ) => Promise<ReturnType<IpcInvoke[C]>>;
   on: <C extends EventChannel>(channel: C, listener: (payload: IpcEvents[C]) => void) => () => void;
+  /** Where a dropped file lives on disk (Electron no longer puts it on `File.path`). */
+  pathForFile: (file: File) => string;
 }

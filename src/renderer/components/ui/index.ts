@@ -21,3 +21,4 @@ export { Tooltip } from "./tooltip/tooltip.component";
 export { DialogShell } from "./dialog-shell/dialog-shell.component";
 export { DialogHeader } from "./dialog-header/dialog-header.component";
 export { Segmented } from "./segmented/segmented.component";
+export { Switch } from "./switch/switch.component";

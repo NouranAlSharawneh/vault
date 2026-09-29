@@ -1,4 +1,4 @@
-import { contextBridge, ipcRenderer, type IpcRendererEvent } from "electron";
+import { contextBridge, ipcRenderer, webUtils, type IpcRendererEvent } from "electron";
 import { EVENT_CHANNELS, INVOKE_CHANNELS, type MarascaApi } from "@shared/ipc";
 
 const invokeSet = new Set<string>(INVOKE_CHANNELS);
@@ -17,6 +17,7 @@ const api: MarascaApi = {
 
     return () => ipcRenderer.removeListener(channel, wrapped);
   },
+  pathForFile: (file) => webUtils.getPathForFile(file),
 };
 
 contextBridge.exposeInMainWorld("marasca", api);
