@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 
 interface Handlers {
   /** `reveal` is true for ⌥⌘↵: save, then open the doc in Marasca. */
@@ -14,6 +14,10 @@ interface Handlers {
  * anywhere in the sheet.
  */
 export function useCaptureKeys({ onSave, onOpenEditor, onActions, onHide }: Handlers) {
+  const save = useRef(onSave);
+  useEffect(() => {
+    save.current = onSave;
+  });
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       const mod = e.metaKey || e.ctrlKey;
@@ -24,7 +28,10 @@ export function useCaptureKeys({ onSave, onOpenEditor, onActions, onHide }: Hand
         if (!e.defaultPrevented) onHide();
       } else if (mod && e.key === "Enter") {
         e.preventDefault();
-        onSave(e.altKey);
+        // A turn later, with the latest save: a tag typed and not yet added is added by
+        // this same keypress, and the save made in the same breath didn't have it.
+        const reveal = e.altKey;
+        setTimeout(() => save.current(reveal), 0);
       } else if (mod && e.key.toLowerCase() === "e") {
         e.preventDefault();
         onOpenEditor();
@@ -36,5 +43,5 @@ export function useCaptureKeys({ onSave, onOpenEditor, onActions, onHide }: Hand
     window.addEventListener("keydown", onKey);
 
     return () => window.removeEventListener("keydown", onKey);
-  }, [onSave, onOpenEditor, onActions, onHide]);
+  }, [onOpenEditor, onActions, onHide]);
 }

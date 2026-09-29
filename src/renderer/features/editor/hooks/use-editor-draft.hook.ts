@@ -5,7 +5,14 @@ import { api } from "@/lib/api";
 import { useApp } from "@/stores/app";
 import { DRAFT_DEBOUNCE_MS } from "@shared/constants";
 import { inferTitle } from "@shared/helpers";
-import type { AssetImport, DocContent, EditorDraft, SaveResult, Source } from "@shared/types";
+import type {
+  AssetImport,
+  DocContent,
+  EditorDraft,
+  SaveResult,
+  Source,
+  StoredDraft,
+} from "@shared/types";
 import {
   emptyMeta,
   metaFromDoc,
@@ -35,6 +42,12 @@ export function useEditorDraft(untitledKey: string | null) {
   const [saving, setSaving] = useState<SaveMode | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [lastSaved, setLastSaved] = useState<SaveResult | null>(null);
+  /**
+   * Text parked from an earlier session that is older than the file: the file moved on
+   * since (a pull, an edit elsewhere), so the draft is offered rather than put back —
+   * applied silently, the next save wrote over the newer file without a word.
+   */
+  const [staleDraft, setStaleDraft] = useState<StoredDraft | null>(null);
   const [pathPreview, setPathPreview] = useState("");
 
   const inferredTitle = useMemo(() => inferTitle(state.body) ?? "", [state.body]);
@@ -121,15 +134,44 @@ export function useEditorDraft(untitledKey: string | null) {
     return () => clearTimeout(t);
   }, [draftKey, state.body, state.meta, state.dirty]);
 
-  /** Bring back whatever was left behind for this document, if it is still unsaved. */
-  const recoverDraft = useCallback(async (key: string) => {
+  /**
+   * Bring back whatever was left behind for this document, if it is still unsaved. `doc`
+   * is the file it was opened on, when there is one.
+   */
+  const recoverDraft = useCallback(async (key: string, doc?: DocContent) => {
     const parked = await api("draft:load", key).catch(() => null);
     if (!parked?.body.trim()) return;
+    // The same text as the file is nothing to recover.
+    if (doc && parked.body === doc.body) return;
+    // Older than the file on disk: ask, don't apply.
+    if (doc && Date.parse(parked.at) < doc.meta.mtime) {
+      setStaleDraft(parked);
+
+      return;
+    }
     setState((s) =>
       // Only if nothing has been typed since the window opened — never overwrite live work.
       s.dirty ? s : { ...s, body: parked.body, meta: { ...s.meta, ...parked.meta }, dirty: true },
     );
   }, []);
+
+  /** Put the offered draft back after all, or let it go. */
+  const resolveStaleDraft = useCallback(
+    (restore: boolean) => {
+      const parked = staleDraft;
+      setStaleDraft(null);
+      if (!parked) return;
+      if (restore)
+        setState((s) => ({
+          ...s,
+          body: parked.body,
+          meta: { ...s.meta, ...parked.meta },
+          dirty: true,
+        }));
+      else if (draftKey) void api("draft:clear", draftKey).catch(() => undefined);
+    },
+    [staleDraft, draftKey],
+  );
 
   /**
    * One save at a time. ⌘↵ reaches the editor twice for one press — CodeMirror's own
@@ -214,6 +256,8 @@ export function useEditorDraft(untitledKey: string | null) {
     loadDoc,
     loadDraft,
     recoverDraft,
+    staleDraft,
+    resolveStaleDraft,
     discardDraft: useCallback(() => {
       if (draftKey) void api("draft:clear", draftKey).catch(() => undefined);
     }, [draftKey]),

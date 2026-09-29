@@ -126,9 +126,24 @@ describe("Editor", () => {
       });
       render(<Editor />);
 
-      await screen.findByText("Typed before the crash.");
+      // In the text and in its preview.
+      expect((await screen.findAllByText("Typed before the crash.")).length).toBeGreaterThan(0);
       await act(() => new Promise((r) => setTimeout(r, 0)));
       expect(screen.queryByText("The text on disk.")).toBeNull();
+    });
+
+    it("offers text parked before the file last changed, instead of putting it back", async () => {
+      window.location.hash = "#editor?path=atlas-api/spec.md";
+      mockMarascaApi({
+        "doc:read": { ...SPEC, meta: { ...SPEC.meta, mtime: Date.parse("2026-06-01") } },
+        "draft:load": { ...PARKED, body: "# Spec\n\nFrom before.", at: "2026-01-01T00:00:00Z" },
+        "doc:pathPreview": () => "atlas-api/spec.md",
+      });
+      render(<Editor />);
+      await screen.findByText(/is older than this file/);
+      expect(screen.queryByText("From before.")).toBeNull();
+      fireEvent.click(screen.getByRole("button", { name: "Restore it" }));
+      expect((await screen.findAllByText("From before.")).length).toBeGreaterThan(0);
     });
 
     it("sends back what it loaded, so a change made since can be noticed", async () => {

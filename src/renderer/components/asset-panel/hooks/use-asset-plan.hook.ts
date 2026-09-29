@@ -1,33 +1,44 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ASSET_RESOLVE_DEBOUNCE_MS } from "@/constants";
 import { api } from "@/lib/api";
 import { useApp } from "@/stores/app";
-import { INBOX_SLUG } from "@shared/constants";
+import { ASSET_MAX_BYTES, ASSET_WARN_BYTES, INBOX_SLUG } from "@shared/constants";
 import { findAssetRefs, projectSlug } from "@shared/helpers";
-import type { AssetResolution } from "@shared/types";
+import type { AssetImport, AssetRef, AssetResolution } from "@shared/types";
 import type { AssetPlan, AssetPlanOptions } from "../asset-panel.types";
+
+/** How long a save waits for the images to be looked for before going on without them. */
+const SETTLE_WAIT_MS = 3000;
 
 /**
  * Relative images in a body, where they are on disk, and what to copy on save.
  * The base folder comes from the copied file, else the folder remembered for this project,
  * else main works it out from the refs themselves. Picking one by hand is the last resort,
  * not the first step, and a hand-picked folder is remembered for the project.
+ *
+ * Everything chosen here belongs to one body. The capture sheet is never unmounted, so a
+ * folder picked, or an image skipped, for one clip used to carry over to the next.
  */
 export function useAssetPlan({ body, project, sourceDir }: AssetPlanOptions): AssetPlan {
   const config = useApp((s) => s.config);
   const setConfig = useApp((s) => s.setConfig);
   const slug = projectSlug(project) || INBOX_SLUG;
   const remembered = config?.assetDirs?.[slug] ?? null;
-  const [chosen, setChosen] = useState<string | null>(null);
+  const [picked, setPicked] = useState<{ body: string; dir: string } | null>(null);
+  const [toggled, setToggled] = useState<{ body: string; refs: Record<string, boolean> }>({
+    body,
+    refs: {},
+  });
   const [resolved, setResolved] = useState<{ key: string } & AssetResolution>({
     key: "",
     baseDir: null,
     detected: false,
     refs: [],
   });
-  const [excluded, setExcluded] = useState<string[]>([]);
 
   const paths = useMemo(() => findAssetRefs(body), [body]);
+  const chosen = picked?.body === body ? picked.dir : null;
+  const overrides = useMemo(() => (toggled.body === body ? toggled.refs : {}), [toggled, body]);
   /** What we ask about; what comes back may be a folder main worked out on its own. */
   const asked = chosen ?? sourceDir ?? remembered;
   const key = `${asked ?? ""} ${paths.join(" ")}`;
@@ -38,7 +49,13 @@ export function useAssetPlan({ body, project, sourceDir }: AssetPlanOptions): As
     const t = setTimeout(() => {
       api("assets:resolve", asked, paths)
         .then((r) => !cancelled && setResolved({ key, ...r }))
-        .catch(() => undefined);
+        // A lookup that failed is settled too: nothing was found. Left unsettled, a save
+        // waited on it and the panel never said anything.
+        .catch(
+          () =>
+            !cancelled &&
+            setResolved({ key, baseDir: asked, detected: false, refs: paths.map(missing) }),
+        );
     }, ASSET_RESOLVE_DEBOUNCE_MS);
 
     return () => {
@@ -48,37 +65,80 @@ export function useAssetPlan({ body, project, sourceDir }: AssetPlanOptions): As
   }, [asked, paths, key]);
 
   const settled = paths.length > 0 && resolved.key === key;
+  const pending = paths.length > 0 && !settled;
   const refs = settled ? resolved.refs : [];
   const baseDir = settled ? resolved.baseDir : asked;
 
   const chooseFolder = useCallback(async () => {
     const dir = await api("assets:chooseFolder", baseDir ?? undefined);
     if (!dir) return;
-    setChosen(dir);
+    setPicked({ body, dir });
     const assetDirs = { ...(config?.assetDirs ?? {}), [slug]: dir };
     setConfig(await api("vault:updateConfig", { assetDirs }));
-  }, [baseDir, config?.assetDirs, slug, setConfig]);
+  }, [baseDir, body, config?.assetDirs, slug, setConfig]);
+
+  /** Copied unless skipped; a large file waits to be asked for; one over GitHub's limit never goes. */
+  const included = useCallback(
+    (r: AssetRef) =>
+      r.status === "found" &&
+      r.bytes <= ASSET_MAX_BYTES &&
+      (overrides[r.ref] ?? r.bytes <= ASSET_WARN_BYTES),
+    [overrides],
+  );
 
   const toggle = useCallback(
     (ref: string) =>
-      setExcluded((x) => (x.includes(ref) ? x.filter((r) => r !== ref) : [...x, ref])),
-    [],
+      setToggled((t) => {
+        const refs = t.body === body ? t.refs : {};
+        const r = resolved.refs.find((x) => x.ref === ref);
+        const now = r ? included(r) : false;
+
+        return { body, refs: { ...refs, [ref]: !now } };
+      }),
+    [body, resolved.refs, included],
   );
 
-  const included = refs.filter((r) => r.status === "found" && !excluded.includes(r.ref));
+  const going = refs.filter(included);
+  const request: AssetImport | undefined =
+    baseDir && going.length ? { baseDir, refs: going.map((r) => r.ref) } : undefined;
+
+  // A save pressed before the images have been looked for waits for the answer (briefly),
+  // so it can't go ahead with links that are about to be found missing.
+  const waiters = useRef<(() => void)[]>([]);
+  useEffect(() => {
+    if (pending) return;
+    for (const done of waiters.current.splice(0)) done();
+  }, [pending]);
+  const whenSettled = useCallback(
+    () =>
+      pending
+        ? new Promise<void>((done) => {
+            waiters.current.push(done);
+            setTimeout(done, SETTLE_WAIT_MS);
+          })
+        : Promise.resolve(),
+    [pending],
+  );
 
   return {
     refs,
     baseDir,
     detected: settled && resolved.detected,
-    excluded,
+    pending,
+    lookingFor: pending ? paths.length : 0,
+    excluded: refs.filter((r) => r.status === "found" && !included(r)).map((r) => r.ref),
     found: refs.filter((r) => r.status === "found").length,
     missing: refs.filter((r) => r.status === "missing").length,
-    /** Referenced but not going into the commit: never located, or deliberately skipped. */
-    stranded: refs.filter((r) => r.status !== "found" || excluded.includes(r.ref)).length,
-    bytes: included.reduce((n, r) => n + r.bytes, 0),
+    /** Referenced but not going into the commit: never located, too large, or skipped. */
+    stranded: refs.filter((r) => !included(r)).length,
+    bytes: going.reduce((n, r) => n + r.bytes, 0),
     chooseFolder,
     toggle,
-    request: baseDir && included.length ? { baseDir, refs: included.map((r) => r.ref) } : undefined,
+    whenSettled,
+    request,
   };
+}
+
+function missing(ref: string): AssetRef {
+  return { ref, name: ref.split("/").pop() ?? ref, status: "missing", bytes: 0 };
 }

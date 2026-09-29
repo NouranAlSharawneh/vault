@@ -5,6 +5,7 @@ export {
   editorWindowCount,
   setEditorPath,
   takeEditorSeed,
+  notifyDocGone,
 } from "./editor.window";
 export {
   getCaptureWindow,

@@ -9,7 +9,7 @@ interface Handlers {
   onDoc: (doc: DocContent) => void;
   onDraft: (draft: EditorDraft) => void;
   /** Bring back text left unsaved the last time this document was open. */
-  onRecover: (key: string) => Promise<void>;
+  onRecover: (key: string, doc?: DocContent) => Promise<void>;
 }
 
 const READY: OpenStatus = { kind: "ready" };
@@ -38,7 +38,7 @@ async function open(target: EditorTarget, handlers: { current: Handlers }): Prom
       return { kind: "failed", path: target.path, reason: errorMessage(e), retrying: false };
     }
     handlers.current.onDoc(doc);
-    await handlers.current.onRecover(target.path);
+    await handlers.current.onRecover(target.path, doc);
 
     return READY;
   }

@@ -18,3 +18,4 @@ export { describeResolution } from "./describe-resolution";
 export { pixelRuns } from "./pixel-runs";
 export { describeGit } from "./describe-git";
 export { describePull, describePush } from "./describe-sync";
+export { plainError } from "./plain-error";

@@ -74,3 +74,14 @@ export function takeEditorSeed(win: BrowserWindow | null): EditorDraft | null {
 export function setEditorPath(win: BrowserWindow | null, path: string | null): void {
   if (win) editors.setPath(win, path);
 }
+
+/**
+ * Tell the editor holding `path`, if one is open, that its document just went to the
+ * trash. It used to hear nothing, and its next save put the document back without a word
+ * while the trashed copy stayed in the trash.
+ */
+export function notifyDocGone(path: string): void {
+  const win = editors.windowFor(path);
+  if (win && !win.isDestroyed())
+    win.webContents.send("editor:docGone", { path, reason: "trashed" });
+}

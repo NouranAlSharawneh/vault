@@ -1,8 +1,18 @@
 import { HTML_SRC_RE, MD_LINK_RE } from "../constants";
 import { unwrap } from "./find-asset-refs";
+import { splitCode } from "./split-code";
 
-/** Replace referenced paths (as found by `findAssetRefs`) with their new locations. */
+/**
+ * Replace referenced paths (as found by `findAssetRefs`) with their new locations — in the
+ * prose only; code keeps what it shows.
+ */
 export function rewriteAssetRefs(markdown: string, map: Record<string, string>): string {
+  return splitCode(markdown)
+    .map((s) => (s.code ? s.text : rewriteProse(s.text, map)))
+    .join("");
+}
+
+function rewriteProse(markdown: string, map: Record<string, string>): string {
   const swap = (raw: string) => {
     const [target, ...rest] = raw.split(/([?#].*)/s);
     const next = map[target];

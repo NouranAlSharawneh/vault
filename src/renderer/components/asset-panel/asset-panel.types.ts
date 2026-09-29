@@ -13,7 +13,11 @@ export interface AssetPlan {
   baseDir: string | null;
   /** True when Marasca worked the folder out itself rather than being handed one. */
   detected: boolean;
-  /** Refs the user unticked (too big, not wanted). */
+  /** Still being looked for. */
+  pending: boolean;
+  /** How many refs are being looked for right now. */
+  lookingFor: number;
+  /** Found refs that won't be copied: skipped, large and not asked for, or over the limit. */
   excluded: string[];
   found: number;
   missing: number;
@@ -23,6 +27,8 @@ export interface AssetPlan {
   bytes: number;
   chooseFolder: () => Promise<void>;
   toggle: (ref: string) => void;
+  /** Resolves once the images have been looked for (or after a short wait). */
+  whenSettled: () => Promise<void>;
   /** What to attach to the save request; undefined when there is nothing to copy. */
   request: AssetImport | undefined;
 }

@@ -3,6 +3,8 @@ import type { SaveMode } from "../../editor.types";
 export interface EditorFooterProps {
   pathPreview: string;
   hasRemote: boolean;
+  /** The branch a commit goes to, named on the button. */
+  branch: string;
   saving: SaveMode | null;
   canSave: boolean;
   dirty: boolean;

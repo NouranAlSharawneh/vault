@@ -37,6 +37,9 @@ beforeAll(() => {
   file("downloads/old/docs/hero-flyin.gif");
   // Noise the walk must not be derailed by.
   file("concorde/node_modules/pkg/docs/hero-flyin.gif");
+  file("concorde/shots/one.png");
+  // A lone file with a common name, nowhere near the project.
+  file("desktop/screenshot.png");
 });
 afterAll(() => rmSync(home, { recursive: true, force: true }));
 
@@ -66,5 +69,16 @@ describe("findAssetRoot", () => {
 
   it("has nothing to search with when every ref is absolute or an unservable type", async () => {
     expect(await findAssetRoot(["/etc/passwd", "notes/thing.psd"], [home])).toBeNull();
+  });
+
+  it("finds a ./ ref, which no file path used to end with", async () => {
+    expect(await findAssetRoot(["./shots/one.png"], [join(home, "concorde")])).toBe(
+      join(home, "concorde"),
+    );
+  });
+
+  it("does not guess from one bare filename", async () => {
+    // `screenshot.png` alone matched the Desktop and set it to be copied and pushed.
+    expect(await findAssetRoot(["screenshot.png"], [join(home, "desktop")])).toBeNull();
   });
 });

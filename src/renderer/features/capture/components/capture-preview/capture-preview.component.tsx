@@ -2,9 +2,13 @@ import { useEffect, useRef, useState } from "react";
 import { cx, shortPath } from "@/helpers";
 import type { CapturePreviewProps } from "./capture-preview.types";
 
-/** The whole clipboard, monospace on the deep-stone surface, scrollable. */
+/** Lines drawn in the preview; the rest is counted, not drawn. It's a glance, not an editor. */
+const PREVIEW_LINES = 300;
+
+/** The clipboard, monospace on the deep-stone surface, scrollable. */
 export function CapturePreview({ clip, compact }: CapturePreviewProps) {
-  const lines = clip.text.split(/\r?\n/);
+  const all = clip.text.split(/\r?\n/);
+  const lines = all.slice(0, PREVIEW_LINES);
   const box = useRef<HTMLPreElement>(null);
   const [more, setMore] = useState(false);
 
@@ -34,6 +38,11 @@ export function CapturePreview({ clip, compact }: CapturePreviewProps) {
               {l || " "}
             </div>
           ))}
+          {all.length > PREVIEW_LINES && (
+            <div className="text-overlay-ink-3">
+              … {(all.length - PREVIEW_LINES).toLocaleString()} more lines
+            </div>
+          )}
         </pre>
         {/* While there's more below, the last lines fade out instead of stopping mid-line.
           The colour is the preview's own surface (black/40 over the sheet). */}

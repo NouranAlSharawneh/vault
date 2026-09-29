@@ -11,6 +11,38 @@ const key = (k: string) =>
   ({ key: k, preventDefault: vi.fn() }) as unknown as KeyboardEvent<HTMLInputElement>;
 
 describe("useCombobox", () => {
+  it("keeps a new name that an existing project merely contains", () => {
+    // "API" typed for a new project became "Atlas API" on Enter.
+    const onChange = vi.fn();
+    const { result } = renderHook(() => useCombobox("API", onChange, PROJECTS));
+    act(() => result.current.setOpen(true));
+    expect(result.current.cursor).toBe(-1);
+    act(() => result.current.onKeyDown(key("Enter")));
+    expect(onChange).toHaveBeenLastCalledWith("API");
+  });
+
+  it("takes an existing project's own spelling when the name matches it", () => {
+    const onChange = vi.fn();
+    const { result } = renderHook(() => useCombobox("atlas api", onChange, PROJECTS));
+    act(() => result.current.setOpen(true));
+    act(() => result.current.onKeyDown(key("Enter")));
+    expect(onChange).toHaveBeenLastCalledWith("Atlas API");
+  });
+
+  it("leaves ⌘↵ to the window's save instead of picking a match", () => {
+    const onChange = vi.fn();
+    const e = {
+      key: "Enter",
+      metaKey: true,
+      preventDefault: vi.fn(),
+    } as unknown as KeyboardEvent<HTMLInputElement>;
+    const { result } = renderHook(() => useCombobox("Atl", onChange, PROJECTS));
+    act(() => result.current.setOpen(true));
+    act(() => result.current.onKeyDown(e));
+    expect(onChange).not.toHaveBeenCalled();
+    expect(e.preventDefault).not.toHaveBeenCalled();
+  });
+
   it("puts the highlight back on the first match when the query changes", () => {
     const onChange = vi.fn();
     const { result, rerender } = renderHook(({ v }) => useCombobox(v, onChange, PROJECTS), {

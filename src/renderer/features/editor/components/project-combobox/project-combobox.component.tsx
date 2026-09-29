@@ -7,7 +7,14 @@ import { projectColor, projectSlug } from "@shared/helpers";
 import { useCombobox } from "./hooks/use-combobox.hook";
 import type { ProjectComboboxProps } from "./project-combobox.types";
 
-export function ProjectCombobox({ value, onChange, projects, dark, hint }: ProjectComboboxProps) {
+export function ProjectCombobox({
+  value,
+  onChange,
+  projects,
+  dark,
+  hint,
+  placement = "above",
+}: ProjectComboboxProps) {
   const c = useCombobox(value, onChange, projects);
   const listId = useId();
   const expanded = c.open && c.matches.length > 0;
@@ -44,7 +51,7 @@ export function ProjectCombobox({ value, onChange, projects, dark, hint }: Proje
           aria-autocomplete="list"
           aria-expanded={expanded}
           aria-controls={expanded ? listId : undefined}
-          aria-activedescendant={expanded ? `${listId}-${c.cursor}` : undefined}
+          aria-activedescendant={expanded && c.cursor >= 0 ? `${listId}-${c.cursor}` : undefined}
         />
         {isNew ? (
           <span className="text-2xs text-ink-4">new</span>
@@ -59,7 +66,8 @@ export function ProjectCombobox({ value, onChange, projects, dark, hint }: Proje
           role="listbox"
           aria-label="Projects"
           className={cx(
-            "absolute bottom-full left-0 z-10 mb-1 w-full rounded-md border p-1 shadow-pop",
+            "absolute left-0 z-10 w-full rounded-md border p-1 shadow-pop",
+            placement === "above" ? "bottom-full mb-1" : "top-full mt-1",
             dark ? "border-overlay-line bg-overlay-2" : "border-line bg-paper",
           )}
         >

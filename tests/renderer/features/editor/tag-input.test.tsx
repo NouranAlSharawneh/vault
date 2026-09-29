@@ -56,4 +56,27 @@ describe("TagInput", () => {
     await userEvent.type(screen.getByLabelText("Tags"), "spec{Enter}{Enter}");
     expect(onChange).not.toHaveBeenCalled();
   });
+
+  it("adds a tag that a longer one starts with: exact first, and a comma adds what's typed", async () => {
+    // `api` couldn't be added while `api-design` existed: Enter always took the suggestion.
+    const onChange = vi.fn();
+    render(<TagInput value={[]} onChange={onChange} suggestions={["api-design", "api"]} />);
+    const input = screen.getByLabelText("Tags");
+    await userEvent.type(input, "api{Enter}");
+    expect(onChange).toHaveBeenLastCalledWith(["api"]);
+  });
+
+  it("takes a comma as 'this, as typed' even when a suggestion is highlighted", async () => {
+    const onChange = vi.fn();
+    render(<TagInput value={[]} onChange={onChange} suggestions={["infra"]} />);
+    await userEvent.type(screen.getByLabelText("Tags"), "inf,");
+    expect(onChange).toHaveBeenLastCalledWith(["inf"]);
+  });
+
+  it("keeps what's typed on ⌘↵, and turns spaces into dashes", async () => {
+    const onChange = vi.fn();
+    render(<TagInput value={[]} onChange={onChange} suggestions={["react"]} />);
+    await userEvent.type(screen.getByLabelText("Tags"), "Rea Ct{Meta>}{Enter}{/Meta}");
+    expect(onChange).toHaveBeenLastCalledWith(["rea-ct"]);
+  });
 });

@@ -1,5 +1,6 @@
 import { ASSET_MIME, HTML_SRC_RE, MD_LINK_RE } from "../constants";
 import { isRelativeRef } from "./is-relative-ref";
+import { splitCode } from "./split-code";
 
 /**
  * Relative image/media paths a markdown body points at (`![…](docs/hero.gif)`,
@@ -14,13 +15,17 @@ export function findAssetRefs(markdown: string): string[] {
     if (mediaOnly && !(ext in ASSET_MIME)) return;
     if (!out.includes(target)) out.push(target);
   };
+  // Code is left as written: an image shown as an example is not an image to fetch.
+  const prose = splitCode(markdown)
+    .map((s) => (s.code ? " ".repeat(s.text.length) : s.text))
+    .join("");
   const found = [
-    ...[...markdown.matchAll(MD_LINK_RE)].map((m) => ({
+    ...[...prose.matchAll(MD_LINK_RE)].map((m) => ({
       at: m.index,
       raw: unwrap(m[2]),
       mediaOnly: m[1] !== "!",
     })),
-    ...[...markdown.matchAll(HTML_SRC_RE)].map((m) => ({
+    ...[...prose.matchAll(HTML_SRC_RE)].map((m) => ({
       at: m.index,
       raw: m[2],
       mediaOnly: false,

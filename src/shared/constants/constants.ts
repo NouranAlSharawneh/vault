@@ -73,6 +73,8 @@ export const ASSET_WARN_BYTES = 10 * 1024 * 1024;
  * it until history is rewritten. Such a file is never copied into the vault.
  */
 export const ASSET_MAX_BYTES = 100 * 1024 * 1024;
+/** The largest file the capture sheet will take from Finder. */
+export const CAPTURE_FILE_MAX_BYTES = 2 * 1024 * 1024;
 
 // ---- finding the folder relative refs belong to -----------------------------------
 /** How many refs are used as probes when working out the folder on our own. */

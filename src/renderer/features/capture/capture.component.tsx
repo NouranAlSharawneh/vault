@@ -24,9 +24,11 @@ export function Capture() {
   // Something worth saving is on the clipboard (not still being read, not blank).
   const clip = c.phase === "empty" || c.phase === "loading" ? null : c.clip;
   const { save, openInEditor, hide } = c;
+  // No menu while the footer shows an error: it would open under it, and pop up after retry.
+  const menuable = !!clip && c.phase !== "error";
   const toggleActions = useCallback(() => {
-    if (clip) setActionsOpen((o) => !o);
-  }, [clip]);
+    if (menuable) setActionsOpen((o) => !o);
+  }, [menuable]);
   useCaptureKeys({
     onSave: (reveal) => fire(save(reveal)),
     onOpenEditor: openInEditor,
@@ -50,14 +52,14 @@ export function Capture() {
       id: "save",
       label: saveLabel,
       keys: `${MOD_KEY}↵`,
-      disabled: c.phase !== "ready",
+      disabled: c.phase !== "ready" && c.phase !== "error",
       run: () => fire(save(false)),
     },
     {
       id: "save-open",
       label: "Save and open in Marasca",
       keys: `${ALT_KEY}${MOD_KEY}↵`,
-      disabled: c.phase !== "ready",
+      disabled: c.phase !== "ready" && c.phase !== "error",
       run: () => fire(save(true)),
     },
     { id: "editor", label: "Open in editor", keys: `${MOD_KEY}E`, run: openInEditor },
@@ -99,7 +101,8 @@ export function Capture() {
                 projects={c.projects}
                 tags={c.tags}
                 lastProject={c.lastProject}
-                detected={c.form.source === clip.detectedSource}
+                // "manual" is what's left when nothing was recognised, not a detection.
+                detected={clip.detectedSource !== "manual" && c.form.source === clip.detectedSource}
               />
             </div>
           </div>

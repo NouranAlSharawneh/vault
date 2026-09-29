@@ -1,5 +1,13 @@
 import { createHash, randomUUID } from "node:crypto";
-import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import {
+  existsSync,
+  mkdirSync,
+  readdirSync,
+  readFileSync,
+  renameSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
 import { join } from "node:path";
 import { LEGACY_UNTITLED_DRAFT_KEY, UNTITLED_DRAFT_PREFIX } from "@shared/constants";
 import type { StoredDraft } from "@shared/types";
@@ -42,7 +50,11 @@ function readDraftFile(file: string): StoredDraft | null {
 /** The key is written into the file as well, since the file name is only its hash. */
 export function saveDraft(key: string, draft: StoredDraft): void {
   try {
-    writeFileSync(draftPath(key), JSON.stringify({ ...draft, key }), "utf8");
+    // Written beside and renamed over: a crash mid-write left half a JSON file, which reads
+    // as no draft at all — exactly when one was needed.
+    const file = draftPath(key);
+    writeFileSync(`${file}.tmp`, JSON.stringify({ ...draft, key }), "utf8");
+    renameSync(`${file}.tmp`, file);
   } catch {
     /* a draft that cannot be parked is not worth failing a keystroke over */
   }
