@@ -60,8 +60,17 @@ describe("palette contrast", () => {
     ["overlay-ink-3", "overlay"],
     ["overlay-ink-3", "overlay-2"],
     ["overlay-ink-2", "overlay-2"],
-    // The tint built for dark grounds: it is what error text uses on the capture sheet.
+    // The tint built for dark grounds: it is what error text uses on the capture sheet,
+    // and the Mermaid block's error on its dark code view (cherry was 2.6:1 there).
     ["cherry-3", "overlay"],
+    // The capture preview's well, and the "… more lines" under it.
+    ["overlay-ink", "overlay-well"],
+    ["overlay-ink-3", "overlay-well"],
+    // A toast's × on the dark pill (ink-4 there was 2.3:1).
+    ["overlay-ink-3", "ink"],
+    // Label on a primary button, resting and hovered.
+    ["paper", "cherry"],
+    ["paper", "cherry-2"],
   ])("%s on %s is readable", (ink, ground) => {
     expect(contrast(token(ink), token(ground))).toBeGreaterThanOrEqual(4.5);
   });
@@ -79,6 +88,13 @@ describe("palette contrast", () => {
     // The star, on a row and on a selected row.
     ["warn-2", "paper"],
     ["warn-2", "paper-2"],
+    // The selection bar on the dark lists (palette, capture dropdowns, capture menu), on
+    // the row fill it marks: the fill alone was 1.3:1.
+    ["cherry-3", "overlay-3"],
+    // An unchosen radio in the repo list (line-2 was 1.4:1), and the lock beside a scope
+    // GitHub won't grant (paper on line-2 was 1.4:1).
+    ["ink-4", "paper"],
+    ["ink-3", "line"],
   ])("%s on %s is visible as a shape", (shape, ground) => {
     expect(contrast(token(shape), token(ground))).toBeGreaterThanOrEqual(3);
   });

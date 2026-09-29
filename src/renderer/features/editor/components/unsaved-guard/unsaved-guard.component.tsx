@@ -17,8 +17,8 @@ export function UnsavedGuard({
       // Escape means "put this away", which is keeping the document open — not asking
       // again. The editor's own Escape used to re-open this prompt on top of itself.
       onClose={onKeepEditing}
-      backdropClassName="items-start bg-ink/20 pt-24"
-      className="w-100 animate-pop-in rounded-lg border border-line bg-paper p-5 shadow-pop"
+      backdropClassName="pt-24"
+      className="w-100 max-w-full animate-pop-in rounded-lg border border-line bg-paper p-5 shadow-sheet"
       initialFocus="[data-keep-editing]"
     >
       <div className="font-serif text-xl font-medium text-ink">Unsaved changes</div>

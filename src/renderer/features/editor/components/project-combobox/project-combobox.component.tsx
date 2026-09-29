@@ -23,18 +23,11 @@ export function ProjectCombobox({
 
   return (
     <div className="relative">
-      <div
-        className={cx(
-          "flex h-8 items-center gap-2 rounded-sm border px-2",
-          dark
-            ? "border-overlay-line bg-overlay-2 focus-within:ring-2 focus-within:ring-cherry-3"
-            : "border-line bg-paper focus-within:ring-2 focus-within:ring-cherry",
-        )}
-      >
+      <div className="field">
         <Dot color={value.trim() ? projectColor(projectSlug(value)) : INBOX_COLOR} />
         <input
           className={cx(
-            "min-w-0 flex-1 bg-transparent text-sm outline-none",
+            "min-w-0 flex-1 bg-transparent outline-none",
             dark ? "text-overlay-ink placeholder:text-overlay-ink-3" : "placeholder:text-ink-4",
           )}
           value={value}

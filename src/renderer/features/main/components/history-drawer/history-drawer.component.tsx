@@ -1,5 +1,5 @@
-import { RotateCcw, X } from "lucide-react";
-import { Button, Empty, ListRow, SectionLabel } from "@/components/ui";
+import { RotateCcw } from "lucide-react";
+import { Button, DialogHeader, Empty, ListRow } from "@/components/ui";
 import { cx, diffStat, parseUnifiedDiff } from "@/helpers";
 import { fire } from "@/lib/api";
 import { relativeTime } from "@shared/helpers";
@@ -21,30 +21,15 @@ export function HistoryDrawer({ path, onClose, onRestored }: HistoryDrawerProps)
     <aside
       data-testid="history-drawer"
       // Its own inset card, like the reader beside it — wide enough for a diff, capped
-      // so it never crushes the document.
-      className="mr-2 mb-2 flex w-110 max-w-[42vw] shrink-0 flex-col overflow-hidden rounded-lg border border-line bg-paper-2 shadow-pop"
+      // at two fifths of the window so it never crushes the document.
+      className="mr-2 mb-2 flex w-110 max-w-2/5 shrink-0 flex-col overflow-hidden rounded-lg border border-line bg-paper-2 shadow-pop"
     >
       {/* No document title here — it is already on the document this sits beside.
           Every line of text in this drawer sits in a fixed-height band, and every one of
           them carries `leading-none`: a line box reserves room for descenders, so text
           that happens to have none — an all-caps label, a commit sha — floats above the
           band's middle and leans away from the icon or button beside it. */}
-      <header className="flex h-11 shrink-0 items-center justify-between gap-2 px-4">
-        <SectionLabel className="leading-none">History</SectionLabel>
-        <Button
-          variant="ghost"
-          size="sm"
-          // Pulled out by its own padding so the icon — not the button's invisible box —
-          // ends on the same column as the timestamps below it. The hit area stays 28px.
-          className="-mr-2 w-7 px-0"
-          onClick={onClose}
-          tooltip="Close"
-          tooltipKeys="Esc"
-          aria-label="close history"
-        >
-          <X size={13} />
-        </Button>
-      </header>
+      <DialogHeader title="History" closeLabel="close history" onClose={onClose} />
 
       {h.loading ? (
         <div className="p-4 text-xs text-ink-4">Reading history…</div>
@@ -91,7 +76,7 @@ export function HistoryDrawer({ path, onClose, onRestored }: HistoryDrawerProps)
                 onClick={() => fire(h.restore())}
                 tooltip="Brings it back as a new commit — nothing is rewritten"
               >
-                <RotateCcw size={11} /> Restore this version
+                <RotateCcw size={12} /> Restore this version
               </Button>
             )}
           </div>

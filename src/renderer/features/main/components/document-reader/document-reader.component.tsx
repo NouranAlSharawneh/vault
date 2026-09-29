@@ -72,6 +72,7 @@ export function DocumentReader({
       <main className="flex h-full min-w-0 flex-col">
         <div className="h-11 shrink-0" />
         <Empty
+          tone="error"
           title="Couldn’t open this document"
           hint={error}
           action={

@@ -22,7 +22,7 @@ export function Option({ selected, onClick, badge, children }: OptionProps) {
       onClick={onClick}
       onKeyDown={onKeyDown}
       className={cx(
-        "mt-4 cursor-pointer rounded-md border px-3.5 py-3 text-base transition-colors",
+        "cursor-pointer rounded-md border px-3.5 py-3 text-base transition-colors",
         selected ? "border-cherry bg-cherry-tint" : "border-line hover:bg-paper-2",
       )}
     >

@@ -12,7 +12,7 @@ export function FirstScan({ onDone, onBack }: FirstScanProps) {
   return (
     <Card className="p-7">
       <h2 className="font-serif text-2xl font-medium text-ink">Reading your vault</h2>
-      <p className="mt-1 text-sm text-ink-3">
+      <p className="mt-1.5 text-sm text-ink-3">
         Parsing frontmatter across every file. No index file is written into the repo.
       </p>
       {error ? (

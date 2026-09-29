@@ -4,24 +4,21 @@ import { describe, expect, it } from "vitest";
 import { ListRow } from "@/components/ui";
 
 describe("ListRow", () => {
-  it.each(["nav", "rail", "item"] as const)(
-    "marks the current %s row with aria-current",
-    (kind) => {
-      render(
-        <>
-          <ListRow kind={kind} selected>
-            on
-          </ListRow>
-          <ListRow kind={kind}>off</ListRow>
-        </>,
-      );
-      const on = screen.getByRole("button", { name: "on" });
-      // "page": these rows are navigation, and the selected one is where you are.
-      expect(on.getAttribute("aria-current")).toBe("page");
-      expect(on.hasAttribute("aria-selected")).toBe(false);
-      expect(screen.getByRole("button", { name: "off" }).hasAttribute("aria-current")).toBe(false);
-    },
-  );
+  it.each(["nav", "rail"] as const)("marks the current %s row with aria-current", (kind) => {
+    render(
+      <>
+        <ListRow kind={kind} selected>
+          on
+        </ListRow>
+        <ListRow kind={kind}>off</ListRow>
+      </>,
+    );
+    const on = screen.getByRole("button", { name: "on" });
+    // "page": these rows are navigation, and the selected one is where you are.
+    expect(on.getAttribute("aria-current")).toBe("page");
+    expect(on.hasAttribute("aria-selected")).toBe(false);
+    expect(screen.getByRole("button", { name: "off" }).hasAttribute("aria-current")).toBe(false);
+  });
 
   it.each(["menu", "palette"] as const)(
     "is a listbox option out of the Tab order as a %s row",
@@ -52,11 +49,24 @@ describe("ListRow", () => {
     expect(screen.getByRole("button", { name: "repo", pressed: true })).toBeTruthy();
   });
 
-  it("hovers a list row in a fill you can see", () => {
+  it("hovers a row in a fill you can see", () => {
     // paper-2 at 60% over paper measured about 1.03:1 — a hover that wasn't there.
-    render(<ListRow kind="item">doc</ListRow>);
-    const cls = screen.getByRole("button", { name: "doc" }).className;
+    render(<ListRow kind="option">repo</ListRow>);
+    const cls = screen.getByRole("button", { name: "repo" }).className;
     expect(cls).toContain("hover:bg-paper-2");
     expect(cls).not.toMatch(/hover:bg-paper-2\//);
+  });
+
+  it("marks the chosen row of a dark dropdown with the cherry bar, not the light pink", () => {
+    render(
+      <div role="listbox" aria-label="list">
+        <ListRow kind="menu" dark selected>
+          on
+        </ListRow>
+      </div>,
+    );
+    const cls = screen.getByRole("option", { name: "on" }).className;
+    expect(cls).toContain("before:bg-cherry-3");
+    expect(cls).not.toContain("bg-cherry-tint");
   });
 });

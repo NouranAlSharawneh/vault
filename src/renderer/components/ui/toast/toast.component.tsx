@@ -33,7 +33,8 @@ export function Toasts({
       {toasts.length > 0 && (
         <div
           className={cx(
-            "pointer-events-none absolute inset-x-0 z-40 flex flex-col items-center gap-2",
+            // px-4: a long toast stops short of the window edge instead of running into it.
+            "pointer-events-none absolute inset-x-0 z-40 flex flex-col items-center gap-2 px-4",
             PLACEMENT[placement],
           )}
         >
@@ -62,7 +63,7 @@ function ToastItem({ toast, onDismiss, onDark }: ToastItemProps) {
         <Button
           variant="ghost"
           size="sm"
-          className="shrink-0 text-cherry-3 hover:bg-ink-2 hover:text-white"
+          className="shrink-0 text-cherry-3 hover:bg-ink-2 hover:text-paper"
           onClick={() => {
             const undo = toast.action?.run();
             if (undo) fire(undo, "Couldn’t undo that");
@@ -74,8 +75,9 @@ function ToastItem({ toast, onDismiss, onDark }: ToastItemProps) {
       )}
       <Button
         variant="ghost"
-        size="sm"
-        className="w-6 shrink-0 px-0 text-ink-4 hover:bg-ink-2 hover:text-white"
+        size="icon-sm"
+        // overlay-ink-3, not ink-4: the × was 2.3:1 on the dark pill.
+        className="shrink-0 text-overlay-ink-3 hover:bg-ink-2 hover:text-paper"
         onClick={() => onDismiss(toast.id)}
         aria-label="dismiss"
       >

@@ -75,7 +75,7 @@ export function SyncBadge({ className, onReviewConflicts }: SyncBadgeProps) {
           tooltip="Two versions of the same document"
           aria-label={`review ${waiting} conflicting document(s)`}
         >
-          <GitMerge size={11} />
+          <GitMerge size={12} />
           {waiting === 1 ? "1 to review" : `${waiting} to review`}
         </Button>
       )}

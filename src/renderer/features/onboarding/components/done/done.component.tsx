@@ -32,10 +32,10 @@ export function Done() {
   const newDocument = () => fire(api("window:openEditor"), "Couldn’t open the editor");
 
   return (
-    <Card className="p-8">
+    <Card className="p-7">
       <Logo size={56} className="mb-5 -ml-1" />
       <h2 className="font-serif text-4xl font-medium text-ink">Your vault is ready</h2>
-      <p className="mt-2 text-md text-ink-2">
+      <p className="mt-1.5 text-md text-ink-2">
         {plural(count, "document")} indexed.{" "}
         {config?.remote ? (
           <>
@@ -69,7 +69,7 @@ export function Done() {
         )}
       </div>
 
-      <div className="mt-7 flex flex-wrap items-center gap-2">
+      <div className="mt-6 flex flex-wrap items-center gap-2">
         {count > 0 ? (
           <>
             <Button variant="primary" size="lg" onClick={openVault}>
@@ -91,7 +91,7 @@ export function Done() {
         )}
       </div>
 
-      <div className="mt-7 flex items-center justify-between gap-4 border-t border-line pt-4">
+      <div className="mt-6 flex items-center justify-between gap-4 border-t border-line pt-4">
         <GitNotice />
         <Button
           variant="subtle"

@@ -27,18 +27,89 @@ const mdHighlight = HighlightStyle.define([
 const vaultTheme = EditorView.theme({
   ".cm-content": { fontFamily: "var(--font-mono)" },
   ".cm-cursor, .cm-dropCursor": { borderLeftColor: "var(--color-cherry)" },
-  // ⌘F's find and replace bar, in the app's own paper and type rather than the default grey.
+  // ⌘F's find and replace bar, in the app's own paper, type and controls rather than the
+  // browser's grey buttons and bare checkboxes — and on the text's column.
   ".cm-panels": {
     backgroundColor: "var(--color-paper-2)",
     color: "var(--color-ink-2)",
     fontFamily: "var(--font-sans)",
   },
   ".cm-panels-top": { borderBottom: "1px solid var(--color-line)" },
-  ".cm-search": { fontSize: "var(--text-xs)", padding: "6px 12px" },
-  ".cm-search input, .cm-search button": {
+  // Three rows whatever the pane's width — find, replace, options — so the checkboxes
+  // never break a row in two. Flex ignores the panel's own <br>; two zero-height
+  // pseudo-elements break the rows instead, and `order` puts each control on its row.
+  ".cm-panel.cm-search": {
+    display: "flex",
+    flexWrap: "wrap",
+    alignItems: "center",
+    fontSize: "var(--text-sm)",
+    padding:
+      "calc(var(--spacing) * 2) max(calc(var(--spacing) * 5), calc((100% - var(--spacing) * 170) / 2))",
+    paddingRight: "calc(var(--spacing) * 10)",
+    paddingBottom: "calc(var(--spacing) * 0.5)",
+  },
+  ".cm-panel.cm-search::after, .cm-panel.cm-search::before": {
+    content: '""',
+    flexBasis: "100%",
+    height: 0,
+  },
+  ".cm-panel.cm-search::after": { order: 1 },
+  ".cm-panel.cm-search [name=replace], .cm-panel.cm-search [name=replaceAll]": { order: 2 },
+  ".cm-panel.cm-search::before": { order: 3 },
+  ".cm-panel.cm-search br": { display: "none" },
+  ".cm-panel.cm-search input, .cm-panel.cm-search button, .cm-panel.cm-search label": {
+    margin: "0 calc(var(--spacing) * 1.5) calc(var(--spacing) * 1.5) 0",
     fontFamily: "inherit",
     fontSize: "inherit",
-    borderRadius: "var(--radius-xs)",
+  },
+  ".cm-textfield": {
+    height: "calc(var(--spacing) * 7)",
+    flex: "0 1 calc(var(--spacing) * 52)",
+    minWidth: "calc(var(--spacing) * 32)",
+    padding: "0 calc(var(--spacing) * 2.5)",
+    border: "1px solid var(--color-line)",
+    borderRadius: "var(--radius-sm)",
+    backgroundColor: "var(--color-paper)",
+    color: "var(--color-ink)",
+  },
+  ".cm-button": {
+    height: "calc(var(--spacing) * 7)",
+    padding: "0 calc(var(--spacing) * 2.5)",
+    border: "1px solid var(--color-line)",
+    borderRadius: "var(--radius-sm)",
+    backgroundColor: "var(--color-paper)",
+    backgroundImage: "none",
+    color: "var(--color-ink-2)",
+    fontWeight: "500",
+    textTransform: "capitalize",
+    transition: "background-color 120ms",
+  },
+  ".cm-button:hover": { backgroundColor: "var(--color-paper-3)" },
+  ".cm-button:active": { backgroundColor: "var(--color-line)", backgroundImage: "none" },
+  ".cm-panel.cm-search label": {
+    order: 4,
+    display: "inline-flex",
+    alignItems: "center",
+    gap: "calc(var(--spacing) * 1)",
+    color: "var(--color-ink-3)",
+    fontSize: "var(--text-xs)",
+  },
+  ".cm-panel.cm-search label input": { margin: 0, accentColor: "var(--color-cherry)" },
+  ".cm-panel.cm-search [name=close]": {
+    margin: 0,
+    top: "calc(var(--spacing) * 2)",
+    right: "calc(var(--spacing) * 2)",
+    width: "calc(var(--spacing) * 6)",
+    height: "calc(var(--spacing) * 6)",
+    padding: 0,
+    borderRadius: "var(--radius-sm)",
+    color: "var(--color-ink-3)",
+    fontSize: "var(--text-lg)",
+    lineHeight: 1,
+  },
+  ".cm-panel.cm-search [name=close]:hover": {
+    backgroundColor: "var(--color-paper-3)",
+    color: "var(--color-ink)",
   },
   ".cm-searchMatch": { backgroundColor: "var(--color-cherry-tint-2)" },
   ".cm-searchMatch-selected": { backgroundColor: "var(--color-warn)" },

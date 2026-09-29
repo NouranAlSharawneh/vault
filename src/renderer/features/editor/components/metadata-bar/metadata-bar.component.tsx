@@ -14,7 +14,7 @@ export function MetadataBar({
   lastProject,
 }: MetadataBarProps) {
   return (
-    <div className="grid grid-cols-[1.4fr_1fr_0.7fr_1.4fr] gap-3 border-t border-line bg-paper-2 px-5 py-3">
+    <div className="grid grid-cols-metadata gap-3 border-t border-line bg-paper-2 px-5 py-3">
       <label className="block">
         <SectionLabel className="mb-1">Title</SectionLabel>
         <div className="relative">

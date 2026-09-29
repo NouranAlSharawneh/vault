@@ -7,6 +7,10 @@ export interface TooltipProps {
   keys?: string;
   /** Which way to open. Default "bottom"; use "top" when the control sits near the floor. */
   side?: "top" | "bottom";
+  /** Which edge of the control the label lines up with. Default "center". The window
+   *  edge is handled by measuring; a panel that clips its overflow is not, so a control
+   *  near a panel's right edge says "end". */
+  align?: "start" | "center" | "end";
   children: ReactNode;
   className?: string;
 }

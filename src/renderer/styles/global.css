@@ -84,6 +84,10 @@
   /* The quiet tier on the dark surfaces (palette hints, capture labels, placeholders).
      Readable on overlay-2 as well as overlay, since the capture fields sit on overlay-2. */
   --color-overlay-ink-3: #938e85;
+  /* The sunk well on a dark sheet: the capture preview, and (at half strength) the image
+     panel. It is black at 40% over overlay, named so the gradient that fades the preview
+     out can end on exactly the same colour. */
+  --color-overlay-well: #121211;
 
   --radius-xs: 5px;
   --radius-sm: 6px;
@@ -94,11 +98,20 @@
   --shadow-pop: 0 1px 2px rgb(30 29 27 / 0.06), 0 8px 24px -8px rgb(30 29 27 / 0.18);
   --shadow-sheet: 0 2px 6px rgb(0 0 0 / 0.25), 0 28px 60px -12px rgb(0 0 0 / 0.55);
   --shadow-kbd: 0 1px 0 var(--color-line-2);
+  /* A control lifted a hair off its track: the chosen segment of a segmented control. */
+  --shadow-raised: 0 1px 2px rgb(30 29 27 / 0.1), 0 0 0 1px rgb(30 29 27 / 0.04);
 
   --animate-fade-in: fade-in 140ms ease-out both;
+  /* Opacity only: a backdrop dims in rather than snapping, and does not move. */
+  --animate-fade: fade 120ms ease-out both;
   --animate-pop-in: pop-in 160ms cubic-bezier(0.2, 0.9, 0.3, 1.2) both;
   --animate-spin-fast: spin 900ms linear infinite;
 
+  @keyframes fade {
+    from {
+      opacity: 0;
+    }
+  }
   @keyframes fade-in {
     from {
       opacity: 0;
@@ -178,23 +191,55 @@ body {
   padding-left: var(--titlebar-inset);
 }
 
+/* The reading measure as padding: text no wider than `max-w-170`, centred, with the
+   editor's 20px gutter as the floor. A pane's label, its text and its find bar all start
+   on the same column, and a click in the margin still lands in the pane. */
+@utility px-measure {
+  padding-inline: max(--spacing(5), calc((100% - --spacing(170)) / 2));
+}
+
+/* Column recipes for the few grids whose columns are not equal. Named here so no
+   component has to carry an arbitrary value. */
+@utility grid-cols-metadata {
+  /* title · project · source · tags */
+  grid-template-columns: 1.4fr 1fr 0.7fr 1.4fr;
+}
+@utility grid-cols-capture {
+  /* project · source · tags */
+  grid-template-columns: 1fr 0.8fr 1.4fr;
+}
+@utility grid-cols-palette {
+  /* results · preview */
+  grid-template-columns: 1.2fr 1fr;
+}
+
+/* A diagram may be taller than the reader, never taller than most of the window. */
+@utility max-h-diagram {
+  max-height: 70vh;
+}
+
 /* Scrollbars */
 * {
   scrollbar-width: thin;
   scrollbar-color: var(--color-line-2) transparent;
 }
 *::-webkit-scrollbar {
-  width: 10px;
-  height: 10px;
+  width: --spacing(2.5);
+  height: --spacing(2.5);
 }
 *::-webkit-scrollbar-thumb {
   background: transparent;
-  border-radius: 8px;
+  border-radius: --spacing(2);
   border: 3px solid transparent;
   background-clip: padding-box;
 }
 *:hover::-webkit-scrollbar-thumb {
   background-color: var(--color-line-2);
+}
+/* The dark sheets (capture, palette) had the light thumb: a pale bar on near-black. */
+.dark,
+.dark * {
+  scrollbar-color: var(--color-overlay-line) transparent;
 }
 
 kbd {
@@ -202,18 +247,29 @@ kbd {
   font-size: var(--text-2xs);
   font-weight: 500;
   line-height: 1;
-  padding: 3px 5px;
+  padding: 3px --spacing(1.25);
   border-radius: var(--radius-xs);
   color: var(--color-ink-3);
   background: var(--color-paper-2);
   border: 1px solid var(--color-line);
   box-shadow: var(--shadow-kbd);
 }
-.dark kbd {
+/* `<Kbd dark>` puts the class on the kbd itself; a dark surface puts it on an ancestor.
+   Only the second used to match, so a dark key on a light page stayed light. */
+.dark kbd,
+kbd.dark {
   color: var(--color-overlay-ink-2);
   background: var(--color-overlay-3);
   border-color: var(--color-overlay-line);
-  box-shadow: 0 1px 0 #000;
+  box-shadow: 0 1px 0 var(--color-overlay-well);
+}
+/* On a filled button (Save & commit): a quiet key of the button's own colour, not a
+   white tile punched out of it. */
+kbd.on-fill {
+  color: inherit;
+  background: rgb(255 255 255 / 0.16);
+  border-color: rgb(255 255 255 / 0.22);
+  box-shadow: none;
 }
 
 textarea,
@@ -265,7 +321,7 @@ input {
     @apply text-ink-2 hover:bg-paper-3 active:bg-line;
   }
   .btn-primary {
-    @apply bg-cherry text-white hover:bg-cherry-2 active:bg-cherry-2;
+    @apply bg-cherry text-paper hover:bg-cherry-2 active:bg-cherry-2;
   }
   .btn-ghost {
     @apply text-ink-3 hover:bg-paper-3 hover:text-ink;
@@ -285,9 +341,6 @@ input {
   .btn-subtle {
     @apply text-ink-4 hover:text-ink-2 hover:no-underline;
   }
-  .icon-btn {
-    @apply inline-flex h-7 w-7 items-center justify-center rounded-sm text-ink-3 transition-colors hover:bg-paper-3 hover:text-ink;
-  }
 
   .input {
     @apply h-8 w-full rounded-sm border border-line bg-paper px-2.5 text-base text-ink outline-none;
@@ -296,6 +349,15 @@ input {
   }
   .input-sm {
     @apply h-7 text-sm;
+  }
+  /* A box that holds its own input (project, source, tags): the same box as `.input`, so
+     the four metadata fields stop being four sizes. Dark inside a `.dark` sheet. */
+  .field {
+    @apply flex min-h-8 items-center gap-2 rounded-sm border border-line bg-paper px-2.5 text-base text-ink transition;
+    @apply focus-within:border-line-2 focus-within:ring-2 focus-within:ring-cherry;
+  }
+  .dark .field {
+    @apply border-overlay-line bg-overlay-2 text-overlay-ink focus-within:ring-cherry-3;
   }
 
   .chip {
@@ -312,231 +374,260 @@ input {
 }
 
 /* ---- rendered markdown -------------------------------------------- */
-.prose-doc {
-  font-family: var(--font-serif);
-  font-size: var(--text-xl);
-  line-height: 1.6;
-  color: var(--color-ink);
-  user-select: text;
-  font-variation-settings: "opsz" 16;
-}
-.prose-doc > *:first-child {
-  margin-top: 0;
-}
-.prose-doc h1 {
-  font-size: var(--text-4xl);
-  font-weight: 500;
-  line-height: 1.2;
-  letter-spacing: -0.01em;
-  margin: 0 0 0.6em;
-}
-.prose-doc h2 {
-  font-size: var(--text-2xl);
-  font-weight: 500;
-  margin: 1.5em 0 0.5em;
-}
-.prose-doc h3 {
-  font-size: var(--text-lg);
-  font-weight: 600;
-  margin: 1.3em 0 0.4em;
-}
-.prose-doc h4,
-.prose-doc h5,
-.prose-doc h6 {
-  font-family: var(--font-sans);
-  font-size: var(--text-base);
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: var(--color-ink-3);
-  margin: 1.4em 0 0.4em;
-}
-.prose-doc p,
-.prose-doc ul,
-.prose-doc ol,
-.prose-doc blockquote,
-.prose-doc table {
-  margin: 0 0 1em;
-}
-.prose-doc ul,
-.prose-doc ol {
-  padding-left: 1.4em;
-}
-/* Tailwind's preflight sets `list-style: none` on every list, so a doc's bullets and
-   numbers vanish unless they're put back. These are GitHub's markers, nesting included. */
-.prose-doc ul {
-  list-style: disc;
-}
-.prose-doc ol {
-  list-style: decimal;
-}
-.prose-doc :is(ul, ol) ul {
-  list-style-type: circle;
-}
-.prose-doc :is(ul, ol) :is(ul, ol) ul {
-  list-style-type: square;
-}
-.prose-doc :is(ul, ol) ol {
-  list-style-type: lower-roman;
-}
-.prose-doc :is(ul, ol) :is(ul, ol) ol {
-  list-style-type: lower-alpha;
-}
-/* A `- [ ]` item shows its checkbox, not a bullet as well. */
-.prose-doc .task-list-item {
-  list-style-type: none;
-}
-.prose-doc li + li {
-  margin-top: 0.25em;
-}
-.prose-doc li > p {
-  margin: 0;
-}
-.prose-doc a {
-  color: var(--color-cherry);
-  text-decoration: underline;
-  text-decoration-color: var(--color-cherry-tint-2);
-  text-underline-offset: 3px;
-}
-.prose-doc strong {
-  font-weight: 600;
-}
-.prose-doc blockquote {
-  border-left: 3px solid var(--color-line-2);
-  padding-left: 1em;
-  color: var(--color-ink-2);
-  font-style: italic;
-}
-.prose-doc hr {
-  border: 0;
-  border-top: 1px solid var(--color-line);
-  margin: 2em 0;
-}
-.prose-doc code {
-  font-family: var(--font-mono);
-  font-size: 0.82em;
-  background: var(--color-paper-3);
-  padding: 0.12em 0.35em;
-  border-radius: 4px;
-}
-.prose-doc pre {
-  font-family: var(--font-mono);
-  font-size: var(--text-sm);
-  line-height: 1.55;
-  background: var(--color-overlay);
-  color: var(--color-overlay-ink);
-  padding: 14px 16px;
-  border-radius: var(--radius-md);
-  overflow-x: auto;
-  margin: 0 0 1.2em;
-}
-.prose-doc pre code {
-  background: none;
-  padding: 0;
-  font-size: inherit;
-  color: inherit;
-}
-.prose-doc table {
-  font-family: var(--font-sans);
-  font-size: var(--text-base);
-  border-collapse: collapse;
-  width: 100%;
-}
-.prose-doc th,
-.prose-doc td {
-  border-bottom: 1px solid var(--color-line);
-  padding: 6px 8px;
-  text-align: left;
-  vertical-align: top;
-}
-.prose-doc th {
-  font-weight: 600;
-  color: var(--color-ink-3);
-  font-size: var(--text-xs);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-}
-.prose-doc img {
-  max-width: 100%;
-  border-radius: var(--radius-md);
-}
+/* In the components layer, so a utility on a rendered element (the Mermaid block's code
+   view, say) wins over the defaults here instead of losing to them. */
+@layer components {
+  .prose-doc {
+    font-family: var(--font-serif);
+    font-size: var(--text-xl);
+    line-height: 1.6;
+    color: var(--color-ink);
+    user-select: text;
+    font-variation-settings: "opsz" 16;
+  }
+  .prose-doc > *:first-child {
+    margin-top: 0;
+  }
+  .prose-doc h1 {
+    font-size: var(--text-4xl);
+    font-weight: 500;
+    line-height: 1.2;
+    letter-spacing: -0.01em;
+    /* A second h1 further down is a new part, not a continuation: it gets room above. */
+    margin: 1.4em 0 0.6em;
+  }
+  .prose-doc h2 {
+    font-size: var(--text-2xl);
+    font-weight: 500;
+    margin: 1.5em 0 0.5em;
+  }
+  /* Between h2 (22px) and the body (17px). It was 15px — smaller than the text under it. */
+  .prose-doc h3 {
+    font-size: 1.15em;
+    font-weight: 600;
+    margin: 1.3em 0 0.4em;
+  }
+  .prose-doc h4,
+  .prose-doc h5,
+  .prose-doc h6 {
+    font-family: var(--font-sans);
+    font-size: var(--text-base);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--color-ink-3);
+    margin: 1.4em 0 0.4em;
+  }
+  .prose-doc p,
+  .prose-doc ul,
+  .prose-doc ol,
+  .prose-doc blockquote,
+  .prose-doc table {
+    margin: 0 0 1em;
+  }
+  .prose-doc ul,
+  .prose-doc ol {
+    padding-left: 1.4em;
+  }
+  /* Tailwind's preflight sets `list-style: none` on every list, so a doc's bullets and
+     numbers vanish unless they're put back. These are GitHub's markers, nesting included. */
+  .prose-doc ul {
+    list-style: disc;
+  }
+  .prose-doc ol {
+    list-style: decimal;
+  }
+  .prose-doc :is(ul, ol) ul {
+    list-style-type: circle;
+  }
+  .prose-doc :is(ul, ol) :is(ul, ol) ul {
+    list-style-type: square;
+  }
+  .prose-doc :is(ul, ol) ol {
+    list-style-type: lower-roman;
+  }
+  .prose-doc :is(ul, ol) :is(ul, ol) ol {
+    list-style-type: lower-alpha;
+  }
+  /* A `- [ ]` item shows its checkbox, not a bullet as well. */
+  .prose-doc .task-list-item {
+    list-style-type: none;
+  }
+  .prose-doc li + li {
+    margin-top: 0.25em;
+  }
+  .prose-doc li > p {
+    margin: 0;
+  }
+  /* A second paragraph in an item, or a list inside one, sits close under it — and the
+     inner list no longer leaves a paragraph's gap before the next item. */
+  .prose-doc li > p + :is(p, pre, blockquote) {
+    margin-top: 0.5em;
+  }
+  .prose-doc li > :is(ul, ol) {
+    margin: 0.25em 0 0;
+  }
+  /* The checkbox hangs where the bullet would be, so task text lines up with list text —
+     wrapped lines included. In a loose list the checkbox sits inside the item's <p>. */
+  .prose-doc .task-list-item > input[type="checkbox"],
+  .prose-doc .task-list-item > p:first-child > input[type="checkbox"]:first-child {
+    margin: 0 0.4em 0 -1.35em;
+    vertical-align: middle;
+  }
+  .prose-doc a {
+    color: var(--color-cherry);
+    text-decoration: underline;
+    text-decoration-color: var(--color-cherry-tint-2);
+    text-underline-offset: 3px;
+  }
+  .prose-doc strong {
+    font-weight: 600;
+  }
+  .prose-doc blockquote {
+    border-left: 3px solid var(--color-line-2);
+    padding-left: 1em;
+    color: var(--color-ink-2);
+    font-style: italic;
+  }
+  .prose-doc hr {
+    border: 0;
+    border-top: 1px solid var(--color-line);
+    margin: 2em 0;
+  }
+  .prose-doc code {
+    font-family: var(--font-mono);
+    font-size: 0.82em;
+    background: var(--color-paper-3);
+    padding: 0.12em 0.35em;
+    border-radius: var(--radius-xs);
+  }
+  .prose-doc pre {
+    font-family: var(--font-mono);
+    font-size: var(--text-sm);
+    line-height: 1.55;
+    background: var(--color-overlay);
+    color: var(--color-overlay-ink);
+    padding: --spacing(3.5) --spacing(4);
+    border-radius: var(--radius-md);
+    overflow-x: auto;
+    margin: 0 0 1.2em;
+  }
+  .prose-doc pre code {
+    background: none;
+    padding: 0;
+    font-size: inherit;
+    color: inherit;
+  }
+  /* A wide table scrolls inside the column instead of pushing past it, as on GitHub. */
+  .prose-doc table {
+    font-family: var(--font-sans);
+    font-size: var(--text-base);
+    border-collapse: collapse;
+    display: block;
+    width: max-content;
+    max-width: 100%;
+    overflow-x: auto;
+  }
+  .prose-doc th,
+  .prose-doc td {
+    border-bottom: 1px solid var(--color-line);
+    padding: --spacing(1.5) --spacing(2);
+    text-align: left;
+    vertical-align: top;
+  }
+  .prose-doc th {
+    font-weight: 600;
+    color: var(--color-ink-3);
+    font-size: var(--text-xs);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+  .prose-doc img {
+    max-width: 100%;
+  }
+  /* An image on a line of its own is a picture and gets the card's corners; images in a
+     row, or behind links, are badges and logos and stay square. */
+  .prose-doc p > img:only-child {
+    border-radius: var(--radius-md);
+  }
 
-/* GitHub alerts (`> [!NOTE]`), via remark-github-blockquote-alert. The plugin emits
-   GitHub's own class names and octicons, so only the paint is ours. */
-.prose-doc .markdown-alert {
-  --alert: var(--color-ink-3);
-  font-family: var(--font-sans);
-  font-size: var(--text-md);
-  line-height: 1.5;
-  color: var(--color-ink-2);
-  background: color-mix(in srgb, var(--alert) 6%, transparent);
-  border-left: 3px solid var(--alert);
-  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
-  padding: 10px 14px;
-  margin: 0 0 1.2em;
-}
-.prose-doc .markdown-alert > *:last-child {
-  margin-bottom: 0;
-}
-.prose-doc .markdown-alert-title {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: var(--text-xs);
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--alert);
-  margin: 0 0 0.4em;
-}
-/* The octicon ships with no fill of its own, so it would otherwise paint black. */
-.prose-doc .markdown-alert-title .octicon {
-  flex: none;
-  fill: currentColor;
-}
-.prose-doc .markdown-alert-note {
-  --alert: var(--color-alert-note);
-}
-.prose-doc .markdown-alert-tip {
-  --alert: var(--color-alert-tip);
-}
-.prose-doc .markdown-alert-important {
-  --alert: var(--color-alert-important);
-}
-.prose-doc .markdown-alert-warning {
-  --alert: var(--color-alert-warning);
-}
-.prose-doc .markdown-alert-caution {
-  --alert: var(--color-alert-caution);
-}
+  /* GitHub alerts (`> [!NOTE]`), via remark-github-blockquote-alert. The plugin emits
+     GitHub's own class names and octicons, so only the paint is ours. */
+  .prose-doc .markdown-alert {
+    --alert: var(--color-ink-3);
+    font-family: var(--font-sans);
+    font-size: var(--text-md);
+    line-height: 1.5;
+    color: var(--color-ink-2);
+    background: color-mix(in srgb, var(--alert) 6%, transparent);
+    border-left: 3px solid var(--alert);
+    border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+    padding: --spacing(2.5) --spacing(3.5);
+    margin: 0 0 1.2em;
+  }
+  .prose-doc .markdown-alert > *:last-child {
+    margin-bottom: 0;
+  }
+  .prose-doc .markdown-alert-title {
+    display: flex;
+    align-items: center;
+    gap: --spacing(1.5);
+    font-size: var(--text-xs);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--alert);
+    margin: 0 0 0.4em;
+  }
+  /* The octicon ships with no fill of its own, so it would otherwise paint black. */
+  .prose-doc .markdown-alert-title .octicon {
+    flex: none;
+    fill: currentColor;
+  }
+  .prose-doc .markdown-alert-note {
+    --alert: var(--color-alert-note);
+  }
+  .prose-doc .markdown-alert-tip {
+    --alert: var(--color-alert-tip);
+  }
+  .prose-doc .markdown-alert-important {
+    --alert: var(--color-alert-important);
+  }
+  .prose-doc .markdown-alert-warning {
+    --alert: var(--color-alert-warning);
+  }
+  .prose-doc .markdown-alert-caution {
+    --alert: var(--color-alert-caution);
+  }
 
-/* A README badge row is a paragraph of images; keep them on one line and unrounded. */
-.prose-doc p > img + img {
-  margin-left: 4px;
-}
-.prose-doc a > img,
-.prose-doc p[align] img {
-  vertical-align: middle;
-}
-.prose-doc input[type="checkbox"] {
-  margin-right: 0.5em;
-  accent-color: var(--color-cherry);
-}
-.prose-doc .mermaid-block {
-  font-family: var(--font-sans);
-  border: 1px solid var(--color-line);
-  border-radius: var(--radius-md);
-  margin: 0 0 1.2em;
-  overflow: hidden;
-}
-.prose-doc .mermaid-block svg {
-  max-width: 100%;
-  height: auto;
-}
-/* Once the wrapper has an explicit width, the diagram follows it — that is the zoom. */
-.prose-doc .mermaid-block .mermaid-canvas[style*="width"] svg {
-  width: 100%;
-  max-width: none;
+  /* A README badge row is a paragraph of images; keep them on one line and unrounded. */
+  .prose-doc p > img + img {
+    margin-left: --spacing(1);
+  }
+  .prose-doc a > img,
+  .prose-doc p[align] img {
+    vertical-align: middle;
+  }
+  .prose-doc input[type="checkbox"] {
+    margin-right: 0.5em;
+    accent-color: var(--color-cherry);
+  }
+  .prose-doc .mermaid-block {
+    font-family: var(--font-sans);
+    border: 1px solid var(--color-line);
+    border-radius: var(--radius-md);
+    margin: 0 0 1.2em;
+    overflow: hidden;
+  }
+  .prose-doc .mermaid-block svg {
+    max-width: 100%;
+    height: auto;
+  }
+  /* Once the wrapper has an explicit width, the diagram follows it — that is the zoom. */
+  .prose-doc .mermaid-block .mermaid-canvas[style*="width"] svg {
+    width: 100%;
+    max-width: none;
+  }
 }
 
 /* highlight.js token colours on the dark block */
@@ -585,14 +676,15 @@ input {
 }
 .cm-editor .cm-scroller {
   line-height: 1.6;
-  padding: 20px 0 40vh;
+  padding: --spacing(5) 0 40vh;
   overflow: auto;
 }
-/* Same reading measure as the reader (`max-w-170`), centred. Done with padding rather
-   than a max-width so the content still spans the pane: a click in the side margins
-   lands on the content and places the cursor, instead of on the bare scroller. */
+/* Same reading measure as the reader (`max-w-170`), centred — the `px-measure` utility,
+   which the pane labels use too. Done with padding rather than a max-width so the content
+   still spans the pane: a click in the side margins lands on the content and places the
+   cursor, instead of on the bare scroller. */
 .cm-editor .cm-content {
-  padding: 0 max(24px, calc((100% - var(--spacing) * 170) / 2));
+  padding: 0 max(--spacing(5), calc((100% - --spacing(170)) / 2));
 }
 .cm-editor .cm-line {
   padding: 0;

@@ -33,7 +33,7 @@ export function DeviceFlow({ onBack }: DeviceFlowProps) {
       {/* Only once there is a code: before one arrives, or when none can, the browser
           has opened nothing. */}
       {session && (
-        <p className="mt-1 text-sm text-ink-3">
+        <p className="mt-1.5 text-sm text-ink-3">
           Your browser should have opened{" "}
           <span className="font-mono">github.com/{DEVICE_LOGIN_PATH}</span>. Paste the code there
           and approve.
@@ -64,7 +64,7 @@ export function DeviceFlow({ onBack }: DeviceFlowProps) {
           </div>
           <div className="mt-3 flex items-center justify-center gap-4 text-xs">
             <Button variant="link" onClick={copy}>
-              <Copy size={11} /> {copied ? "Copied" : "Copy code"}
+              <Copy size={12} /> {copied ? "Copied" : "Copy code"}
             </Button>
             <Button
               variant="link"
@@ -106,8 +106,8 @@ export function DeviceFlow({ onBack }: DeviceFlowProps) {
           </span>
         </div>
       )}
-      <div className="mt-4 flex justify-center">
-        <Button variant="ghost" onClick={onBack}>
+      <div className="mt-6 flex justify-center">
+        <Button variant="ghost" size="lg" onClick={onBack}>
           Use another method
         </Button>
       </div>

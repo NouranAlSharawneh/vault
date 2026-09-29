@@ -39,7 +39,7 @@ export function EditorFooter({
             committed before this one, so the only thing left to do is say where it went. */}
           {keptOtherVersion && !dirty && (
             <span className="flex items-center gap-1.5 text-warn-2">
-              <GitBranch size={11} /> This file had changed — the other version is in its history
+              <GitBranch size={12} /> This file had changed — the other version is in its history
             </span>
           )}
           {persisted && !dirty && !error && !keptOtherVersion && (
@@ -60,7 +60,8 @@ export function EditorFooter({
             onClick={() => onSave("commit")}
             tooltip={`Commits and closes. ${MOD_KEY}S commits and keeps writing.`}
           >
-            {hasRemote ? `Save & commit to ${branch}` : "Save & commit"} <Kbd>{MOD_KEY}↵</Kbd>
+            {hasRemote ? `Save & commit to ${branch}` : "Save & commit"}{" "}
+            <Kbd onFill>{MOD_KEY}↵</Kbd>
           </Button>
         </div>
       </div>

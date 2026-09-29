@@ -27,14 +27,14 @@ export function TopBar({ sidebar, onToggleSidebar, onSearch, onReviewConflicts }
       <div className="flex min-w-fit flex-1 basis-0 items-center gap-1">
         <Button
           variant="ghost"
-          size="sm"
-          className="w-7 px-0 no-drag"
+          size="icon"
+          className="no-drag"
           onClick={onToggleSidebar}
           tooltip={SIDEBAR_NEXT[sidebar]}
           tooltipKeys={`${MOD_KEY}\\`}
           aria-label={SIDEBAR_NEXT[sidebar]}
         >
-          <PanelLeft size={13} />
+          <PanelLeft size={14} />
         </Button>
       </div>
       {/* Shrinks before anything overflows: at the narrowest window, or beside a long sync
@@ -62,7 +62,7 @@ export function TopBar({ sidebar, onToggleSidebar, onSearch, onReviewConflicts }
           tooltip="New document"
           tooltipKeys={`${MOD_KEY}N`}
         >
-          <Plus size={11} /> New
+          <Plus size={12} /> New
         </Button>
       </div>
     </header>

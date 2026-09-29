@@ -68,6 +68,7 @@ export function VaultUnavailable() {
 
   return (
     <Empty
+      tone="error"
       title={`Marasca couldn’t open ${shortPath(config.root)}.`}
       hint={vaultError ?? undefined}
       action={

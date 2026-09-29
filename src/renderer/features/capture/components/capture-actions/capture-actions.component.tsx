@@ -68,9 +68,11 @@ export function CaptureActions({ actions, onClose }: CaptureActionsProps) {
                 a.run();
               }}
               className={cx(
-                "flex h-8 w-full items-center gap-2 rounded-xs px-2 text-left text-sm outline-none",
+                "relative flex h-8 w-full items-center gap-2 rounded-xs px-2 text-left text-sm transition-colors outline-none",
                 a.danger ? "text-cherry-3" : "text-overlay-ink",
-                at === cursor && "bg-overlay-3",
+                // The fill alone was 1.3:1 against the menu: the bar is what you can see.
+                at === cursor &&
+                  "bg-overlay-3 before:absolute before:inset-y-1.5 before:left-0 before:w-0.5 before:rounded-full before:bg-cherry-3",
                 a.disabled && "opacity-40",
               )}
             >

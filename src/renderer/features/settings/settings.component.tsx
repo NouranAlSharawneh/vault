@@ -56,13 +56,14 @@ export function Settings() {
 
   return (
     <div className="flex h-full flex-col bg-paper-2">
-      <header className="flex h-12 shrink-0 items-center pr-3 pl-titlebar drag">
+      <header className="flex h-12 shrink-0 items-center pr-2 pl-titlebar drag">
         <Button variant="ghost" size="sm" className="no-drag" onClick={s.back}>
           <ArrowLeft size={12} /> Back to vault
         </Button>
       </header>
       <div className="min-h-0 flex-1 overflow-y-auto px-6">
-        <div className="mx-auto flex max-w-150 flex-col gap-7 pt-6 pb-10">
+        {/* pb-24: the Danger zone scrolls clear of a toast instead of sitting under it. */}
+        <div className="mx-auto flex max-w-150 flex-col gap-7 pt-6 pb-24">
           {/* The header gets more room below it than the groups get between them, so it
               reads as the page's title rather than the first item in the list. */}
           <header className="mb-3 flex flex-col gap-1">

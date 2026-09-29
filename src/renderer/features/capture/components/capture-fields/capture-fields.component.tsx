@@ -14,7 +14,7 @@ export function CaptureFields({
   detected,
 }: CaptureFieldsProps) {
   return (
-    <div className="grid grid-cols-[1fr_0.8fr_1.4fr] gap-3">
+    <div className="grid grid-cols-capture gap-3">
       <div>
         <SectionLabel className="mb-1 text-overlay-ink-3">Project</SectionLabel>
         <ProjectCombobox

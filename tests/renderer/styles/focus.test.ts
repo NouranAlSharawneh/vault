@@ -28,6 +28,13 @@ describe("focus indicator", () => {
     expect(css).toMatch(/:focus-visible:where\(:not\(\.cm-content, \[tabindex="-1"\]\)\)/);
   });
 
+  it("rings a field that holds its own input, in the colour its surface needs", () => {
+    // Project, source and tags wrap their input: the ring is on the box, via focus-within,
+    // and the capture sheet's dark fields take cherry-3 like every dark ring.
+    expect(css).toMatch(/\.field \{[^}]*focus-within:ring-2 focus-within:ring-cherry;/);
+    expect(css).toMatch(/\.dark \.field \{[^}]*focus-within:ring-cherry-3;/);
+  });
+
   it("never paints a focus ring in the tint that cannot be seen on paper", () => {
     for (const file of sources(root)) {
       expect(readFileSync(file, "utf8"), file).not.toMatch(/(focus|focus-within):ring-cherry-tint/);

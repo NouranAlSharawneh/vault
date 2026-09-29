@@ -30,7 +30,8 @@ export function CapturePreview({ clip, compact }: CapturePreviewProps) {
           className={cx(
             "m-0 overflow-auto rounded-md",
             compact ? "max-h-28" : "max-h-52",
-            "bg-black/40 p-4 font-mono text-sm leading-relaxed whitespace-pre text-overlay-ink select-text",
+            // Wrapped, not scrolled sideways: a long line of prose ran off the sheet.
+            "bg-overlay-well p-4 font-mono text-sm leading-relaxed wrap-break-word whitespace-pre-wrap text-overlay-ink select-text",
           )}
         >
           {lines.map((l, i) => (
@@ -45,11 +46,11 @@ export function CapturePreview({ clip, compact }: CapturePreviewProps) {
           )}
         </pre>
         {/* While there's more below, the last lines fade out instead of stopping mid-line.
-          The colour is the preview's own surface (black/40 over the sheet). */}
+          The colour is the preview's own surface, the sheet's well. */}
         {more && (
           <div
             aria-hidden
-            className="pointer-events-none absolute inset-x-0 bottom-0 h-10 rounded-b-md bg-gradient-to-b from-transparent to-[#121211]"
+            className="pointer-events-none absolute inset-x-0 bottom-0 h-10 rounded-b-md bg-gradient-to-b from-transparent to-overlay-well"
           />
         )}
       </div>

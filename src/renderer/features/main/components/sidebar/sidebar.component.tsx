@@ -55,7 +55,7 @@ export function Sidebar({
 
           return (
             <ListRow key={c.key} selected={active} onClick={() => onCollection(c.key)}>
-              {c.key === "all" ? <Logo size={14} /> : <Icon size={13} className="text-ink-3" />}
+              {c.key === "all" ? <Logo size={14} /> : <Icon size={14} className="text-ink-3" />}
               {c.label}
               <Count n={count} />
             </ListRow>
@@ -113,7 +113,7 @@ export function Sidebar({
       {(trashCount > 0 || inTrash) && (
         <div className="px-3 pb-1">
           <ListRow selected={inTrash} onClick={() => onCollection("trash")}>
-            <Trash2 size={13} className="text-ink-3" />
+            <Trash2 size={14} className="text-ink-3" />
             Trash
             <Count n={trashCount} />
           </ListRow>
