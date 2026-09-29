@@ -1,4 +1,4 @@
-import { ArrowRight, FolderOpen, Plus, Search } from "lucide-react";
+import { ArrowRight, FolderOpen, Laptop, Plus, Search } from "lucide-react";
 import { GitNotice } from "@/components/git-notice/git-notice.component";
 import { Button, Card, ListRow, Option, PathText, SectionLabel, Spinner } from "@/components/ui";
 import { REPO_LIST_LIMIT } from "@/constants";
@@ -7,8 +7,8 @@ import { fire } from "@/lib/api";
 import { useRepoPicker } from "./hooks/use-repo-picker.hook";
 import type { RepoPickerProps } from "./repo-picker.types";
 
-export function RepoPicker({ onDone, onBack }: RepoPickerProps) {
-  const p = useRepoPicker(onDone);
+export function RepoPicker({ onDone, onBack, preferLocal }: RepoPickerProps) {
+  const p = useRepoPicker(onDone, preferLocal);
 
   return (
     <Card className="p-7">
@@ -33,19 +33,46 @@ export function RepoPicker({ onDone, onBack }: RepoPickerProps) {
                 <span className="text-ink-4">{p.login}/</span>
                 <input
                   className="input input-sm w-44 font-mono"
+                  aria-label="New repository name"
+                  aria-invalid={!!p.nameError}
                   value={p.newName}
                   onChange={(e) => p.setNewName(e.target.value)}
                   onClick={(e) => e.stopPropagation()}
                 />
               </div>
             )}
-            {p.nameError && <div className="mt-1 text-xs text-cherry">{p.nameError}</div>}
+            {p.nameError && (
+              <div className="mt-1 flex items-center gap-2 text-xs text-cherry" role="alert">
+                {p.nameError}
+                {p.existing && (
+                  <Button
+                    variant="link"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      p.setChoice(p.existing!.fullName);
+                    }}
+                  >
+                    Use it
+                  </Button>
+                )}
+              </div>
+            )}
+          </Option>
+          <Option selected={p.choice === "local"} onClick={() => p.setChoice("local")}>
+            <div className="flex items-center gap-2">
+              <Laptop size={13} className="text-ink-3" />
+              <span className="font-medium">Keep it on this Mac for now</span>
+            </div>
+            <div className="mt-1 text-xs text-ink-3">
+              A local git repo. Connect GitHub from Settings whenever you like.
+            </div>
           </Option>
           <SectionLabel className="mt-5">Or use one you have</SectionLabel>
           <div className="relative mt-2">
             <Search size={12} className="absolute top-2 left-2.5 text-ink-4" />
             <input
               className="input input-sm pl-7"
+              aria-label="Filter your repositories"
               placeholder="Filter your repos…"
               value={p.filter}
               onChange={(e) => p.setFilter(e.target.value)}
@@ -68,7 +95,17 @@ export function RepoPicker({ onDone, onBack }: RepoPickerProps) {
               </div>
             )}
             {p.repos !== null && p.filtered.length === 0 && (
-              <div className="p-3 text-xs text-ink-4">No repos match.</div>
+              <div className="flex items-center gap-2 p-3 text-xs text-ink-4">
+                {/* An empty account, or a token that sees nothing, is not a filter miss. */}
+                {p.filter.trim()
+                  ? "No repos match."
+                  : p.tokenUser
+                    ? "This token can’t push to any repo. Check its repository access on GitHub."
+                    : "No repos you can push to yet."}
+                <Button variant="link" className="ml-auto shrink-0" onClick={p.retryList}>
+                  Refresh
+                </Button>
+              </div>
             )}
             {p.filtered.map((r) => (
               <ListRow
@@ -99,6 +136,13 @@ export function RepoPicker({ onDone, onBack }: RepoPickerProps) {
               Showing {REPO_LIST_LIMIT} of {p.matchCount.toLocaleString()} — type to filter.
             </div>
           )}
+          {/* Everything captured lands here, clipboard included: a public repo publishes it. */}
+          {p.selectedRepo && !p.selectedRepo.private && (
+            <div className="mt-2 text-xs text-warn-2" role="note">
+              {p.selectedRepo.fullName} is public — everything you capture will be visible to
+              anyone.
+            </div>
+          )}
         </div>
       ) : (
         <div className="mt-4 rounded-md border border-line bg-paper-2 p-3 text-sm text-ink-2">
@@ -109,14 +153,18 @@ export function RepoPicker({ onDone, onBack }: RepoPickerProps) {
 
       <div className="mt-5 flex items-center gap-2 text-xs text-ink-3">
         <FolderOpen size={12} className="shrink-0" />
-        <span className="shrink-0 whitespace-nowrap">clones to</span>
+        <span className="shrink-0 whitespace-nowrap">{p.folderLabel}</span>
         <PathText path={p.localPath} className="text-ink-2" />
         <Button variant="link" className="ml-auto shrink-0" onClick={() => fire(p.chooseFolder())}>
           Change
         </Button>
       </div>
       <GitNotice hideWhenReady className="mt-4" />
-      {p.submitError && <div className="mt-3 text-xs text-cherry">{p.submitError}</div>}
+      {p.submitError && (
+        <div className="mt-3 text-xs text-cherry" role="alert">
+          {p.submitError}
+        </div>
+      )}
       <div className="mt-5 flex items-center justify-between">
         <Button variant="subtle" onClick={onBack}>
           Back

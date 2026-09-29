@@ -154,6 +154,11 @@ class Session {
       const user = await fetchUser();
       updateSettings({ authMethod: method });
       this.setAuth({ status: "signed-in", user, method });
+      // Signed out, the vault kept committing and stopped pushing, and a dead token is
+      // never retried on its own. The banner promised pushes resume on signing in again:
+      // this is what makes it so.
+      const vault = this.vaultService;
+      if (vault?.config.remote) fire(vault.pushNow(), "pushing after sign-in");
 
       return user;
     } catch (e) {

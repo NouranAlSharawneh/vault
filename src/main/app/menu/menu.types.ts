@@ -7,6 +7,8 @@ export type MenuAction =
   | "openMain"
   | "openOnGitHub"
   | "resetApp"
+  | "openSettings"
+  | "search"
   | { shortcut: IpcEvents["shortcut"] };
 
 export type MenuItemData =

@@ -30,19 +30,28 @@ export function DeviceFlow({ onBack }: DeviceFlowProps) {
   return (
     <Card className="p-7 text-center">
       <h2 className="font-serif text-2xl font-medium text-ink">Enter this code on GitHub</h2>
-      <p className="mt-1 text-sm text-ink-3">
-        Your browser should have opened{" "}
-        <span className="font-mono">github.com/{DEVICE_LOGIN_PATH}</span>. Paste the code there and
-        approve.
-      </p>
+      {/* Only once there is a code: before one arrives, or when none can, the browser
+          has opened nothing. */}
+      {session && (
+        <p className="mt-1 text-sm text-ink-3">
+          Your browser should have opened{" "}
+          <span className="font-mono">github.com/{DEVICE_LOGIN_PATH}</span>. Paste the code there
+          and approve.
+        </p>
+      )}
       {session ? (
         <>
-          <div className="mt-6 flex justify-center gap-1.5">
+          <div
+            className="mt-6 flex justify-center gap-1.5"
+            role="img"
+            aria-label={`Code ${session.userCode.split("").join(" ")}`}
+          >
             {/* The gap goes wherever GitHub put a hyphen, however many there are. */}
             {session.userCode.split("-").map((group, g) =>
               group.split("").map((c, i) => (
                 <span
                   key={`${g}-${i}`}
+                  aria-hidden
                   className={cx(
                     "flex h-11 w-9 items-center justify-center rounded-sm border border-line bg-paper-2 font-mono text-2xl text-ink",
                     g > 0 && i === 0 && "ml-3",
@@ -70,17 +79,14 @@ export function DeviceFlow({ onBack }: DeviceFlowProps) {
             </span>
           </div>
           <div className="mt-6 flex items-center justify-between rounded-md border border-line bg-paper-2 px-3 py-2 text-xs text-ink-2">
-            <span className="flex items-center gap-2">
-              {!terminal && status !== "ok" && <Spinner className="text-cherry" />}
+            <span className="flex items-center gap-2" role="status">
+              {/* Approved is not done: the account is still being looked up. */}
+              {!terminal && <Spinner className="text-cherry" />}
               {DEVICE_FLOW_STATUS_TEXT[status]}
             </span>
-            {terminal ? (
+            {terminal && (
               <Button variant="link" onClick={restart}>
                 Try again
-              </Button>
-            ) : (
-              <Button variant="subtle" onClick={onBack}>
-                Cancel
               </Button>
             )}
           </div>
@@ -95,12 +101,9 @@ export function DeviceFlow({ onBack }: DeviceFlowProps) {
         </div>
       ) : (
         <div className="mt-6 flex items-center justify-between rounded-md border border-line bg-paper-2 px-3 py-2 text-xs text-ink-2">
-          <span className="flex items-center gap-2">
+          <span className="flex items-center gap-2" role="status">
             <Spinner className="text-cherry" /> Asking GitHub for a code…
           </span>
-          <Button variant="subtle" onClick={onBack}>
-            Cancel
-          </Button>
         </div>
       )}
       <div className="mt-4 flex justify-center">

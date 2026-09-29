@@ -3,7 +3,7 @@ import type { MenuItemData, MenuSectionData, MenuTarget } from "../app/menu/menu
 const SETTINGS: MenuItemData = {
   label: "Settings…",
   accelerator: "CmdOrCtrl+,",
-  action: { shortcut: "settings" },
+  action: "openSettings",
 };
 const RESET: MenuItemData = { label: "Reset Marasca…", action: "resetApp" };
 const SEPARATOR: MenuItemData = { type: "separator" };
@@ -56,7 +56,7 @@ export const appMenu = (captureHotkey: string, { mac, dev }: MenuTarget): MenuSe
   {
     label: "View",
     items: [
-      { label: "Search…", accelerator: "CmdOrCtrl+K", action: { shortcut: "search" } },
+      { label: "Search…", accelerator: "CmdOrCtrl+K", action: "search" },
       {
         label: "Toggle Sidebar",
         accelerator: "CmdOrCtrl+\\",

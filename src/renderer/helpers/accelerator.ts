@@ -12,25 +12,62 @@ const KEY_NAMES: Record<string, string> = {
   Enter: "Return",
 };
 
+/** Punctuation by physical key, so the accelerator doesn't depend on the keyboard layout. */
+const CODE_NAMES: Record<string, string> = {
+  Minus: "-",
+  Equal: "=",
+  BracketLeft: "[",
+  BracketRight: "]",
+  Semicolon: ";",
+  Quote: "'",
+  Comma: ",",
+  Period: ".",
+  Slash: "/",
+  Backslash: "\\",
+  Backquote: "`",
+};
+
+const MODIFIER_KEYS = ["Control", "Alt", "Shift", "Meta", "CapsLock", "Fn"];
+
+/** True while only modifier keys are down — the combination isn't finished yet. */
+export function isModifierOnly(e: KeyboardEvent): boolean {
+  return MODIFIER_KEYS.includes(e.key);
+}
+
+function keyName(e: KeyboardEvent): string | null {
+  const code = e.code;
+  if (/^Key[A-Z]$/.test(code)) return code.slice(3);
+  if (/^Digit\d$/.test(code)) return code.slice(5);
+  if (/^F\d{1,2}$/.test(code)) return code;
+  if (CODE_NAMES[code]) return CODE_NAMES[code];
+  if (KEY_NAMES[e.key]) return KEY_NAMES[e.key];
+  if (e.key === "+") return "Plus";
+
+  // A dead key ("Dead"), or a character Electron has no name for (⌥ on a Mac types "…").
+  return e.key.length === 1 && /[\x21-\x7e]/.test(e.key) ? e.key.toUpperCase() : null;
+}
+
 /**
- * KeyboardEvent → Electron accelerator ("Control+Alt+V"), or null while only
- * modifiers are held. The key must come with at least one modifier.
+ * KeyboardEvent → Electron accelerator ("Control+Alt+V"), or null while only modifiers
+ * are held or when the combination can't be a global shortcut.
+ *
+ * It must hold ⌃ or ⌘. A global shortcut takes the keys from every app: ⇧A would make
+ * capital A untypeable anywhere, ⌥L is how a German keyboard types @, and ⇧⇥ — pressed to
+ * leave the recorder — became the shortcut. ⌥Space and function keys are the exceptions:
+ * neither types anything.
  */
 export function toAccelerator(e: KeyboardEvent): string | null {
+  if (isModifierOnly(e)) return null;
   const mods = [
     e.ctrlKey && "Control",
     e.altKey && "Alt",
     e.shiftKey && "Shift",
     e.metaKey && "Super",
   ].filter(Boolean) as string[];
-  if (["Control", "Alt", "Shift", "Meta"].includes(e.key)) return null;
-  if (!mods.length) return null;
-  const code = e.code;
-  let key: string;
-  if (/^Key[A-Z]$/.test(code)) key = code.slice(3);
-  else if (/^Digit\d$/.test(code)) key = code.slice(5);
-  else if (/^F\d{1,2}$/.test(code)) key = code;
-  else key = KEY_NAMES[e.key] ?? (e.key.length === 1 ? e.key.toUpperCase() : e.key);
+  const key = keyName(e);
+  if (!key || !mods.length) return null;
+  const typesNothing = /^F\d{1,2}$/.test(key) || (key === "Space" && e.altKey);
+  if (!e.ctrlKey && !e.metaKey && !typesNothing) return null;
 
   return [...MOD_ORDER.filter((m) => mods.includes(m)), key].join("+");
 }
@@ -39,7 +76,7 @@ export function toAccelerator(e: KeyboardEvent): string | null {
 export function acceleratorLabel(accelerator: string): string {
   const parts = accelerator
     .split("+")
-    .map((p) => (p === "CmdOrCtrl" ? (IS_MAC ? "Super" : "Control") : p));
+    .map((p) => (p === "CmdOrCtrl" ? (IS_MAC ? "Super" : "Control") : p === "Plus" ? "+" : p));
   if (!IS_MAC)
     return parts.map((p) => (p === "Super" ? "Win" : p === "Control" ? "Ctrl" : p)).join("+");
 

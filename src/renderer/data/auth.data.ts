@@ -6,6 +6,6 @@ export const DEVICE_FLOW_STATUS_TEXT: Record<DevicePollStatus, string> = {
   slow_down: "GitHub asked us to slow down — still waiting…",
   expired: "Code expired.",
   denied: "You cancelled on GitHub.",
-  ok: "Approved!",
+  ok: "Approved — signing you in…",
   error: "Lost touch with GitHub — no longer waiting on this code.",
 };

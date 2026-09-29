@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { REPO_LIST_LIMIT, REPO_NAME_PATTERN } from "@/constants";
 import { errorMessage } from "@/helpers";
 import { api, fire } from "@/lib/api";
@@ -8,7 +8,7 @@ import type { GitHubRepo } from "@shared/types";
 import type { RepoChoice } from "../repo-picker.types";
 
 /** Repo list, selection, new-repo name, local path and the setup call. */
-export function useRepoPicker(onDone: () => void) {
+export function useRepoPicker(onDone: () => void, preferLocal = false) {
   const auth = useApp((s) => s.auth);
   const config = useApp((s) => s.config);
   const setConfig = useApp((s) => s.setConfig);
@@ -27,8 +27,8 @@ export function useRepoPicker(onDone: () => void) {
 
   const [repos, setRepos] = useState<GitHubRepo[] | null>(null);
   const [filter, setFilter] = useState("");
-  const [choice, setChoice] = useState<RepoChoice | null>(
-    !signedIn ? "local" : tokenUser ? null : "new",
+  const [choice, setChoice] = useState<RepoChoice | null>(() =>
+    initialChoice(config?.remote ?? null, signedIn, preferLocal, tokenUser),
   );
   const [newName, setNewName] = useState(DEFAULT_VAULT_NAME);
   const [localPath, setLocalPath] = useState(existingRoot ?? "");
@@ -66,15 +66,12 @@ export function useRepoPicker(onDone: () => void) {
     setListAttempt((n) => n + 1);
   }, []);
 
+  // A folder picked by hand stays picked. Changing the selection used to put the default
+  // path back without a word.
+  const pickedFolder = useRef(false);
   useEffect(() => {
-    if (existingRoot) return;
-    const name =
-      choice === "new"
-        ? newName
-        : choice === "local" || choice === null
-          ? DEFAULT_VAULT_NAME
-          : choice.split("/")[1];
-    fire(api("vault:defaultPath", name || DEFAULT_VAULT_NAME).then(setLocalPath));
+    if (existingRoot || pickedFolder.current) return;
+    fire(api("vault:defaultPath", folderName(choice, newName)).then(setLocalPath));
   }, [choice, newName, existingRoot]);
 
   const matching = useMemo(() => {
@@ -84,14 +81,17 @@ export function useRepoPicker(onDone: () => void) {
   }, [repos, filter]);
   const filtered = matching.slice(0, REPO_LIST_LIMIT);
 
-  const nameError =
-    choice === "new" && !REPO_NAME_PATTERN.test(newName)
-      ? "Letters, numbers, dashes, dots and underscores only."
-      : null;
+  const login = auth.user?.login ?? "";
+  const existing = choice === "new" ? findOwn(repos, login, newName) : null;
+  const nameError = nameProblem(choice, newName, existing);
+  const selectedRepo = repos?.find((r) => r.fullName === choice) ?? null;
 
   const chooseFolder = async () => {
     const p = await api("vault:chooseFolder");
-    if (p) setLocalPath(p);
+    if (p) {
+      pickedFolder.current = true;
+      setLocalPath(p);
+    }
   };
 
   const submit = async () => {
@@ -122,7 +122,11 @@ export function useRepoPicker(onDone: () => void) {
   return {
     signedIn,
     tokenUser,
-    login: auth.user?.login ?? "",
+    login,
+    existing,
+    selectedRepo,
+    // Nothing is cloned for a local vault, or when attaching a repo to one that exists.
+    folderLabel: choice === "local" || existingRoot ? "vault folder" : "clones to",
     repos,
     filtered,
     matchCount: matching.length,
@@ -142,4 +146,49 @@ export function useRepoPicker(onDone: () => void) {
     submit,
     canSubmit: choice !== null && !nameError && !!localPath && gitReady,
   };
+}
+
+/**
+ * Back on this screen with a repo already connected: that one is the answer. Otherwise
+ * local when asked for (or signed out), the list for a one-repo token, else a new repo.
+ */
+function initialChoice(
+  remote: string | null,
+  signedIn: boolean,
+  preferLocal: boolean,
+  tokenUser: boolean,
+): RepoChoice | null {
+  if (remote) return remote;
+  if (!signedIn || preferLocal) return "local";
+
+  return tokenUser ? null : "new";
+}
+
+/** The folder name to suggest for a choice. */
+function folderName(choice: RepoChoice | null, newName: string): string {
+  if (choice === "new") return newName || DEFAULT_VAULT_NAME;
+  if (choice === "local" || choice === null) return DEFAULT_VAULT_NAME;
+
+  return choice.split("/")[1] || DEFAULT_VAULT_NAME;
+}
+
+/**
+ * A second Mac, or a run after Reset: the vault repo is already there. Creating it again
+ * only ever failed on GitHub's side, with "Repository creation failed."
+ */
+function findOwn(repos: GitHubRepo[] | null, login: string, name: string): GitHubRepo | null {
+  const wanted = `${login}/${name}`.toLowerCase();
+
+  return repos?.find((r) => r.fullName.toLowerCase() === wanted) ?? null;
+}
+
+function nameProblem(
+  choice: RepoChoice | null,
+  name: string,
+  existing: GitHubRepo | null,
+): string | null {
+  if (choice !== "new") return null;
+  if (!REPO_NAME_PATTERN.test(name)) return "Letters, numbers, dashes, dots and underscores only.";
+
+  return existing ? `You already have ${existing.fullName}.` : null;
 }

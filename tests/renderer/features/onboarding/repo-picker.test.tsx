@@ -121,7 +121,8 @@ describe("RepoPicker — signed in with a pasted token", () => {
       "github:createRepo": forbidden,
     });
     render(<RepoPicker onDone={noop} onBack={noop} />);
-    await screen.findByText("No repos match.");
+    // An empty list for a token is about the token, not about a filter.
+    await screen.findByText(/This token can’t push to any repo/);
     await userEvent.click(screen.getByRole("radio", { name: /Create a new private repo/ }));
     made = true; // they go and make it on GitHub while the request is out
     await userEvent.click(screen.getByRole("button", { name: /Continue/ }));
@@ -199,5 +200,37 @@ describe("RepoPicker — git", () => {
     await userEvent.click(screen.getByRole("button", { name: /Continue/ }));
     await vi.waitFor(() => expect(onDone).toHaveBeenCalled());
     expect(invoke.mock.calls.filter(([c]) => c === "github:createRepo")).toHaveLength(1);
+  });
+});
+
+describe("RepoPicker — choices that used to be lost", () => {
+  it("opens on keeping the vault on this Mac when that was asked for, even signed in", async () => {
+    mockMarascaApi({ ...base, "github:listRepos": [] });
+    render(<RepoPicker onDone={noop} onBack={noop} preferLocal />);
+    const local = await screen.findByRole("radio", { name: /Keep it on this Mac/ });
+    expect(local.getAttribute("aria-checked")).toBe("true");
+  });
+
+  it("keeps a folder picked by hand when the selection changes", async () => {
+    mockMarascaApi({
+      ...base,
+      "github:listRepos": [repo("nunu/notes")],
+      "vault:chooseFolder": "/Users/nunu/Dropbox/notes",
+    });
+    render(<RepoPicker onDone={noop} onBack={noop} />);
+    await userEvent.click(await screen.findByRole("button", { name: "Change" }));
+    await screen.findByText(/Dropbox/);
+    await userEvent.click(screen.getByText("nunu/notes"));
+    expect(screen.getByText(/Dropbox/)).toBeTruthy();
+  });
+
+  it("points at a repo that already has the name instead of failing to create it", async () => {
+    mockMarascaApi({ ...base, "github:listRepos": [repo("nunu/vault")] });
+    render(<RepoPicker onDone={noop} onBack={noop} />);
+    expect(await screen.findByText("You already have nunu/vault.")).toBeTruthy();
+    await userEvent.click(screen.getByRole("button", { name: "Use it" }));
+    expect(screen.getByRole("radio", { name: /nunu\/vault/ }).getAttribute("aria-checked")).toBe(
+      "true",
+    );
   });
 });

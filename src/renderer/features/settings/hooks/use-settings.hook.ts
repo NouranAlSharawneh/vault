@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { errorMessage, plural } from "@/helpers";
+import { acceleratorLabel, errorMessage, plural } from "@/helpers";
 import { api, fire } from "@/lib/api";
 import { useApp } from "@/stores/app";
 import { useToast } from "@/stores/toast";
@@ -56,17 +56,23 @@ export function useSettings() {
       const key = Object.keys(patch)[0] as keyof VaultConfig;
       setState({ error: null, busy: key });
       try {
-        setConfig(await api("vault:updateConfig", patch));
+        const next = await api("vault:updateConfig", patch);
+        setConfig(next);
         setState({ error: null, busy: null });
+        // A shortcut is a change you want to hear about: it works in every other app now.
+        if (patch.hotkey) {
+          setHotkey(await api("hotkey:status").catch(() => null));
+          show(`Capture shortcut is now ${acceleratorLabel(next.hotkey)}`);
+        }
 
         return true;
       } catch (e) {
-        setState({ error: errorMessage(e), busy: null });
+        setState({ error: { field: key, message: errorMessage(e) }, busy: null });
 
         return false;
       }
     },
-    [setConfig],
+    [setConfig, show],
   );
 
   const forgetAssetDir = useCallback(
@@ -88,13 +94,19 @@ export function useSettings() {
       if (!removed) return;
       await refreshTrash();
       const images = assets.length ? ` and ${plural(assets.length, "image")}` : "";
-      show(`Emptied the trash — deleted ${plural(removed, "doc")}${images} forever`);
+      show(`Emptied the trash — deleted ${plural(removed, "doc")}${images} from the vault`);
     } catch (e) {
       show(errorMessage(e));
     } finally {
       setState((s) => ({ ...s, busy: null }));
     }
   }, [refreshTrash, show]);
+
+  /** The message for one setting, if the last write to it failed. */
+  const errorFor = useCallback(
+    (field: SettingsState["busy"]) => (state.error?.field === field ? state.error.message : null),
+    [state.error],
+  );
 
   const signOut = useCallback(async () => {
     setState((s) => ({ ...s, busy: "signOut" }));
@@ -117,6 +129,7 @@ export function useSettings() {
     docCount: index?.docs.length ?? 0,
     trashCount: trash.length,
     projectNames: new Map((index?.projects ?? []).map((p) => [p.slug, p.name])),
+    errorFor,
     update,
     forgetAssetDir,
     emptyTrash,

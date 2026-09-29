@@ -13,14 +13,37 @@ import type { NoWriteAccessBannerProps } from "./no-write-access-banner.types";
 export function NoWriteAccessBanner({ className }: NoWriteAccessBannerProps) {
   const sync = useApp((s) => s.sync);
   const remote = useApp((s) => s.config?.remote);
+  // A pasted token that can't write is nearly always the token, not the account: made
+  // without Contents · Read and write. Neither button below fixes that; a new token does.
+  const pat = useApp((s) => s.auth.method === "pat");
   if (!remote || sync?.state !== "error" || sync.failure !== "no-permission") return null;
+  if (pat)
+    return (
+      <div
+        className={cx(
+          "flex items-center gap-2 bg-warn/15 px-4 py-1.5 text-xs text-ink-2",
+          className,
+        )}
+        role="status"
+      >
+        <AlertTriangle size={12} className="text-warn-2" />
+        Your token can’t write to {remote}. Give it Contents · Read and write, or paste a new one.
+        <Button
+          variant="link"
+          className="ml-auto"
+          onClick={() => fire(api("window:openMain", "onboarding?signin"), "Couldn’t open sign-in")}
+        >
+          Update token
+        </Button>
+      </div>
+    );
 
   return (
     <div
       className={cx("flex items-center gap-2 bg-warn/15 px-4 py-1.5 text-xs text-ink-2", className)}
       role="status"
     >
-      <AlertTriangle size={12} className="text-warn" />
+      <AlertTriangle size={12} className="text-warn-2" />
       You don’t have write access to {remote}. Documents still save on this Mac.
       <Button
         variant="link"

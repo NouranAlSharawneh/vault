@@ -45,4 +45,25 @@ describe("onboarding step", () => {
     renderHook(() => useOnboardingStep());
     expect(window.location.hash).toBe("#onboarding");
   });
+
+  it("takes a local-only vault that signs in from Settings on to the repo picker", () => {
+    // It used to land on Done, which then said to connect GitHub from Settings.
+    useApp.setState({ auth: { status: "signed-out", user: null }, config } as never);
+    window.location.hash = "#onboarding?signin";
+    const { result, rerender } = renderHook(() => useOnboardingStep());
+    expect(result.current.step).toBe("signin");
+    signedIn();
+    rerender();
+    expect(result.current.step).toBe("repo");
+  });
+
+  it("sends someone signing in again to a connected vault back to it, not to Done", () => {
+    const connected = { ...config, remote: "nunu/vault" };
+    useApp.setState({ auth: { status: "expired", user: null }, config: connected } as never);
+    window.location.hash = "#onboarding?signin";
+    const { rerender } = renderHook(() => useOnboardingStep());
+    useApp.setState({ auth: { status: "signed-in", user: null }, config: connected } as never);
+    rerender();
+    expect(window.location.hash).toBe("#main");
+  });
 });

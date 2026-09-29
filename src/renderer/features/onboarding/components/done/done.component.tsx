@@ -1,8 +1,9 @@
 import { ArrowRight, PenLine, RefreshCw } from "lucide-react";
+import { useEffect, useState } from "react";
 import { GitNotice } from "@/components/git-notice/git-notice.component";
 import { Button, Card, Kbd, Logo, SectionLabel } from "@/components/ui";
 import { LEARN_SHORTCUTS } from "@/data/onboarding.data";
-import { plural } from "@/helpers";
+import { acceleratorLabel, plural } from "@/helpers";
 import { api, fire } from "@/lib/api";
 import { useApp } from "@/stores/app";
 
@@ -15,6 +16,19 @@ export function Done() {
   const config = useApp((s) => s.config);
   const count = useApp((s) => s.index?.docs.length ?? 0);
   const openVault = () => (window.location.hash = "main");
+  // The shortcut it teaches has to work. When another app holds it, say so here rather
+  // than let the first ⌃⌥V do nothing.
+  const [hotkeyTaken, setHotkeyTaken] = useState(false);
+  useEffect(() => {
+    let live = true;
+    api("hotkey:status")
+      .then((h) => live && setHotkeyTaken(!!h.accelerator && !h.active))
+      .catch(() => undefined);
+
+    return () => {
+      live = false;
+    };
+  }, []);
   const newDocument = () => fire(api("window:openEditor"), "Couldn’t open the editor");
 
   return (
@@ -45,6 +59,14 @@ export function Done() {
             </div>
           ))}
         </div>
+        {hotkeyTaken && config && (
+          <p className="mt-3 text-xs text-cherry" role="status">
+            {acceleratorLabel(config.hotkey)} is taken by another app.{" "}
+            <Button variant="link" onClick={() => (window.location.hash = "settings")}>
+              Pick another in Settings
+            </Button>
+          </p>
+        )}
       </div>
 
       <div className="mt-7 flex flex-wrap items-center gap-2">

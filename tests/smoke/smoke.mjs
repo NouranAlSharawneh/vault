@@ -97,7 +97,7 @@ await win.waitForSelector("text=Enter this code on GitHub");
 await win.waitForTimeout(400);
 await win.screenshot({ path: join(out, "smoke-1c-deviceflow.png") });
 await win.click("text=Use another method");
-await win.click("text=Skip for now");
+await win.click("text=Start local, connect later");
 await win.waitForSelector("text=Where should the vault live?");
 await win.screenshot({ path: join(out, "smoke-2-repo.png") });
 await win.click('button:has-text("Continue")');

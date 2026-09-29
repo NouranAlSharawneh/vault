@@ -16,3 +16,4 @@ export {
 } from "./capture.window";
 export { IS_MAC } from "./load-route";
 export { dialogParent } from "./dialog-parent";
+export { hardenWebContents, isAppUrl, isSafeExternal } from "./harden";

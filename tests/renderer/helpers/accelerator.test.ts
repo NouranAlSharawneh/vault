@@ -20,6 +20,25 @@ describe("toAccelerator", () => {
     expect(toAccelerator(key({ key: "Control", code: "ControlLeft", ctrlKey: true }))).toBeNull();
     expect(toAccelerator(key({ key: "v", code: "KeyV" }))).toBeNull();
   });
+
+  it("refuses shortcuts that would take over ordinary typing everywhere", () => {
+    // ⇧⇥, pressed to leave the recorder, used to become the global shortcut.
+    expect(toAccelerator(key({ key: "Tab", code: "Tab", shiftKey: true }))).toBeNull();
+    expect(toAccelerator(key({ key: "A", code: "KeyA", shiftKey: true }))).toBeNull();
+    // ⌥L is how a German keyboard types @.
+    expect(toAccelerator(key({ key: "@", code: "KeyL", altKey: true }))).toBeNull();
+    expect(toAccelerator(key({ key: "F5", code: "F5", shiftKey: true }))).toBe("Shift+F5");
+  });
+
+  it("names punctuation by its key, so Electron can read it", () => {
+    expect(toAccelerator(key({ key: "+", code: "Equal", ctrlKey: true, shiftKey: true }))).toBe(
+      "Control+Shift+=",
+    );
+    expect(toAccelerator(key({ key: "Dead", code: "KeyE", altKey: true, ctrlKey: true }))).toBe(
+      "Control+Alt+E",
+    );
+    expect(toAccelerator(key({ key: "Dead", code: "IntlRo", ctrlKey: true }))).toBeNull();
+  });
 });
 
 describe("acceleratorLabel", () => {

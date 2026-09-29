@@ -8,9 +8,13 @@ export function createResponseInterceptor(onAuthExpired?: AuthExpiredHandler) {
 
   const onRejected = (error: unknown): never => {
     if (isAxiosError(error)) {
-      const e = error as AxiosError<{ message?: string }>;
+      const e = error as AxiosError<{ message?: string; errors?: { message?: string }[] }>;
       const status = e.response?.status ?? 0;
+      // A 422 puts the useful part in `errors`: "Repository creation failed." on its own
+      // hid "name already exists on this account".
+      const detail = e.response?.data?.errors?.find((x) => x?.message)?.message;
       const message =
+        detail ??
         e.response?.data?.message ??
         (status ? e.response?.statusText : "Network unreachable") ??
         e.message;

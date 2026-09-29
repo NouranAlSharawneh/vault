@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useApp } from "@/stores/app";
 import type { OnboardingStep } from "../onboarding.types";
 
@@ -24,7 +24,8 @@ export function useOnboardingStep() {
   const auth = useApp((s) => s.auth);
   const config = useApp((s) => s.config);
   const signedIn = auth.status === "signed-in";
-  const [asked] = useState(intent);
+  const [asked, setAsked] = useState(intent);
+
   const [step, setStep] = useState<OnboardingStep>(() =>
     asked === "connect" && signedIn
       ? "repo"
@@ -37,10 +38,34 @@ export function useOnboardingStep() {
             : "welcome",
   );
 
-  // Once auth lands, leave the sign-in screen: to the repo picker when there is no vault
-  // yet or the user came here to attach one, and otherwise straight to done.
-  const effectiveStep: OnboardingStep =
-    step === "signin" && signedIn ? (config && asked !== "connect" ? "done" : "repo") : step;
+  // Asked again while already here — a banner in another window, say. The route is the
+  // same once the `?…` is dropped, so nothing remounted and the request did nothing.
+  useEffect(() => {
+    const onHash = () => {
+      const next = intent();
+      if (!next) return;
+      setAsked(next);
+      setStep(
+        next === "connect" && useApp.getState().auth.status === "signed-in" ? "repo" : "signin",
+      );
+    };
+    window.addEventListener("hashchange", onHash);
 
-  return { step: effectiveStep, setStep, signedIn, user: auth.user };
+    return () => window.removeEventListener("hashchange", onHash);
+  }, []);
+
+  // Once auth lands, leave the sign-in screen: to the repo picker when there is no GitHub
+  // repo yet or the user came here to attach one, and otherwise on. A local-only vault
+  // signing in from Settings wants a repo, not the "your vault is ready" screen.
+  const connected = !!config?.remote;
+  const effectiveStep: OnboardingStep =
+    step === "signin" && signedIn ? (connected && asked !== "connect" ? "done" : "repo") : step;
+  // Signing in again to a vault that already pushes somewhere is not a first run: go
+  // straight back to the library rather than through the celebration and its tips.
+  const backToVault = asked === "signin" && signedIn && connected && effectiveStep === "done";
+  useEffect(() => {
+    if (backToVault) window.location.hash = "main";
+  }, [backToVault]);
+
+  return { step: effectiveStep, setStep, signedIn, user: auth.user, auth, hasVault: !!config };
 }

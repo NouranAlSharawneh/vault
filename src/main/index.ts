@@ -12,9 +12,11 @@ import { fire } from "./lib/fire";
 import { configureNetwork } from "./network/axios";
 import { getSettings } from "./store/settings.store";
 import { loadToken } from "./store/token.store";
-import { getCaptureWindow, getMainWindow, IS_MAC } from "./windows";
+import { getCaptureWindow, getMainWindow, hardenWebContents, IS_MAC } from "./windows";
 
-if (!app.requestSingleInstanceLock()) app.quit();
+// The second launch hands over to the first and stops here. `quit()` alone let the rest of
+// this file run on: handlers registered, and the session restored against the same vault.
+if (!app.requestSingleInstanceLock()) app.exit(0);
 
 registerAssetScheme();
 
@@ -27,6 +29,7 @@ const boot = app.whenReady().then(async () => {
   nativeTheme.themeSource = "light";
   app.on("browser-window-created", (_, w) => {
     optimizer.watchWindowShortcuts(w);
+    hardenWebContents(w.webContents);
     attachContextMenu(w.webContents);
   });
 
