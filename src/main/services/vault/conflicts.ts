@@ -39,12 +39,17 @@ export async function resolveConflict(
     const original = await host.read(mark.of).catch(() => null);
     const trashed = original ? await host.trash(mark.of) : null;
     try {
-      await host.save({
-        body: copy.body,
-        frontmatter: pickFrontmatter(original?.meta ?? copy.meta),
-        existingPath: copyPath,
-        commit: true,
-      });
+      // Onto the original's path by name: a save keeps a document where it is unless its
+      // title changes, and the copy has the same title as the original.
+      await host.save(
+        {
+          body: copy.body,
+          frontmatter: pickFrontmatter(original?.meta ?? copy.meta),
+          existingPath: copyPath,
+          commit: true,
+        },
+        mark.of,
+      );
     } catch (e) {
       // Put the original back. Otherwise the pair can't be found again — its twin is
       // gone from its path — and the sheet said "nothing to review" over a doc that had

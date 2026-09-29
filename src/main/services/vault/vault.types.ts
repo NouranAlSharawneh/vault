@@ -54,7 +54,9 @@ export interface VaultContext {
 export interface ConflictHost {
   readonly index: IndexerService;
   read(relPath: string): Promise<DocContent>;
-  save(req: SaveRequest): Promise<SaveResult>;
+  /** `moveTo`: the path the text should end up at — the original's, when GitHub's copy
+   *  wins. Main-side only; a request from the renderer never names its own path. */
+  save(req: SaveRequest, moveTo?: string): Promise<SaveResult>;
   trash(relPath: string): Promise<TrashedDoc>;
   /** Undo a trash that a failed resolution already made. */
   restoreFromTrash(path: string): Promise<SaveResult>;

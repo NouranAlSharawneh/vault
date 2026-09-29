@@ -22,7 +22,7 @@ To release: add a section for the new version here, run `npm run release -- <pat
 - **Quitting pushes what's waiting** instead of leaving the last few seconds of saves on this Mac.
 - **The sync badge recovers by itself** once the network is back, and says when GitHub refused a commit (a secret it recognised, or a file over 100 MB) instead of retrying for ever. Files over 100 MB are never copied into the vault.
 - **History and restore work for documents with non-Latin titles.**
-- Notes in nested folders, or at the top of the vault, stay where they are when saved or starred.
+- **A saved note keeps its name and its folder** unless you change its title or project, so links to it keep working. A note named differently from its title (`rate-limiting.md`, titled "Rate limiting at the edge") was renamed on any save, and notes in nested folders or at the top of the vault were moved when saved or starred.
 - A crash that left git's lock file behind no longer blocks every save.
 - Resolving a conflict can't send both versions to the trash.
 - **Dropping a file on a window no longer replaces the app with the file.** Windows stay on Marasca, links only open web and mail addresses, and only Marasca's own page can talk to the app.

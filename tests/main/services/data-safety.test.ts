@@ -218,6 +218,38 @@ describe("where a document lives", () => {
     expect(vault.index.get("atlas-api/old.md")?.created.startsWith("1970")).toBe(false);
   });
 
+  it("keeps its file name when its title didn't change, so links to it keep working", async () => {
+    // Titled "Rate limiting at the edge", saved as rate-limiting-at-the-edge.md on any
+    // save at all — every link to rate-limiting.md broke.
+    await open({ "atlas-api/rate-limiting.md": doc("Rate limiting at the edge", "Body.") });
+    const res = await vault.save({
+      body: "Body, edited.",
+      frontmatter: {
+        title: "Rate limiting at the edge",
+        project: "Atlas API",
+        tags: [],
+        source: "manual",
+      },
+      existingPath: "atlas-api/rate-limiting.md",
+      commit: true,
+    });
+
+    expect(res.path).toBe("atlas-api/rate-limiting.md");
+    expect(existsSync(join(root, "atlas-api/rate-limiting-at-the-edge.md"))).toBe(false);
+  });
+
+  it("takes its title's name when the title does change", async () => {
+    await open({ "atlas-api/rate-limiting.md": doc("Rate limiting at the edge", "Body.") });
+    const res = await vault.save({
+      body: "Body.",
+      frontmatter: { title: "Edge limits", project: "Atlas API", tags: [], source: "manual" },
+      existingPath: "atlas-api/rate-limiting.md",
+      commit: true,
+    });
+
+    expect(res.path).toBe("atlas-api/edge-limits.md");
+  });
+
   it("a rename that isn't committed stages nothing for the next commit to sweep up", async () => {
     await open({ "atlas-api/spec.md": doc("Spec", "Body.") });
     await vault.save({
