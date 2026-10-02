@@ -86,7 +86,7 @@ fi
 
 mkdir -p "$DEST"
 target="$DEST/${APP}.app"
-say "Installing to $target…"
+say "Installing to ${target}…"
 if [ -w "$DEST" ]; then
   rm -rf "$target"
   ditto "$mnt/${APP}.app" "$target"
