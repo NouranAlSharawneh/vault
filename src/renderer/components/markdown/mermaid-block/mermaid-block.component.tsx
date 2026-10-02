@@ -11,7 +11,7 @@ export function MermaidBlock({ code }: MermaidBlockProps) {
   const [view, setView] = useState<MermaidView>("rendered");
   const { svg, error } = useMermaid(code);
   const paneRef = useRef<HTMLDivElement>(null);
-  const z = useDiagramZoom(svg, paneRef);
+  const z = useDiagramZoom(svg, paneRef, view === "rendered");
   const showZoom = view === "rendered" && !error && !!svg;
 
   return (

@@ -109,7 +109,8 @@ export interface IpcInvoke {
   "views:delete": (name: string) => SavedView[];
   "templates:list": () => Template[];
 
-  "search:query": (text: string) => SearchHit[];
+  /** `filters` is the whole query; its operators narrow the hits before they are ranked and cut. */
+  "search:query": (text: string, filters?: string) => SearchHit[];
 
   "assets:resolve": (baseDir: string | null, refs: string[]) => AssetResolution;
   "assets:chooseFolder": (defaultPath?: string) => string | null;
@@ -129,6 +130,12 @@ export interface IpcInvoke {
   "window:openMain": (route?: string) => void;
   /** Bring the main window forward with this document selected. */
   "window:revealDoc": (path: string, saved?: SavedNotice) => void;
+  /**
+   * The reveal still waiting for the main window, handed over once. The library asks when
+   * it mounts: a `doc:reveal` sent as a closed window reopened arrived before anything
+   * was listening, and the saved document came up unselected, with no "Saved" either.
+   */
+  "window:takeReveal": () => DocReveal | null;
   "window:openEditor": (path?: string) => void;
   /**
    * The text an editor window was opened with (from the capture sheet), handed over once.

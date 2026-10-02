@@ -16,5 +16,8 @@ export interface HistoryState {
   diffFor: string | null;
   loading: boolean;
   restoring: boolean;
+  /** The list of commits couldn't be read. */
   error: string | null;
+  /** One commit's diff couldn't be read — said in the diff pane, the list stays usable. */
+  diffError: string | null;
 }

@@ -1,11 +1,13 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { AuthExpiredBanner } from "@/components/auth-expired-banner/auth-expired-banner.component";
 import { NoWriteAccessBanner } from "@/components/no-write-access-banner/no-write-access-banner.component";
 import { SplitPane } from "@/components/ui";
 import { cx, describeSave } from "@/helpers";
 import { api, fire, on } from "@/lib/api";
 import { useApp } from "@/stores/app";
+import { useLibrary } from "@/stores/library";
 import { useToast } from "@/stores/toast";
+import type { DocReveal } from "@shared/types";
 import { CommandPalette } from "./components/command-palette/command-palette.component";
 import { ConflictSheet } from "./components/conflict-sheet/conflict-sheet.component";
 import { DocumentList } from "./components/document-list/document-list.component";
@@ -21,7 +23,6 @@ import { useHotkeyWarning } from "./hooks/use-hotkey-warning.hook";
 import { useMainShortcuts } from "./hooks/use-main-shortcuts.hook";
 import { useSidebarState } from "./hooks/use-sidebar-state.hook";
 import { useTrashActions } from "./hooks/use-trash-actions.hook";
-import type { ReaderView } from "./main.types";
 
 /**
  * Top bar across the window, then navigation · document list · reader.
@@ -34,78 +35,131 @@ export function Main() {
   const trash = useApp((s) => s.trash);
   const show = useToast((s) => s.show);
   const sidebar = useSidebarState();
-  const [selected, setSelected] = useState<string | null>(null);
+  const selected = useLibrary((s) => s.selected);
+  const setSelected = useLibrary((s) => s.setSelected);
+  const view = useLibrary((s) => s.view);
+  const setView = useLibrary((s) => s.setView);
   const list = useDocumentFilter(index, trash, (docs) =>
     setSelected((s) => reconcileSelection(s, docs)),
   );
   const { showAll, filtered, docs: listed } = list;
-  const [view, setView] = useState<ReaderView>("preview");
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
   const [conflictsOpen, setConflictsOpen] = useState(false);
   const inTrash = list.filter.collection === "trash";
-  const doc = useDocument(selected, inTrash ? trash.map((t) => t.meta) : index?.docs);
-  const trashActions = useTrashActions(doc?.meta ?? null, setSelected);
+  const loaded = useDocument(selected, inTrash ? trash.map((t) => t.meta) : index?.docs);
+  const doc = loaded.doc;
 
-  // A capture or an editor save lands as `doc:reveal`: select the document, dropping back
-  // to All documents only when the current list doesn't hold it. The index arrives on its
-  // own event, so order doesn't matter.
-  useEffect(
-    () =>
-      on("doc:reveal", ({ path, saved }) => {
-        // An edited document is usually in the list already; clearing the filters for it
-        // threw away the view you had set up and announced it as "the new one".
-        const inList = listed.some((d) => d.path === path);
-        if (!inList) showAll();
-        setSelected(path);
-        // The editor closes as it saves, so this is the only place left to say how it went.
-        if (saved) {
-          const cleared = filtered && !inList ? " · showing all documents" : "";
-          show(
-            describeSave(saved) + cleared,
-            saved.keptOtherVersion
-              ? { label: "History", run: () => setHistoryOpen(true) }
-              : undefined,
-          );
-        } else if (filtered && !inList) {
-          // Dropping the filters is what makes the new document findable, but doing it in
-          // silence left you looking at a different list than the one you had set up.
-          show("Showing all documents so the new one is in the list");
-        }
-      }),
-    [showAll, filtered, show, listed],
+  // The reader shows what the list holds. A tag narrowing the list, a pull or an outside
+  // delete removing the file, a rename moving it — each left the reader on a document the
+  // list no longer had, and ⌘⌫ trashed something you couldn't see.
+  useEffect(() => {
+    setSelected((s) => reconcileSelection(s, listed));
+  }, [listed, setSelected]);
+
+  /** The document after `path` in the list, or before it at the end: where a removal lands. */
+  const neighbour = useCallback(
+    (path: string) => {
+      const i = listed.findIndex((d) => d.path === path);
+
+      return i < 0 ? null : ((listed[i + 1] ?? listed[i - 1] ?? null)?.path ?? null);
+    },
+    [listed],
+  );
+  const trashActions = useTrashActions(doc?.meta ?? null, setSelected, neighbour);
+
+  /**
+   * Select a document, dropping back to All documents only when the current list doesn't
+   * hold it. Every way to a document from outside the list — a capture, an editor's save,
+   * the palette, a link in another document — comes through here, so none of them can
+   * leave the reader on something the list isn't showing.
+   */
+  const reveal = useCallback(
+    (path: string): boolean => {
+      const inList = listed.some((d) => d.path === path);
+      if (!inList) showAll();
+      setSelected(path);
+
+      return inList;
+    },
+    [listed, showAll, setSelected],
   );
 
+  const lastReveal = useRef(0);
+  const onReveal = useCallback(
+    ({ id, path, saved }: DocReveal) => {
+      if (id <= lastReveal.current) return;
+      lastReveal.current = id;
+      const inList = reveal(path);
+      // The editor closes as it saves, so this is the only place left to say how it went.
+      if (saved) {
+        const cleared = filtered && !inList ? " · showing all documents" : "";
+        show(
+          describeSave(saved) + cleared,
+          saved.keptOtherVersion
+            ? { label: "History", run: () => setHistoryOpen(true) }
+            : undefined,
+        );
+      } else if (filtered && !inList) {
+        // Dropping the filters is what makes the new document findable, but doing it in
+        // silence left you looking at a different list than the one you had set up.
+        show("Showing all documents so the new one is in the list");
+      }
+    },
+    [reveal, filtered, show],
+  );
+  // Pushed while the library is up; asked for when it mounts, since one sent while the
+  // window was still booting found nobody listening.
+  useEffect(() => on("doc:reveal", onReveal), [onReveal]);
+  useEffect(() => {
+    let live = true;
+    api("window:takeReveal")
+      .then((r) => live && r && onReveal(r))
+      .catch(() => undefined);
+
+    return () => {
+      live = false;
+    };
+    // Once per mount: later reveals arrive as events.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // A relative `.md` link in the reader. Checked against the index so a broken link says so
-  // instead of blanking the reader; from Trash, back to All documents, where live docs are.
+  // instead of blanking the reader. Its `#section` is kept for once the document is up —
+  // it used to be dropped, and the link opened at the top.
+  const [anchor, setAnchor] = useState<{ path: string; id: string } | null>(null);
+  const clearAnchor = useCallback(() => setAnchor(null), []);
   const openLinkedDoc = useCallback(
-    (path: string) => {
-      if (!index?.docs.some((d) => d.path === path)) {
+    (path: string, hash?: string) => {
+      if (!useApp.getState().index?.docs.some((d) => d.path === path)) {
         show("That link points to a document that isn’t in the vault");
 
         return;
       }
-      if (inTrash) showAll();
-      setSelected(path);
+      setAnchor(hash ? { path, id: hash } : null);
+      reveal(path);
     },
-    [index, inTrash, showAll, show],
+    [reveal, show],
   );
 
   const openPalette = useCallback(() => setPaletteOpen(true), []);
-  // History is about one document, so it is meaningless with nothing selected.
-  const toggleHistory = useCallback(() => setHistoryOpen((open) => !open), []);
+  // History is about one document: meaningless with none selected, or one in the trash —
+  // and toggling it then left it open for the next document, unasked.
+  const canShowHistory = !!doc && !inTrash;
+  const toggleHistory = useCallback(() => {
+    if (canShowHistory) setHistoryOpen((open) => !open);
+  }, [canShowHistory]);
   const openSettings = useCallback(() => (window.location.hash = "settings"), []);
+  const trashNow = useCallback(() => fire(trashActions.trash()), [trashActions]);
   useHotkeyWarning(openSettings);
   useMainShortcuts({
     onSearch: openPalette,
-    onTrash: () => fire(trashActions.trash()),
+    onTrash: trashNow,
     onSettings: openSettings,
     onHistory: toggleHistory,
   });
 
-  // History belongs to a document; with none open, or one in the trash, there is nothing
-  // to show — and a stale drawer beside an empty reader would be worse than none.
-  const showHistory = historyOpen && !!doc && !inTrash;
+  const showHistory = historyOpen && canShowHistory;
 
   useEffect(() => {
     if (!showHistory) return;
@@ -119,22 +173,19 @@ export function Main() {
     return () => window.removeEventListener("keydown", onKey);
   }, [showHistory, paletteOpen, conflictsOpen]);
 
-  // Escape closes the review, like every other overlay in the app.
-  useEffect(() => {
-    if (!conflictsOpen) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape" && !e.defaultPrevented) setConflictsOpen(false);
-    };
-    window.addEventListener("keydown", onKey);
-
-    return () => window.removeEventListener("keydown", onKey);
-  }, [conflictsOpen]);
-
   const star = useCallback(() => {
     if (doc) fire(api("doc:setStarred", doc.meta.path, !doc.meta.starred));
   }, [doc]);
 
-  if (!config) return <VaultUnavailable />;
+  if (!config)
+    return (
+      <div className="flex h-full flex-col bg-paper">
+        {/* No top bar here, and the window has no title bar of its own: without this strip
+            there was nothing to drag it by. */}
+        <div className="h-12 shrink-0 drag" />
+        <VaultUnavailable />
+      </div>
+    );
 
   const content = (
     <div
@@ -150,12 +201,19 @@ export function Main() {
         defaultRatio={0.32}
         minRatio={0.2}
         maxRatio={0.5}
+        minPx={240}
+        maxPx={560}
+        label="Resize the document list"
         left={
           <DocumentList
             title={list.title}
+            collection={list.filter.collection}
+            project={list.filter.project}
+            scrollKey={JSON.stringify(list.filter)}
             docs={list.docs}
             selected={selected}
             onSelect={setSelected}
+            onOpen={(path) => fire(api("window:openEditor", path), "Couldn’t open the editor")}
             sort={list.filter.sort}
             onSort={list.setSort}
             activeTags={list.activeTags}
@@ -163,16 +221,19 @@ export function Main() {
             onClearTags={list.clearTags}
             sortable={!inTrash && list.filter.collection !== "recent"}
             dateOf={list.dateOf}
-            emptyHint={inTrash ? "Deleted documents wait here until you purge them." : undefined}
+            hotkey={config.hotkey}
           />
         }
         right={
           <DocumentReader
             doc={doc}
+            previous={loaded.previous}
+            error={loaded.error}
+            onRetry={loaded.retry}
             view={view}
             onView={setView}
             onStar={star}
-            onTrash={() => fire(trashActions.trash())}
+            onTrash={trashNow}
             onHistory={toggleHistory}
             historyOpen={historyOpen}
             trashed={isTrashed(doc?.meta.path ?? null)}
@@ -180,6 +241,9 @@ export function Main() {
             onPurge={() => fire(trashActions.purge())}
             trashBusy={trashActions.busy}
             onOpenDoc={openLinkedDoc}
+            anchor={anchor}
+            onAnchorShown={clearAnchor}
+            listEmpty={listed.length === 0}
           />
         }
       />
@@ -201,6 +265,7 @@ export function Main() {
           <SidebarRail
             index={index}
             filter={list.filter}
+            trashCount={trash.length}
             onCollection={list.selectCollection}
             onProject={list.selectProject}
             onExpand={() => sidebar.setState("full")}
@@ -211,6 +276,7 @@ export function Main() {
             index={index}
             config={config}
             filter={list.filter}
+            trashCount={trash.length}
             onCollection={list.selectCollection}
             onProject={list.selectProject}
             onTag={list.toggleTag}
@@ -228,15 +294,14 @@ export function Main() {
           />
         )}
       </div>
+      {/* The sheet closes itself on Escape, through its own dialog shell. */}
       {conflictsOpen && <ConflictSheet onClose={() => setConflictsOpen(false)} />}
       {paletteOpen && (
         <CommandPalette
           onClose={() => setPaletteOpen(false)}
-          onOpenDoc={setSelected}
+          onOpenDoc={reveal}
           // Trash acts on the doc in the reader, so the action is offered with its title or not at all.
-          {...(doc && !inTrash
-            ? { onTrashDoc: () => fire(trashActions.trash()), trashTitle: doc.meta.title }
-            : {})}
+          {...(doc && !inTrash ? { onTrashDoc: trashNow, trashTitle: doc.meta.title } : {})}
           onReviewConflicts={() => setConflictsOpen(true)}
         />
       )}

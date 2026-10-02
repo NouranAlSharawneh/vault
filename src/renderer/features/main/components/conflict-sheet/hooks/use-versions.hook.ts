@@ -18,8 +18,9 @@ export interface Versions {
  * have anywhere. For two edits of one document that is exactly the signal, and it needs
  * no diff algorithm to be trustworthy.
  */
-export function useVersions(pair: ConflictPair): Versions | null {
+export function useVersions(pair: ConflictPair): { versions: Versions | null; failed: boolean } {
   const [v, setV] = useState<Versions | null>(null);
+  const [failed, setFailed] = useState(false);
   const minePath = pair.mine.path;
   const theirsPath = pair.theirs.path;
 
@@ -39,12 +40,14 @@ export function useVersions(pair: ConflictPair): Versions | null {
           onlyTheirs: new Set(theirs.filter((l) => l.trim() && !mineSet.has(l.trim()))),
         });
       })
-      .catch(() => live && setV(null));
+      // Said, not papered over: falling back to the excerpt made a snippet look like the
+      // whole version you were choosing.
+      .catch(() => live && setFailed(true));
 
     return () => {
       live = false;
     };
   }, [minePath, theirsPath]);
 
-  return v;
+  return { versions: v, failed };
 }

@@ -27,7 +27,15 @@ const round = (z: number) => Math.round(z * 100) / 100;
  * both leave the SVG's own `max-width: 100%` resolving against a container that scales
  * with them, so the two cancel out and nothing visibly changes.
  */
-export function useDiagramZoom(svg: string | null, paneRef: RefObject<HTMLDivElement | null>) {
+export function useDiagramZoom(
+  svg: string | null,
+  paneRef: RefObject<HTMLDivElement | null>,
+  /**
+   * Whether the pane is on screen. Code view unmounts it, and coming back mounts a new one:
+   * watched only by what it was first given, the diagram stopped refitting to the reader.
+   */
+  shown = true,
+) {
   const [zoom, setZoom] = useState(1);
   const [fitted, setFitted] = useState<number | null>(null);
   const [canPan, setCanPan] = useState(false);
@@ -45,7 +53,7 @@ export function useDiagramZoom(svg: string | null, paneRef: RefObject<HTMLDivEle
     observer.observe(pane);
 
     return () => observer.disconnect();
-  }, [natural, paneRef]);
+  }, [natural, paneRef, shown]);
 
   // Whether there is anywhere to drag to, once the new width has been laid out.
   useEffect(() => {

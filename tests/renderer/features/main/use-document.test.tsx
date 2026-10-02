@@ -18,11 +18,11 @@ describe("useDocument", () => {
     const { result, rerender } = renderHook(({ live }) => useDocument("atlas-api/spec.md", live), {
       initialProps: { live: [meta(1)] },
     });
-    await waitFor(() => expect(result.current?.body).toBe("old text"));
+    await waitFor(() => expect(result.current.doc?.body).toBe("old text"));
 
     body = "new text";
     rerender({ live: [meta(2)] });
-    await waitFor(() => expect(result.current?.body).toBe("new text"));
+    await waitFor(() => expect(result.current.doc?.body).toBe("new text"));
     expect(invoke).toHaveBeenCalledTimes(2);
   });
 
@@ -33,8 +33,30 @@ describe("useDocument", () => {
     const { result, rerender } = renderHook(({ live }) => useDocument("atlas-api/spec.md", live), {
       initialProps: { live: [meta(1)] },
     });
-    await waitFor(() => expect(result.current?.body).toBe("text"));
+    await waitFor(() => expect(result.current.doc?.body).toBe("text"));
     rerender({ live: [{ ...meta(1), starred: true }] });
     expect(invoke).toHaveBeenCalledTimes(1);
+  });
+
+  it("keeps the last document up while the next one loads, and says when one can't be read", async () => {
+    // The reader fell back to "Select a document" between every two clicks, and a file
+    // that couldn't be read looked exactly the same.
+    let fail = false;
+    mockMarascaApi({
+      "doc:read": (path: string) => {
+        if (fail) throw new Error("EACCES: permission denied");
+
+        return { meta: { ...meta(1), path }, body: `body of ${path}` };
+      },
+    });
+    const { result, rerender } = renderHook(({ path }) => useDocument(path, undefined), {
+      initialProps: { path: "a.md" },
+    });
+    await waitFor(() => expect(result.current.doc?.body).toBe("body of a.md"));
+    fail = true;
+    rerender({ path: "b.md" });
+    expect(result.current.doc).toBeNull();
+    expect(result.current.previous?.body).toBe("body of a.md");
+    await waitFor(() => expect(result.current.error).toMatch(/permission denied/));
   });
 });

@@ -20,7 +20,17 @@ export async function atCommit(git: GitService, relPath: string, sha: string): P
   return git.show(await pathAt(git, relPath, sha), sha);
 }
 
-/** What this commit changed, as a unified diff. */
+/**
+ * What this commit changed, as a unified diff. A commit that moved the document (a new
+ * project, a new title) is asked about under both its names, with rename detection, so it
+ * shows as the edit it was — asked about the new name alone, git reported the whole file
+ * as added.
+ */
 export async function diff(git: GitService, relPath: string, sha: string): Promise<string> {
-  return git.diff(await pathAt(git, relPath, sha), sha);
+  const commits = await git.log(relPath);
+  const i = commits.findIndex((c) => c.sha === sha);
+  const at = commits[i]?.path ?? relPath;
+  const before = i >= 0 ? commits[i + 1]?.path : undefined;
+
+  return git.diff(before && before !== at ? [at, before] : [at], sha);
 }

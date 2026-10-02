@@ -160,6 +160,13 @@ body {
 }
 
 /* Draggable title-bar region (macOS hiddenInset) */
+/* A list row off screen skips layout and paint until it scrolls near; its box is
+   estimated meanwhile so the scrollbar stays honest. */
+@utility cv-row {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 88px;
+}
+
 @utility drag {
   -webkit-app-region: drag;
 }

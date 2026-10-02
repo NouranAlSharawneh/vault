@@ -13,6 +13,7 @@ const EMPTY: HistoryState = {
   loading: true,
   restoring: false,
   error: null,
+  diffError: null,
 };
 
 /**
@@ -31,7 +32,13 @@ export function useDocHistory(path: string, onRestored: (path: string) => void) 
       .then((commits) => {
         if (cancelled) return;
         // Open on the newest change rather than an empty panel.
-        setState((s) => ({ ...s, commits, loading: false, selected: commits[0]?.sha ?? null }));
+        setState((s) => ({
+          ...s,
+          commits,
+          loading: false,
+          error: null,
+          selected: commits[0]?.sha ?? null,
+        }));
       })
       .catch((e: unknown) => {
         if (!cancelled) setState((s) => ({ ...s, loading: false, error: errorMessage(e) }));
@@ -47,8 +54,17 @@ export function useDocHistory(path: string, onRestored: (path: string) => void) 
     if (!selected) return;
     let cancelled = false;
     api("doc:diff", path, selected)
-      .then((diff) => !cancelled && setState((s) => ({ ...s, diff, diffFor: selected })))
-      .catch((e: unknown) => !cancelled && setState((s) => ({ ...s, error: errorMessage(e) })));
+      .then(
+        (diff) =>
+          !cancelled && setState((s) => ({ ...s, diff, diffFor: selected, diffError: null })),
+      )
+      // One diff that can't be read used to replace the whole drawer, commit list and all,
+      // for good.
+      .catch(
+        (e: unknown) =>
+          !cancelled &&
+          setState((s) => ({ ...s, diff: null, diffFor: selected, diffError: errorMessage(e) })),
+      );
 
     return () => {
       cancelled = true;

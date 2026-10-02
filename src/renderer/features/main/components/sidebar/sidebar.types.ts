@@ -5,6 +5,8 @@ export interface SidebarProps {
   index: IndexSnapshot | null;
   config: VaultConfig;
   filter: ListFilter;
+  /** Documents in the trash; the Trash row shows once there are any. */
+  trashCount?: number;
   onCollection: (c: ListFilter["collection"]) => void;
   onProject: (slug: string | null) => void;
   onTag: (tag: string) => void;

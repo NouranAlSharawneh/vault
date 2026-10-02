@@ -139,7 +139,7 @@ describe("Markdown — links", () => {
     const onOpenDoc = vi.fn();
     mount(onOpenDoc);
     fireEvent.click(screen.getByText("the spec"));
-    expect(onOpenDoc).toHaveBeenCalledWith("atlas-api/specs/limits.md");
+    expect(onOpenDoc).toHaveBeenCalledWith("atlas-api/specs/limits.md", undefined);
   });
 
   it("leaves a relative .md link alone where there is nothing to open it in", () => {

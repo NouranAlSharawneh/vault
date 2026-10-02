@@ -71,6 +71,25 @@ describe("applyFilter", () => {
     ).toEqual(["Alpha", "Beta", "Gamma"]);
   });
 
+  it("narrows Recent by the tags that are on, like every other collection", () => {
+    // Recent returned before the tag filter ran: its chips showed tags that filtered nothing.
+    const recent = { ...base, collection: "recent" as const };
+    expect(
+      applyFilter(index, { ...recent, tags: ["spec"] }, [], NOW).docs.map((d) => d.path),
+    ).toEqual(["a"]);
+    expect(applyFilter(index, { ...recent, tags: ["infra"] }, [], NOW).docs).toEqual([]);
+  });
+
+  it("sorts titles the way people count: Doc 2 before Doc 10", () => {
+    const numbered: IndexSnapshot = {
+      ...index,
+      docs: ["Doc 10", "doc 2", "Doc 1"].map((title, i) => doc({ path: `${i}`, title })),
+    };
+    expect(
+      applyFilter(numbered, { ...base, sort: "title" }, [], NOW).docs.map((d) => d.title),
+    ).toEqual(["Doc 1", "doc 2", "Doc 10"]);
+  });
+
   it("shows the trash in its own order and ignores tags there", () => {
     const trashed = [
       {

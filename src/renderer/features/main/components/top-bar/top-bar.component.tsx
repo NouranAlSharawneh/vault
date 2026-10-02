@@ -5,40 +5,59 @@ import { MOD_KEY } from "@/constants";
 import { api, fire } from "@/lib/api";
 import type { TopBarProps } from "./top-bar.types";
 
-/** Full-width title bar: sidebar toggle · centred search pill (opens ⌘K) · sync · New. */
+/** What the sidebar button does next: it cycles full → icons → hidden → full. */
+const SIDEBAR_NEXT = {
+  full: "Collapse the sidebar to icons",
+  rail: "Hide the sidebar",
+  hidden: "Show the sidebar",
+} as const;
+
+/**
+ * Full-width title bar: sidebar toggle · centred search pill (opens ⌘K) · sync · New.
+ *
+ * The bar itself drags the window; only the controls opt out. The two side groups used to
+ * be `no-drag` whole, and as grid columns they stretched to fill the bar, so the window
+ * could only be moved by a few strips around the edges.
+ */
 export function TopBar({ sidebar, onToggleSidebar, onSearch, onReviewConflicts }: TopBarProps) {
   return (
-    <header className="grid h-12 shrink-0 grid-cols-[1fr_auto_1fr] items-center bg-paper-2 pr-3 pl-titlebar drag">
-      <div className="flex items-center gap-1 no-drag">
+    <header className="flex h-12 shrink-0 items-center gap-3 bg-paper-2 pr-2 pl-titlebar drag">
+      {/* The sides grow alike, so the pill sits centred, but never below their own
+          content: when room runs out, the pill gives way instead of the buttons. */}
+      <div className="flex min-w-fit flex-1 basis-0 items-center gap-1">
         <Button
           variant="ghost"
           size="sm"
-          className="w-7 px-0"
+          className="w-7 px-0 no-drag"
           onClick={onToggleSidebar}
-          title={`Sidebar (${MOD_KEY}\\)`}
-          aria-label="toggle sidebar"
-          aria-pressed={sidebar !== "hidden"}
+          tooltip={SIDEBAR_NEXT[sidebar]}
+          tooltipKeys={`${MOD_KEY}\\`}
+          aria-label={SIDEBAR_NEXT[sidebar]}
         >
           <PanelLeft size={13} />
         </Button>
       </div>
+      {/* Shrinks before anything overflows: at the narrowest window, or beside a long sync
+          state, a fixed 520px pill pushed New off the edge. */}
       <Button
         variant="outline"
-        className="h-8 w-130 justify-between rounded-md bg-paper-3/70 font-normal text-ink-4 no-drag hover:bg-paper-3"
+        className="h-8 w-130 min-w-24 shrink justify-between rounded-md bg-paper-3/70 font-normal text-ink-4 no-drag hover:bg-paper-3"
         onClick={onSearch}
       >
-        <span className="flex items-center gap-2">
-          <Search size={12} /> Search your docs
+        <span className="flex min-w-0 items-center gap-2">
+          <Search size={12} className="shrink-0" />{" "}
+          <span className="truncate">Search your docs</span>
         </span>
-        <span className="text-xs text-ink-4">{MOD_KEY} K</span>
+        <span className="shrink-0 text-xs text-ink-4">{MOD_KEY} K</span>
       </Button>
-      <div className="flex items-center justify-end gap-2 no-drag">
+      <div className="flex min-w-fit flex-1 basis-0 items-center justify-end gap-2">
         <SyncBadge onReviewConflicts={onReviewConflicts} />
         {/* ⌘N goes in the tooltip, like every other shortcut in the app: printed on the
             cherry fill it cluttered the one button that should read cleanly. */}
         <Button
           variant="primary"
           size="sm"
+          className="shrink-0 no-drag"
           onClick={() => fire(api("window:openEditor"), "Couldn’t open the editor")}
           tooltip="New document"
           tooltipKeys={`${MOD_KEY}N`}

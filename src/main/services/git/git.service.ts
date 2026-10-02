@@ -456,8 +456,8 @@ export class GitService {
    * What one commit did to one file, as a unified diff. `show` rather than `diff A^ B`
    * so a root commit — which has no parent — renders as all-additions instead of failing.
    */
-  async diff(path: string, sha: string): Promise<string> {
-    return this.git.raw(["show", "--format=", "--unified=3", sha, "--", path]);
+  async diff(paths: string[], sha: string): Promise<string> {
+    return this.git.raw(["show", "--format=", "-M", "--unified=3", sha, "--", ...paths]);
   }
 
   /** Paths with commits not on origin. */

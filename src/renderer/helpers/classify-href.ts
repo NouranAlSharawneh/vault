@@ -1,3 +1,4 @@
+import { TRASH_DIR } from "@shared/constants";
 import { docAssetPath } from "@shared/helpers";
 import type { LinkTarget } from "./classify-href.types";
 
@@ -22,9 +23,18 @@ export function classifyHref(href: string, docPath: string): LinkTarget {
     return id ? { kind: "anchor", id } : { kind: "none" };
   }
   if (/^(?:https?:\/\/|mailto:)/i.test(h)) return { kind: "external", url: h };
-  const path = docAssetPath(h, docPath);
+  // A trashed document's links mean what they meant where it lived: resolved against
+  // `.trash/…` they pointed at nothing, and every one said "isn't in the vault".
+  const from = docPath.startsWith(`${TRASH_DIR}/`) ? docPath.slice(TRASH_DIR.length + 1) : docPath;
+  const path = docAssetPath(h, from);
   if (path && /\.(?:md|markdown)$/i.test(path)) {
-    return { kind: "doc", path: path.split("/").map(decode).join("/") };
+    const hash = decode(h.split("#")[1] ?? "");
+
+    return {
+      kind: "doc",
+      path: path.split("/").map(decode).join("/"),
+      ...(hash ? { hash } : {}),
+    };
   }
 
   return { kind: "none" };

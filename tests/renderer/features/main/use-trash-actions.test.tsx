@@ -70,7 +70,9 @@ describe("useTrashActions", () => {
     expect(useToast.getState().toasts.at(-1)?.message).toBe("Restored “Spec”");
     await act(() => inTrash.result.current.purge());
     expect(invoke).toHaveBeenCalledWith("trash:purge", trashed.path);
-    expect(useToast.getState().toasts.at(-1)?.message).toBe("Deleted “Spec” and 2 images forever");
+    expect(useToast.getState().toasts.at(-1)?.message).toBe(
+      "Deleted “Spec” and 2 images from the vault",
+    );
   });
 
   it("changes nothing when the confirmation is declined", async () => {
@@ -118,5 +120,18 @@ describe("useTrashActions", () => {
     });
     expect(result.current.busy).toBeNull();
     expect(useToast.getState().toasts.at(-1)?.message).toBe("Moved “Spec” to trash");
+  });
+
+  it("moves the selection to the next document instead of leaving the reader blank", async () => {
+    mockMarascaApi({
+      "doc:trash": () => ({ ...trashed, meta: { ...meta } }),
+      "trash:list": () => [],
+    });
+    const select = vi.fn();
+    const { result } = renderHook(() =>
+      useTrashActions(meta, select, (path) => (path === meta.path ? "p/next.md" : null)),
+    );
+    await act(() => result.current.trash());
+    expect(select).toHaveBeenCalledWith("p/next.md");
   });
 });

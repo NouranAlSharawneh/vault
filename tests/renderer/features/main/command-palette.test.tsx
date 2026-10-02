@@ -93,8 +93,9 @@ describe("CommandPalette", () => {
     setIndex();
     render(<CommandPalette onClose={() => undefined} onOpenDoc={onOpen} />);
     await userEvent.type(screen.getByLabelText("search"), "rate limit");
-    await waitFor(() => expect(screen.getByText("Documents")).toBeTruthy());
-    expect(screen.getByText("In text")).toBeTruthy();
+    // Titles match at once, from the index; the text hits follow when the search answers.
+    await waitFor(() => expect(screen.getByText("In text")).toBeTruthy());
+    expect(screen.getByText("Documents")).toBeTruthy();
     expect(screen.getByText("…we rate-limit inside…")).toBeTruthy();
     await userEvent.keyboard("{Enter}");
     expect(onOpen).toHaveBeenCalledWith("a");
@@ -245,5 +246,26 @@ describe("CommandPalette", () => {
     render(<CommandPalette onClose={onClose} onOpenDoc={() => undefined} />);
     await userEvent.keyboard("{Escape}");
     expect(onClose).toHaveBeenCalled();
+  });
+
+  it("shows matching titles before the search answers, and only for the words typed", async () => {
+    // The last answer used to be grouped against the new words for a moment, and Enter
+    // could open one of its results.
+    mockMarascaApi({ "search:query": () => new Promise(() => undefined) });
+    setIndex();
+    render(<CommandPalette onClose={() => undefined} onOpenDoc={() => undefined} />);
+    await userEvent.type(screen.getByLabelText("search"), "weekly");
+    expect(screen.getAllByText("Weekly sync").length).toBeGreaterThan(0);
+    expect(screen.queryByText("Rate limiting at the edge")).toBeNull();
+  });
+
+  it("asks the search to apply the filters, so the limit can't cut real matches", async () => {
+    const { invoke } = mockMarascaApi({ "search:query": () => [] });
+    setIndex();
+    render(<CommandPalette onClose={() => undefined} onOpenDoc={() => undefined} />);
+    await userEvent.type(screen.getByLabelText("search"), "rate tags:spec");
+    await waitFor(() =>
+      expect(invoke).toHaveBeenCalledWith("search:query", "rate", "rate tags:spec"),
+    );
   });
 });

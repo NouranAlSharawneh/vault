@@ -55,7 +55,7 @@ describe("ConflictSheet", () => {
     open();
     expect(
       await screen.findByText(
-        "You’ll get both files — the GitHub one saved as deploy-checklist-from-github.md.",
+        "Keep both leaves two files — the GitHub one as deploy-checklist-from-github.md.",
       ),
     ).toBeTruthy();
   });

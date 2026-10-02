@@ -35,7 +35,8 @@ function selectionProps(kind: NonNullable<ListRowProps["kind"]>, selected: boole
     return { role: "option", "aria-selected": selected, tabIndex: -1 } as const;
   if (kind === "option") return { "aria-pressed": selected } as const;
 
-  return { "aria-current": selected ? ("true" as const) : undefined };
+  // "page": the sidebar is navigation, and this row is where you are.
+  return { "aria-current": selected ? ("page" as const) : undefined };
 }
 
 /** A selectable row or slot (sidebar entries, lists, pickers, dropdowns, palette results). */
