@@ -1,5 +1,5 @@
 import { ChevronDown } from "lucide-react";
-import { useId, useRef } from "react";
+import { useEffect, useId, useRef } from "react";
 import { Dot, Kbd, ListRow } from "@/components/ui";
 import { MOD_KEY } from "@/constants";
 import { cx } from "@/helpers";
@@ -22,6 +22,11 @@ export function ProjectCombobox({
   const listId = useId();
   const hintId = useId();
   const input = useRef<HTMLInputElement>(null);
+  // Closing on blur waits a beat so a click on an option lands first. The wait is cleared
+  // if the field goes away meanwhile — a sheet closed by that same click — so it never
+  // sets state on a combobox that's gone.
+  const closeTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  useEffect(() => () => clearTimeout(closeTimer.current), []);
   const expanded = c.open && c.matches.length > 0;
   const isNew =
     value.trim() && !projects.some((p) => p.toLowerCase() === value.trim().toLowerCase());
@@ -53,7 +58,9 @@ export function ProjectCombobox({
             c.setOpen(true);
           }}
           onFocus={() => c.setOpen(true)}
-          onBlur={() => setTimeout(() => c.setOpen(false), 120)}
+          onBlur={() => {
+            closeTimer.current = setTimeout(() => c.setOpen(false), 120);
+          }}
           onKeyDown={c.onKeyDown}
           aria-label="Project"
           role="combobox"
