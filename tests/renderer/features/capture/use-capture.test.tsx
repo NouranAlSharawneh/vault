@@ -2,7 +2,7 @@ import { act, renderHook, waitFor } from "@testing-library/react";
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { CAPTURE_SAVED_FLASH_MS } from "@/constants";
-import { useCapture } from "@/features/capture/hooks/use-capture.hook";
+import { forgetUnsavedCaptures, useCapture } from "@/features/capture/hooks/use-capture.hook";
 import { useApp } from "@/stores/app";
 import type { ClipboardCapture } from "@shared/types";
 import { mockMarascaApi } from "../../helpers/mock-marasca-api";
@@ -34,7 +34,14 @@ describe("useCapture", () => {
     useApp.setState({ config });
     const { result } = renderHook(() => useCapture());
     await waitFor(() => expect(result.current.phase).toBe("ready"));
-    expect(result.current.form).toEqual({ project: "Atlas API", source: "chatgpt", tags: [] });
+    expect(result.current.form).toEqual({
+      title: "Pasted spec",
+      titleEdited: false,
+      project: "Atlas API",
+      source: "chatgpt",
+      tags: [],
+      variant: "raw",
+    });
     expect(result.current.title).toBe("Pasted spec");
     await waitFor(() => expect(result.current.pathPreview).toBe("atlas-api/pasted-spec.md"));
   });
@@ -197,5 +204,150 @@ describe("useCapture", () => {
     act(() => result.current.retry());
     await waitFor(() => expect(result.current.phase).toBe("saved"));
     expect(invoke.mock.calls.filter((c) => c[0] === "doc:save")).toHaveLength(2);
+  });
+});
+
+/** A document last written on the `day`th of September. */
+function doc(path: string, project: string, projectSlug: string, day: number) {
+  return {
+    title: path,
+    project,
+    projectSlug,
+    tags: [],
+    created: "2026-01-01T00:00:00Z",
+    source: "claude" as const,
+    path,
+    excerpt: "",
+    words: 1,
+    mtime: Date.UTC(2026, 8, day),
+    size: 0,
+    orphan: false,
+  };
+}
+
+describe("useCapture — the title, the page's formatting, and what's remembered", () => {
+  const page: ClipboardCapture = {
+    text: "Setup guide\nInstall it\nThen run it",
+    words: 7,
+    lines: 3,
+    looksLikeMarkdown: false,
+    detectedSource: "manual",
+    detectedTitle: "Setup guide (plain)",
+    converted: "# Setup guide\n\n- Install it\n- Then run it",
+  };
+
+  afterEach(() => forgetUnsavedCaptures());
+
+  const ready = async (c: ClipboardCapture, answers = {}) => {
+    const api = mockMarascaApi({
+      "capture:readClipboard": () => c,
+      "doc:pathPreview": () => "",
+      "doc:save": () => ({ path: "atlas-api/setup-guide.md", committed: true, meta: {} }),
+      ...answers,
+    });
+    useApp.setState({ config, index: null });
+    const hook = renderHook(() => useCapture());
+    await waitFor(() => expect(hook.result.current.phase).toBe("ready"));
+
+    return { ...api, ...hook };
+  };
+
+  it("saves the converted page by default, under the title the user typed", async () => {
+    const { invoke, result } = await ready(page);
+    expect(result.current.form.variant).toBe("converted");
+    expect(result.current.text).toBe(page.converted);
+    expect(result.current.form.title).toBe("Setup guide");
+    act(() => result.current.setTitle("Onboarding checklist"));
+    await act(async () => {
+      await result.current.save();
+    });
+    expect(invoke.mock.calls.find((c) => c[0] === "doc:save")![1]).toMatchObject({
+      body: page.converted,
+      frontmatter: { title: "Onboarding checklist" },
+    });
+  });
+
+  it("saves the text as copied when asked, the title following it until typed", async () => {
+    const { invoke, result } = await ready(page);
+    act(() => result.current.setVariant("raw"));
+    expect(result.current.form.title).toBe("Setup guide (plain)");
+    act(() => result.current.setTitle("Mine"));
+    act(() => result.current.setVariant("converted"));
+    expect(result.current.form.title).toBe("Mine");
+    act(() => result.current.setVariant("raw"));
+    await act(async () => {
+      await result.current.save();
+    });
+    expect(invoke.mock.calls.find((c) => c[0] === "doc:save")![1]).toMatchObject({
+      body: page.text,
+      frontmatter: { title: "Mine" },
+    });
+  });
+
+  it("gives a dismissed clip back its form when shown again, until it is saved", async () => {
+    // Esc, a click elsewhere or the hotkey again threw away the project and tags chosen.
+    const { emit, result } = await ready(clip);
+    act(() => result.current.setForm({ project: "Research log", tags: ["idea"] }));
+    act(() => emit("capture:hidden", null));
+    act(() => emit("capture:shown", clip));
+    await waitFor(() => expect(result.current.form.project).toBe("Research log"));
+    expect(result.current.form.tags).toEqual(["idea"]);
+
+    // Another clip starts fresh…
+    act(() => emit("capture:hidden", null));
+    act(() => emit("capture:shown", { ...clip, text: "# Something else" }));
+    await waitFor(() => expect(result.current.clip?.text).toBe("# Something else"));
+    expect(result.current.form.tags).toEqual([]);
+
+    // …and once the first is saved, it is forgotten.
+    act(() => emit("capture:hidden", null));
+    act(() => emit("capture:shown", clip));
+    await waitFor(() => expect(result.current.form.tags).toEqual(["idea"]));
+    await act(async () => {
+      await result.current.save();
+    });
+    act(() => emit("capture:hidden", null));
+    act(() => emit("capture:shown", clip));
+    await waitFor(() => expect(result.current.phase).toBe("ready"));
+    expect(result.current.form.tags).toEqual([]);
+  });
+
+  it("gets out of the way at once when main says it with a notification", async () => {
+    const { invoke, result } = await ready(clip, { "capture:saved": () => true });
+    await act(async () => {
+      await result.current.save();
+    });
+    expect(invoke).toHaveBeenCalledWith("capture:saved", "atlas-api/setup-guide.md", "Pasted spec");
+    // Main hid the sheet itself: no "saved" flash, and no second hide from here.
+    expect(result.current.phase).not.toBe("saved");
+    expect(invoke.mock.calls.map((c) => c[0])).not.toContain("capture:hide");
+  });
+
+  it("numbers recent projects, and ⌘N picks the Nth", async () => {
+    const { result } = await ready(clip);
+    act(() =>
+      useApp.setState({
+        index: {
+          docs: [
+            doc("research-log/a.md", "Research log", "research-log", 3),
+            doc("onboarding-v2/b.md", "Onboarding v2", "onboarding-v2", 2),
+            doc("atlas-api/c.md", "Atlas API", "atlas-api", 1),
+          ],
+          projects: [
+            { name: "Atlas API", slug: "atlas-api", count: 1 },
+            { name: "Onboarding v2", slug: "onboarding-v2", count: 1 },
+            { name: "Research log", slug: "research-log", count: 1 },
+          ],
+          tags: [{ tag: "infra", count: 4 }],
+          orphans: 0,
+          headSha: null,
+          scannedAt: 0,
+        },
+      }),
+    );
+    // The last project captured into leads; the rest by their latest document.
+    expect(result.current.recents).toEqual(["Atlas API", "Research log", "Onboarding v2"]);
+    act(() => result.current.pickProject(3));
+    expect(result.current.form.project).toBe("Onboarding v2");
   });
 });

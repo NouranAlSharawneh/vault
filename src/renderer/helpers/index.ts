@@ -23,3 +23,5 @@ export { headingsOf } from "./headings";
 export { renameHint } from "./rename-hint";
 export type { RenameHint } from "./rename-hint";
 export type { Heading } from "./headings";
+export { recentProjects } from "./recent-projects";
+export { suggestTags } from "./suggest-tags";

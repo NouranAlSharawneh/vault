@@ -12,6 +12,7 @@ export function Segmented<T extends string>({
   onChange,
   label,
   compact = false,
+  dark = false,
   className,
 }: SegmentedProps<T>) {
   return (
@@ -19,7 +20,11 @@ export function Segmented<T extends string>({
     <div
       role="group"
       aria-label={label}
-      className={cx("inline-flex gap-0.5 rounded-sm bg-paper-3 p-0.5", className)}
+      className={cx(
+        "inline-flex gap-0.5 rounded-sm p-0.5",
+        dark ? "bg-overlay-well" : "bg-paper-3",
+        className,
+      )}
     >
       {options.map((o) => {
         const on = o.value === value;
@@ -35,7 +40,13 @@ export function Segmented<T extends string>({
             onClick={() => onChange(o.value)}
             className={cx(
               "inline-flex h-6 items-center rounded-xs px-2 text-xs font-medium whitespace-nowrap transition-colors",
-              on ? "bg-paper text-ink shadow-raised" : "text-ink-3 hover:text-ink",
+              on
+                ? dark
+                  ? "bg-overlay-3 text-overlay-ink"
+                  : "bg-paper text-ink shadow-raised"
+                : dark
+                  ? "text-overlay-ink-3 hover:text-overlay-ink"
+                  : "text-ink-3 hover:text-ink",
             )}
           >
             {compact && o.icon ? (

@@ -26,10 +26,13 @@ export function useCombobox(value: string, onChange: (v: string) => void, option
       return l === q ? 0 : l.startsWith(q) ? 1 : 2;
     };
 
-    return options
-      .filter((o) => !q || o.toLowerCase().includes(q))
-      .sort((a, b) => rank(a) - rank(b))
-      .slice(0, 8);
+    return (
+      options
+        .filter((o) => !q || o.toLowerCase().includes(q))
+        .sort((a, b) => rank(a) - rank(b))
+        // Nine, so every project the capture sheet numbers ⌘1–⌘9 can be on screen at once.
+        .slice(0, 9)
+    );
   }, [q, options]);
 
   const suggests = !q || !!matches[0]?.toLowerCase().startsWith(q);

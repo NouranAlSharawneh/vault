@@ -59,6 +59,7 @@ export const INVOKE_CHANNELS = [
   "capture:reveal",
   "capture:resize",
   "capture:hide",
+  "capture:saved",
   "capture:openEditor",
   "window:openMain",
   "window:revealDoc",

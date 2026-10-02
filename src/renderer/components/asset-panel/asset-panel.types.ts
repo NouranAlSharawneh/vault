@@ -42,5 +42,10 @@ export interface AssetPlan {
 export interface AssetPanelProps {
   plan: AssetPlan;
   dark?: boolean;
+  /**
+   * Where the images are, said in place of their folder, which can't then be changed: an
+   * image from the clipboard waits in a temporary folder nobody needs to see or pick.
+   */
+  baseLabel?: string;
   className?: string;
 }

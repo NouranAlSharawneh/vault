@@ -4,6 +4,7 @@ import { clipboard } from "electron";
 import { CAPTURE_FILE_MAX_BYTES } from "@shared/constants";
 import type { ClipboardCapture } from "@shared/types";
 import { analyseClipboard } from "./analyse-clipboard";
+import { readClipboardImage } from "./clipboard-image";
 
 /**
  * Read the system clipboard and analyse it. A markdown *file* copied in Finder wins over
@@ -24,6 +25,12 @@ export async function readClipboard(): Promise<ClipboardCapture> {
     }
   } catch {
     /* clipboard empty or non-text */
+  }
+  // No text, but a screenshot or a copied picture: that is the capture. It used to read
+  // as "Clipboard is empty".
+  if (!text.trim()) {
+    const image = await readClipboardImage().catch(() => null);
+    if (image) return image;
   }
 
   return analyseClipboard(text, html);

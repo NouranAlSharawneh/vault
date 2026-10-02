@@ -135,10 +135,11 @@ export class VaultService extends EventEmitter {
   }
 
   /**
-   * Where a document with this project and title belongs. One that lives outside its
-   * project's folder — nested in `research/2024/`, or at the vault root — stays where it
-   * is unless its title or project really changed: the first save of such a note, or
-   * starring it, used to move it into the canonical folder.
+   * Where a document with this project and title belongs. One that already exists stays
+   * where it is, under the name it has, unless its title or project really changed. A
+   * note nested in `research/2024/` or at the vault root used to be moved into the
+   * canonical folder on its first save or star; and `rate-limiting.md`, titled "Rate
+   * limiting at the edge", was renamed on any save at all — breaking every link to it.
    */
   private targetFor(project: string, title: string, existingPath?: string): string {
     const wanted = this.pathFor(project, title);
@@ -146,7 +147,6 @@ export class VaultService extends EventEmitter {
     if (
       existingPath &&
       prior &&
-      folderOf(existingPath) !== folderOf(wanted) &&
       projectSlug(project) === prior.projectSlug &&
       slugify(title) === slugify(prior.title)
     )
@@ -169,15 +169,16 @@ export class VaultService extends EventEmitter {
   }
 
   /** `save`, for callers already holding the repo. */
-  private async saveNow(req: SaveRequest): Promise<SaveResult> {
+  private async saveNow(req: SaveRequest, moveTo?: string): Promise<SaveResult> {
     if (req.existingPath) assertInside(this.root, req.existingPath);
+    if (moveTo) assertInside(this.root, moveTo);
     await this.leaveStaleRebase();
     const title = (req.frontmatter.title || inferTitle(req.body) || "Untitled").trim();
     const existing = await this.readExisting(req);
     const { before, extra } = existing;
     const fm = frontmatterFor(req, title, existing);
 
-    const target = this.targetFor(fm.project, fm.title, req.existingPath);
+    const target = moveTo ?? this.targetFor(fm.project, fm.title, req.existingPath);
     const abs = join(this.root, target);
     await fs.mkdir(dirname(abs), { recursive: true });
 
@@ -508,7 +509,7 @@ export class VaultService extends EventEmitter {
         {
           index: this.index,
           read: (p) => this.read(p),
-          save: (r) => this.saveNow(r),
+          save: (r, moveTo) => this.saveNow(r, moveTo),
           trash: (p) => this.trashNow(p),
           restoreFromTrash: (p) => restoreFromTrash(this, p),
           refreshSyncStatus: () => this.refreshSyncStatus(),
@@ -533,10 +534,6 @@ function frontmatterFor(req: SaveRequest, title: string, existing: ExistingDoc):
   if (existing.starred ?? req.frontmatter.starred) fm.starred = true;
 
   return fm;
-}
-
-function folderOf(relPath: string): string {
-  return relPath.includes("/") ? dirname(relPath) : "";
 }
 
 /** How long a closing vault waits for work already under way before letting go. */

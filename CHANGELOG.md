@@ -22,7 +22,7 @@ To release: add a section for the new version here, run `npm run release -- <pat
 - **Quitting pushes what's waiting** instead of leaving the last few seconds of saves on this Mac.
 - **The sync badge recovers by itself** once the network is back, and says when GitHub refused a commit (a secret it recognised, or a file over 100 MB) instead of retrying for ever. Files over 100 MB are never copied into the vault.
 - **History and restore work for documents with non-Latin titles.**
-- Notes in nested folders, or at the top of the vault, stay where they are when saved or starred.
+- **A saved note keeps its name and its folder** unless you change its title or project, so links to it keep working. A note named differently from its title (`rate-limiting.md`, titled "Rate limiting at the edge") was renamed on any save, and notes in nested folders or at the top of the vault were moved when saved or starred.
 - A crash that left git's lock file behind no longer blocks every save.
 - Resolving a conflict can't send both versions to the trash.
 - **Dropping a file on a window no longer replaces the app with the file.** Windows stay on Marasca, links only open web and mail addresses, and only Marasca's own page can talk to the app.
@@ -97,6 +97,13 @@ To release: add a section for the new version here, run `npm run release -- <pat
 - **Focus mode (⌥⌘P)** folds the preview away and gives the text the window; it is remembered for the next document.
 - **Jump to a heading (⇧⌘O):** the document's outline, filtered as you type.
 - The markdown pane says the length and reading time — or how much is selected — and its **?** lists every key the editor answers to.
+- **Capture names what it saves.** The title sits at the top of the sheet, guessed from the clip and yours to change.
+- **A copied web page keeps its formatting.** Headings, lists, links and tables come across as markdown, converted from the page itself; the text as copied is one click away.
+- **Capture into a recent project with ⌘1–⌘9.** Projects are listed most recent first, each with its shortcut. From the sheet, `#` goes to Tags and `@` to Project.
+- **Tags the clip is about are suggested** under the Tags field, from the ones your vault already uses — one click each.
+- **Esc no longer throws a capture away.** The title, project, tags and image choices you made come back when the same clip is captured again, until it is saved.
+- **Screenshots and copied pictures can be captured.** The image goes into the project's `assets/` folder, with a document that shows it.
+- **Saving a capture gets out of the way at once.** A notification says it was saved, with Open and Undo (Undo moves it to the trash).
 
 ## [0.0.2] - 2026-09-28
 
