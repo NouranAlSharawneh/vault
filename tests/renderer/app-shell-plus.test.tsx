@@ -9,7 +9,7 @@ import { StepIndicator } from "@/features/onboarding/components/step-indicator/s
 import { DiagnosticsRow } from "@/features/settings/components/diagnostics-row/diagnostics-row.component";
 import { LoginItemRow } from "@/features/settings/components/login-item-row/login-item-row.component";
 import { syncSummary } from "@/features/settings/components/sync-row/sync-summary";
-import { describeToken, shortcutLabel, tokenExpiryWarning } from "@/helpers";
+import { describeToken, shortcutKeys, tokenExpiryWarning } from "@/helpers";
 import { installWindowEvents } from "@/lib/window-events";
 import { useShortcutsSheet } from "@/stores/shortcuts";
 import { useToast } from "@/stores/toast";
@@ -89,7 +89,11 @@ describe("Help ▸ Keyboard Shortcuts", () => {
     const sheet = await screen.findByRole("dialog", { name: "Keyboard shortcuts" });
     expect(await screen.findByText("Capture from Clipboard")).toBeTruthy();
     expect(screen.getByRole("heading", { name: "Library" })).toBeTruthy();
-    expect(sheet.textContent).toContain(shortcutLabel("Up / Down"));
+    // One cap per key: ↑ and ↓ are two keys, not one "↑ / ↓" blob.
+    const [[up], [down]] = shortcutKeys("Up / Down");
+    const caps = [...sheet.querySelectorAll("kbd")].map((k) => k.textContent);
+    expect(caps).toContain(up);
+    expect(caps).toContain(down);
   });
 
   it("opens with ⌘/ as well", async () => {
