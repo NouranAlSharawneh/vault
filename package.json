@@ -1,7 +1,7 @@
 {
   "name": "marasca",
   "productName": "Marasca",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "description": "Catches every markdown file you'd hate to lose and commits it straight to a GitHub repo you own.",
   "main": "./out/main/index.js",
   "author": "Nouran Sharawneh",
