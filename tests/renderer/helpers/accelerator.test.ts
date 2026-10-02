@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, expect, it } from "vitest";
-import { acceleratorLabel, toAccelerator } from "@/helpers";
+import { acceleratorLabel, shortcutKeys, toAccelerator } from "@/helpers";
 
 const key = (init: KeyboardEventInit) => new KeyboardEvent("keydown", init);
 
@@ -46,5 +46,17 @@ describe("acceleratorLabel", () => {
     const label = acceleratorLabel("Control+Alt+V");
     expect(["⌃⌥V", "Ctrl+Alt+V"]).toContain(label);
     expect(["⌘K", "Ctrl+K"]).toContain(acceleratorLabel("CmdOrCtrl+K"));
+  });
+});
+
+describe("shortcutKeys", () => {
+  it("splits a shortcut into one cap per key, alternatives apart", () => {
+    expect([
+      [["↑"], ["↓"]],
+      [["Up"], ["Down"]],
+    ]).toContainEqual(shortcutKeys("Up / Down"));
+    expect([[["⌘", "⇧", "K"]], [["Ctrl", "Shift", "K"]]]).toContainEqual(
+      shortcutKeys("CmdOrCtrl+Shift+K"),
+    );
   });
 });

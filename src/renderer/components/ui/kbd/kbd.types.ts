@@ -6,4 +6,5 @@ export interface KbdProps {
   dark?: boolean;
   /** On a filled (primary) button: takes the button's own colour. */
   onFill?: boolean;
+  className?: string;
 }

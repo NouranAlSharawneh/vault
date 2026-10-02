@@ -85,21 +85,25 @@ export function toAccelerator(e: KeyboardEvent): string | null {
   return [...MOD_ORDER.filter((m) => mods.includes(m)), key].join("+");
 }
 
-/** "Control+Alt+V" → "⌃⌥V" on macOS, "Ctrl+Alt+V" elsewhere. */
-export function acceleratorLabel(accelerator: string): string {
+/** "Control+Alt+V" → ["⌃", "⌥", "V"] on macOS, ["Ctrl", "Alt", "V"] elsewhere: one entry per key. */
+function keyCaps(accelerator: string): string[] {
   const parts = accelerator
     .split("+")
     .map((p) => (p === "CmdOrCtrl" ? (IS_MAC ? "Super" : "Control") : p === "Plus" ? "+" : p));
-  if (!IS_MAC)
-    return parts.map((p) => (p === "Super" ? "Win" : p === "Control" ? "Ctrl" : p)).join("+");
+  if (!IS_MAC) return parts.map((p) => (p === "Super" ? "Win" : p === "Control" ? "Ctrl" : p));
 
-  return parts.map((p) => MAC_GLYPH[p] ?? MAC_KEY_GLYPH[p] ?? p).join("");
+  return parts.map((p) => MAC_GLYPH[p] ?? MAC_KEY_GLYPH[p] ?? p);
 }
 
-/** "Up / Down" → "↑ / ↓": keys that do the same job, each labelled. */
-export function shortcutLabel(accelerator: string): string {
-  return accelerator
-    .split(" / ")
-    .map((a) => acceleratorLabel(a))
-    .join(" / ");
+/** "Control+Alt+V" → "⌃⌥V" on macOS, "Ctrl+Alt+V" elsewhere. */
+export function acceleratorLabel(accelerator: string): string {
+  return keyCaps(accelerator).join(IS_MAC ? "" : "+");
+}
+
+/**
+ * "CmdOrCtrl+B / CmdOrCtrl+I" → [["⌘", "B"], ["⌘", "I"]]: keys that do the same job, each
+ * split into the keys pressed, so a sheet can draw one cap per key.
+ */
+export function shortcutKeys(accelerator: string): string[][] {
+  return accelerator.split(" / ").map(keyCaps);
 }
