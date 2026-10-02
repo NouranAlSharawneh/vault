@@ -5,7 +5,6 @@ import {
   CAPTURE_WINDOW,
   OVERLAY_BG,
 } from "@shared/constants";
-import { fire } from "../lib/fire";
 import type { CaptureHideReason } from "./capture.window.types";
 import { editorWindowCount } from "./editor.window";
 import { COMMON_WINDOW_OPTIONS, IS_MAC, loadRoute } from "./load-route";
@@ -37,7 +36,13 @@ export function getCaptureWindow(): BrowserWindow {
     // box. The panel does its own blur in CSS (`backdrop-blur-xl`).
     fullscreenable: false,
   });
-  captureWin.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
+  // Without `skipTransformProcessType`, Electron makes Marasca a menu-bar-only app for
+  // this, and macOS applies that once Marasca isn't in front: the Dock icon vanished a
+  // little after launch and stayed gone until the next capture put it back.
+  captureWin.setVisibleOnAllWorkspaces(true, {
+    visibleOnFullScreen: true,
+    skipTransformProcessType: true,
+  });
   captureWin.setAlwaysOnTop(true, "floating");
   captureWin.on("blur", () => {
     if (dialogsOpen > 0) return;
@@ -58,7 +63,6 @@ export function showCaptureWindow(): BrowserWindow {
   win.setPosition(Math.round(x + (width - w) / 2), Math.round(y + height * 0.18), false);
   // Read before showing: once the sheet has focus, Marasca is always the frontmost app.
   summonedFromAnotherApp = BrowserWindow.getFocusedWindow() === null;
-  if (IS_MAC && app.dock) fire(app.dock.show(), "showing the dock icon");
   win.show();
   win.focus();
 

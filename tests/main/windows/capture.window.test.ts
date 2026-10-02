@@ -27,13 +27,14 @@ class FakeWindow extends EventEmitter {
 const electron = vi.hoisted(() => ({
   windows: [] as unknown[],
   appHide: vi.fn(),
+  dock: { show: vi.fn(async () => undefined), hide: vi.fn() },
   /** Whatever Marasca window has focus when the hotkey fires; null = another app is in front. */
   focused: null as unknown,
   mainOpen: false,
 }));
 
 vi.mock("electron", () => ({
-  app: { hide: electron.appHide, dock: undefined },
+  app: { hide: electron.appHide, dock: electron.dock },
   BrowserWindow: Object.assign(
     vi.fn(function BrowserWindow() {
       const w = new FakeWindow();
@@ -70,8 +71,23 @@ async function sheet() {
 describe("capture window", () => {
   beforeEach(() => {
     electron.appHide.mockClear();
+    electron.dock.show.mockClear();
+    electron.dock.hide.mockClear();
     electron.focused = null;
     electron.mainOpen = false;
+  });
+
+  it("floats over every Space without taking Marasca out of the Dock", async () => {
+    // Left to itself, Electron turns the app into a menu-bar-only one for this, and the
+    // Dock icon disappeared a little after launch.
+    const { win } = await sheet();
+    expect(win.setVisibleOnAllWorkspaces).toHaveBeenCalledWith(true, {
+      visibleOnFullScreen: true,
+      skipTransformProcessType: true,
+    });
+    // Nothing to undo, so a capture no longer juggles the Dock to bring the icon back.
+    expect(electron.dock.show).not.toHaveBeenCalled();
+    expect(electron.dock.hide).not.toHaveBeenCalled();
   });
 
   it("tells the sheet it was hidden, so a pending save flash can stand down", async () => {
