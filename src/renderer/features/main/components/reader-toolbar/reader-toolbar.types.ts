@@ -15,4 +15,7 @@ export interface ReaderToolbarProps {
   onPurge: () => void;
   /** The trash action in flight: its button spins, and none of them take another click. */
   trashBusy?: TrashAction | null;
+  /** Open or close the document's outline. Absent where there is none (the raw view). */
+  onOutline?: () => void;
+  outlineOpen?: boolean;
 }

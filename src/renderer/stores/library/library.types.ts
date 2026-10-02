@@ -7,12 +7,15 @@ export interface ListScroll {
 }
 
 export interface LibraryState {
-  /** The document in the reader. */
+  /** The document in the reader — with several picked, the one the selection started from. */
   selected: string | null;
+  /** Documents picked with ⌘- or ⇧-click, for acting on together. Empty for one. */
+  picked: string[];
   filter: ListFilter;
   view: ReaderView;
   scroll: ListScroll | null;
   setSelected: (next: string | null | ((prev: string | null) => string | null)) => void;
+  setPicked: (picked: string[]) => void;
   setFilter: (next: ListFilter | ((prev: ListFilter) => ListFilter)) => void;
   setView: (view: ReaderView) => void;
   setScroll: (scroll: ListScroll) => void;

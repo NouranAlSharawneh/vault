@@ -1,11 +1,26 @@
 import { GitMerge, Star } from "lucide-react";
-import { memo } from "react";
+import { memo, useState, type MouseEvent } from "react";
 import { Dot } from "@/components/ui";
 import { cx } from "@/helpers";
 import type { DocumentRowProps } from "./document-row.types";
 
 /** Tags a row shows before it says "+N". */
 const ROW_TAGS = 4;
+
+/**
+ * A click on a tag or "+N" is about that tag, not the row. Taken out of the Tab order:
+ * an option's content is presentational to assistive tech, and the sidebar's tag filter
+ * is the way to the same thing from the keyboard.
+ */
+const tagProps = (onClick: () => void) => ({
+  type: "button" as const,
+  tabIndex: -1,
+  onClick: (e: MouseEvent) => {
+    e.stopPropagation();
+    onClick();
+  },
+  onDoubleClick: (e: MouseEvent) => e.stopPropagation(),
+});
 
 /**
  * One document in the list: an option of the list's listbox, not a button of its own.
@@ -15,28 +30,40 @@ const ROW_TAGS = 4;
 export const DocumentRow = memo(function DocumentRow({
   doc: d,
   selected,
+  picked = false,
   id,
   when,
-  onSelect,
+  onActivate,
   onOpen,
+  onMenu,
+  onTag,
 }: DocumentRowProps) {
-  const extra = d.tags.length - ROW_TAGS;
+  const [allTags, setAllTags] = useState(false);
+  const shown = allTags ? d.tags : d.tags.slice(0, ROW_TAGS);
+  const extra = d.tags.length - shown.length;
 
   return (
     <div
       id={id}
       role="option"
-      aria-selected={selected}
+      aria-selected={selected || picked}
       aria-labelledby={`${id}-title`}
       aria-describedby={`${id}-excerpt`}
-      onClick={() => onSelect(d.path)}
+      onClick={(e) => onActivate(d.path, { toggle: e.metaKey || e.ctrlKey, range: e.shiftKey })}
       onDoubleClick={() => onOpen(d.path)}
+      onContextMenu={(e) => {
+        if (!onMenu) return;
+        e.preventDefault();
+        onMenu(d.path);
+      }}
       className={cx(
         "relative block cursor-default border-b border-line/70 px-4 py-2.5 transition-colors cv-row",
         // Selected reads as selected: paper-2 against paper was 1.06:1, and hover looked the same.
         selected
           ? "bg-paper-3 group-focus-visible/list:outline-2 group-focus-visible/list:-outline-offset-2 group-focus-visible/list:outline-cherry before:absolute before:inset-y-0 before:left-0 before:w-0.5 before:bg-cherry"
-          : "hover:bg-paper-2",
+          : picked
+            ? "bg-paper-3"
+            : "hover:bg-paper-2",
       )}
     >
       <div className="flex items-baseline justify-between gap-2">
@@ -70,12 +97,34 @@ export const DocumentRow = memo(function DocumentRow({
       </div>
       {d.tags.length > 0 && (
         <div className="mt-1.5 flex flex-wrap gap-1">
-          {d.tags.slice(0, ROW_TAGS).map((t) => (
-            <span key={t} className="chip chip-tag">
-              #{t}
-            </span>
-          ))}
-          {extra > 0 && <span className="chip">+{extra}</span>}
+          {shown.map((t) =>
+            onTag ? (
+              <button
+                key={t}
+                {...tagProps(() => onTag(t))}
+                title={`Show only #${t}`}
+                className="chip chip-tag cursor-pointer transition-colors hover:bg-cherry-tint-2"
+              >
+                #{t}
+              </button>
+            ) : (
+              <span key={t} className="chip chip-tag">
+                #{t}
+              </span>
+            ),
+          )}
+          {extra > 0 && (
+            <button
+              {...tagProps(() => setAllTags(true))}
+              title={d.tags
+                .slice(ROW_TAGS)
+                .map((t) => `#${t}`)
+                .join(" ")}
+              className="chip cursor-pointer transition-colors hover:bg-line"
+            >
+              +{extra}
+            </button>
+          )}
         </div>
       )}
     </div>

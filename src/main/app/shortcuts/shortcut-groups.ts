@@ -13,6 +13,8 @@ const IN_WINDOW: ShortcutGroup[] = [
       { label: "Move through the list", accelerator: "Up / Down" },
       { label: "First or last document", accelerator: "Home / End" },
       { label: "Open in the editor", accelerator: "Enter" },
+      { label: "Previous or next document", accelerator: "Alt+Up / Alt+Down" },
+      { label: "Find in the document", accelerator: "CmdOrCtrl+F" },
       { label: "Move through History's commits", accelerator: "Up / Down" },
     ],
   },
@@ -21,6 +23,13 @@ const IN_WINDOW: ShortcutGroup[] = [
     items: [
       { label: "Find and replace", accelerator: "CmdOrCtrl+F" },
       { label: "Next match", accelerator: "CmdOrCtrl+G" },
+      {
+        label: "Bold, italic, inline code",
+        accelerator: "CmdOrCtrl+B / CmdOrCtrl+I / CmdOrCtrl+E",
+      },
+      { label: "Link", accelerator: "CmdOrCtrl+Shift+K" },
+      { label: "Jump to a heading", accelerator: "CmdOrCtrl+Shift+O" },
+      { label: "Focus mode", accelerator: "CmdOrCtrl+Alt+P" },
       { label: "Leave the text, then Tab onward", accelerator: "Escape" },
     ],
   },

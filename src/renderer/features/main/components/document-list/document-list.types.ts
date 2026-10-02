@@ -1,5 +1,5 @@
 import type { DocMeta } from "@shared/types";
-import type { Collection, SortOrder } from "../../main.types";
+import type { BulkAction, Collection, SortOrder } from "../../main.types";
 
 export interface DocumentListProps {
   title: string;
@@ -11,6 +11,15 @@ export interface DocumentListProps {
   docs: DocMeta[];
   selected: string | null;
   onSelect: (path: string) => void;
+  /** Documents picked together with ⌘- or ⇧-click; with no `onPick`, the list picks one. */
+  picked?: string[];
+  onPick?: (paths: string[]) => void;
+  /** Star, unstar or trash every picked document. */
+  onBulk?: (action: BulkAction) => void;
+  /** Right-click on a row. */
+  onRowMenu?: (path: string) => void;
+  /** A click on a row's tag. */
+  onTag?: (tag: string) => void;
   /** Enter or a double-click: open the document in the editor. */
   onOpen: (path: string) => void;
   sort: SortOrder;

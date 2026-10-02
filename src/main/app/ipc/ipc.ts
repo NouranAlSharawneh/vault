@@ -46,6 +46,7 @@ import {
   isAppUrl,
   isSafeExternal,
 } from "../../windows";
+import { showDocRowMenu } from "../context-menu/doc-row-menu";
 import { collectDiagnostics } from "../diagnostics/collect-diagnostics";
 import { hotkeyStatus, registerHotkey } from "../hotkey/hotkey";
 import { loginItemState, setLoginItem } from "../login-item/login-item";
@@ -306,7 +307,11 @@ export function registerIpcHandlers(): void {
     return vault.purgeTrash(p);
   });
   handle("doc:setStarred", (p, starred) => session.requireVault().setStarred(p, starred));
-  handle("doc:history", (p) => session.requireVault().history(p));
+  handle("doc:history", (p, skip) => session.requireVault().history(p, skip));
+  handle("doc:compare", (p, sha) => session.requireVault().compare(p, sha));
+  handleFrom("menu:docRow", (sender, input) =>
+    showDocRowMenu(sender, input, session.requireVault().root),
+  );
   handle("doc:restore", (p, sha) => session.requireVault().restore(p, sha));
   handle("doc:diff", (p, sha) => session.requireVault().diff(p, sha));
   handle("doc:pathPreview", (project, title, existingPath) =>

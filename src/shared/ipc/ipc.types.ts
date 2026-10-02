@@ -10,6 +10,8 @@ import type {
   DevicePollStatus,
   DocContent,
   DocReveal,
+  DocRowAction,
+  DocRowMenuInput,
   DocMeta,
   EditorDraft,
   SavedNotice,
@@ -81,7 +83,10 @@ export interface IpcInvoke {
   "doc:save": (req: SaveRequest) => SaveResult;
   "doc:trash": (path: string) => TrashedDoc;
   "doc:setStarred": (path: string, starred: boolean) => DocMeta;
-  "doc:history": (path: string) => CommitInfo[];
+  /** One page of a document's commits, newest first; `skip` pages further back. */
+  "doc:history": (path: string, skip?: number) => CommitInfo[];
+  /** How the document differs today from what it was at `sha`, as a unified diff. */
+  "doc:compare": (path: string, sha: string) => string;
   "doc:restore": (path: string, sha: string) => SaveResult;
   "doc:diff": (path: string, sha: string) => string;
   "doc:pathPreview": (project: string, title: string, existingPath?: string) => string;
@@ -172,6 +177,8 @@ export interface IpcInvoke {
   /** Whether the capture shortcut is really bound, or another app is holding it. */
   "hotkey:status": () => HotkeyStatus;
   "app:openExternal": (url: string) => void;
+  /** The native right-click menu for a document row; resolves with the choice, or null. */
+  "menu:docRow": (input: DocRowMenuInput) => DocRowAction | null;
   "app:reset": () => void;
   "app:loginItem": () => LoginItemState;
   "app:setLoginItem": (openAtLogin: boolean) => LoginItemState;

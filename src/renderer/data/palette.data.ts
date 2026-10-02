@@ -8,7 +8,9 @@ export type PaletteActionKey =
   | "pullNow"
   | "reviewConflicts"
   | "rescan"
-  | "settings";
+  | "settings"
+  /** Put what the query found into the library list (filters the list can express only). */
+  | "showInList";
 
 export interface PaletteActionData {
   key: PaletteActionKey;

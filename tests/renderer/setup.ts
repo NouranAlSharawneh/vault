@@ -22,3 +22,13 @@ if (typeof Element !== "undefined" && !Element.prototype.scrollIntoView) {
 
 // Unmount rendered trees between tests so `screen` queries never see stale DOM.
 afterEach(cleanup);
+
+// The library remembers its selection and scroll across launches; one test's must not
+// become the next one's launch state.
+afterEach(() => {
+  try {
+    localStorage.clear();
+  } catch {
+    /* no storage in this environment */
+  }
+});
