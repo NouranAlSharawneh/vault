@@ -4,6 +4,12 @@ All notable changes to Marasca. The format follows [Keep a Changelog](https://ke
 
 To release: add a section for the new version here, run `npm run release -- <patch|minor|major>`, then `git push --follow-tags`. The tag builds the DMG and opens a draft release with this section as its notes.
 
+## [Unreleased]
+
+### Fixed
+
+- **Quitting quits.** With nothing waiting to push, ⌘Q closed the windows but could leave Marasca running in the Dock: the second quit after the vault closed came too soon, and Electron ignored it.
+
 ## [0.0.4] - 2026-10-02
 
 ### Changed

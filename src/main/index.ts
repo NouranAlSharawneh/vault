@@ -11,6 +11,7 @@ import { buildAppMenu } from "./app/menu/menu";
 import { isMarkdownFile, openMarkdownFile } from "./app/open-file/open-file";
 import { registerAssetProtocol, registerAssetScheme } from "./app/protocol/protocol";
 import { showMainWindow } from "./app/session/launch-route";
+import { quitAfter } from "./app/session/quit-after";
 import { session } from "./app/session/session";
 import { watchForReconnect } from "./app/session/sync-watch";
 import { createTray, destroyTray } from "./app/tray/tray";
@@ -134,7 +135,7 @@ app.on("will-quit", (e) => {
   shutDown = true;
   e.preventDefault();
   fire(
-    session.shutdown().finally(() => app.quit()),
+    quitAfter(session.shutdown(), () => app.quit()),
     "closing the vault",
   );
 });
