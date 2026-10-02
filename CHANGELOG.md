@@ -4,7 +4,7 @@ All notable changes to Marasca. The format follows [Keep a Changelog](https://ke
 
 To release: add a section for the new version here, run `npm run release -- <patch|minor|major>`, then `git push --follow-tags`. The tag builds the DMG and opens a draft release with this section as its notes.
 
-## [Unreleased]
+## [0.0.5] - 2026-10-02
 
 ### Added
 
