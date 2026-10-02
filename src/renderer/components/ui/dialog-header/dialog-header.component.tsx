@@ -28,7 +28,8 @@ export function DialogHeader({
             variant="ghost"
             size="icon"
             // Pulled out by its own padding so the icon — not the button's invisible box —
-            // ends on the content's column. The hit area stays 28px.
+            // ends on the content's column: 8px pulled, 8px either side of a 12px X, ends
+            // exactly at the 16px gutter. The hit area stays 28px.
             className="-mr-2"
             onClick={onClose}
             tooltip="Close"
@@ -36,7 +37,7 @@ export function DialogHeader({
             tooltipAlign="end"
             aria-label={closeLabel}
           >
-            <X size={14} />
+            <X size={12} />
           </Button>
         )}
       </div>

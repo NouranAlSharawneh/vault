@@ -3,7 +3,7 @@ import { GIT_NOT_READY, QUIT_PUSH_WAIT_MS, TOKEN_REFRESH_SKEW_MS } from "@shared
 import type { AuthMethod, AuthState, GitHubUser, VaultConfig } from "@shared/types";
 import { fire } from "../../lib/fire";
 import { NetworkError } from "../../network/axios";
-import { fetchUser, refreshAccessToken } from "../../network/github";
+import { fetchUser, fetchUserWithExpiry, refreshAccessToken } from "../../network/github";
 import { refreshGitStatus } from "../../services/git/git-status.service";
 import { VaultService } from "../../services/vault/vault.service";
 import { getOAuthConfig } from "../../store/oauth-config";
@@ -26,6 +26,8 @@ class Session {
   private openFailure: string | null = null;
   private authState: AuthState = { status: "signed-out", user: null, method: null };
   private listeners = new Set<AuthListener>();
+  /** Told when the open vault changes, or its index or sync state does (the menu bar item). */
+  private vaultListeners = new Set<() => void>();
 
   get vault(): VaultService | null {
     return this.vaultService;
@@ -35,10 +37,25 @@ class Session {
     return this.authState;
   }
 
+  /** Why the configured vault isn't open, when it should be. */
+  get vaultFailure(): string | null {
+    return this.openFailure;
+  }
+
   requireVault(): VaultService {
     if (!this.vaultService) throw new Error(this.openFailure ?? "No vault is open");
 
     return this.vaultService;
+  }
+
+  onVaultChange(fn: () => void): () => void {
+    this.vaultListeners.add(fn);
+
+    return () => this.vaultListeners.delete(fn);
+  }
+
+  private vaultChanged(): void {
+    for (const fn of this.vaultListeners) fn();
   }
 
   onAuthChange(fn: AuthListener): () => void {
@@ -151,7 +168,10 @@ class Session {
   async signIn(creds: StoredCredentials, method: AuthMethod): Promise<GitHubUser> {
     saveCredentials(creds);
     try {
-      const user = await fetchUser();
+      const { user, expiresAt } = await fetchUserWithExpiry();
+      // A pasted token's expiry is only known from GitHub's answer: kept, so Settings can
+      // warn before it lapses instead of after pushes stop.
+      if (method === "pat" && expiresAt) saveCredentials({ ...creds, expiresAt });
       updateSettings({ authMethod: method });
       this.setAuth({ status: "signed-in", user, method });
       // Signed out, the vault kept committing and stopped pushing, and a dead token is
@@ -180,9 +200,15 @@ class Session {
       () => loadToken(),
       () => this.freshenToken(),
     );
-    vault.on("index", (s) => broadcast("index:changed", s));
+    vault.on("index", (s) => {
+      broadcast("index:changed", s);
+      this.vaultChanged();
+    });
     vault.on("progress", (p) => broadcast("index:progress", p));
-    vault.on("sync", (s) => broadcast("sync:status", s));
+    vault.on("sync", (s) => {
+      broadcast("sync:status", s);
+      this.vaultChanged();
+    });
     // A push failed in a way that *might* mean the token died. Check before believing it,
     // and if renewing fixed things, finish the push the user already asked for.
     vault.on("auth-suspect", () => fire(this.onAuthSuspect(vault), "checking the token"));
@@ -191,6 +217,7 @@ class Session {
     this.openFailure = null;
     try {
       await vault.open();
+      this.vaultChanged();
     } catch (e) {
       // A half-open vault answered with an empty index, so the window showed an empty
       // library and a green badge. Nothing is open; say so, and why, to whoever asks.
@@ -222,6 +249,7 @@ class Session {
     await this.vaultService?.close();
     this.vaultService = null;
     this.openFailure = null;
+    this.vaultChanged();
   }
 
   /**
@@ -246,8 +274,13 @@ class Session {
     if (loadToken()) {
       await this.freshenToken();
       try {
-        const user = await fetchUser();
-        this.authState = { status: "signed-in", user, method: s.authMethod ?? "pat" };
+        const { user, expiresAt } = await fetchUserWithExpiry();
+        const method = s.authMethod ?? "pat";
+        this.authState = { status: "signed-in", user, method };
+        // GitHub may have been told a new date since (a regenerated token keeps its value).
+        const creds = loadCredentials();
+        if (method === "pat" && creds && expiresAt && creds.expiresAt !== expiresAt)
+          saveCredentials({ ...creds, expiresAt });
       } catch (e) {
         const unauthorized = e instanceof NetworkError && e.isAuth;
         // A 401 here may just be an expired access token we can renew. Anything else

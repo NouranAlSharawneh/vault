@@ -5,7 +5,19 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 // GitHub calls. All four are stubbed so each branch can be put in front of it directly.
 // vi.hoisted, because vi.mock is lifted above these declarations and the factories below
 // close over them.
-const github = vi.hoisted(() => ({ fetchUser: vi.fn(), refreshAccessToken: vi.fn() }));
+const github = vi.hoisted(() => {
+  const g = {
+    fetchUser: vi.fn(),
+    refreshAccessToken: vi.fn(),
+    /** What GitHub's expiry header says, for the next answer. */
+    expiresAt: null as number | null,
+    // The user and the header come back together; the user part follows `fetchUser`, so
+    // every case that stubs that one drives this one too.
+    fetchUserWithExpiry: async () => ({ user: await g.fetchUser(), expiresAt: g.expiresAt }),
+  };
+
+  return g;
+});
 const store = vi.hoisted(() => ({
   credentials: null as null | Record<string, unknown>,
   saved: [] as unknown[],
@@ -96,6 +108,7 @@ describe("session", () => {
   beforeEach(() => {
     github.fetchUser.mockReset();
     github.refreshAccessToken.mockReset();
+    github.expiresAt = null;
     store.credentials = null;
     store.saved = [];
     store.cleared = 0;
@@ -301,6 +314,34 @@ describe("session", () => {
       ).rejects.toThrow();
       expect(store.cleared).toBe(1);
       expect(session.auth.status).toBe("signed-out");
+    });
+
+    it("keeps a pasted token's expiry, which only GitHub's answer says", async () => {
+      // It was thrown away, and Settings then said the token never expires.
+      github.fetchUser.mockResolvedValue(USER);
+      github.expiresAt = Date.parse("2026-10-06T00:00:00Z");
+      const session = freshSession();
+      await session.signIn(
+        {
+          accessToken: "github_pat_x",
+          refreshToken: null,
+          expiresAt: null,
+          refreshExpiresAt: null,
+        },
+        "pat",
+      );
+
+      expect(store.credentials?.expiresAt).toBe(github.expiresAt);
+    });
+
+    it("picks up a new expiry for a pasted token at launch", async () => {
+      signedInWith({ expiresAt: 1 });
+      github.fetchUser.mockResolvedValue(USER);
+      github.expiresAt = Date.parse("2026-12-01T00:00:00Z");
+      const session = freshSession();
+      await session.restore();
+
+      expect(store.credentials?.expiresAt).toBe(github.expiresAt);
     });
 
     it("forgets the token on sign-out", async () => {

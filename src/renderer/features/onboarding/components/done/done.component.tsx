@@ -6,6 +6,7 @@ import { LEARN_SHORTCUTS } from "@/data/onboarding.data";
 import { acceleratorLabel, plural } from "@/helpers";
 import { api, fire } from "@/lib/api";
 import { useApp } from "@/stores/app";
+import { FirstPush } from "../first-push/first-push.component";
 
 /**
  * The last onboarding screen: what was set up, the two shortcuts worth knowing, and the
@@ -46,6 +47,7 @@ export function Done() {
           "Local-only for now. Connect GitHub from Settings whenever you like."
         )}
       </p>
+      {config?.remote && <FirstPush remote={config.remote} />}
 
       <div className="mt-6 rounded-md border border-line bg-paper-2 p-4">
         <SectionLabel className="mb-3">Two shortcuts worth learning</SectionLabel>

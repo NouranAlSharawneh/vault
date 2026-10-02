@@ -5,6 +5,7 @@ import { findOrphanedUntitledDraft, newUntitledDraftKey } from "../store/draft.s
 import { createEditorRegistry } from "./editor-registry";
 import type { EditorTarget } from "./editor-registry.types";
 import { COMMON_WINDOW_OPTIONS, IS_MAC, loadRoute } from "./load-route";
+import { rememberBounds, savedBoundsFor } from "./window-bounds";
 
 const editors = createEditorRegistry<BrowserWindow>();
 
@@ -48,6 +49,8 @@ export function openEditorWindow({ path, draft }: EditorTarget = {}): BrowserWin
   const win = new BrowserWindow({
     ...COMMON_WINDOW_OPTIONS,
     ...EDITOR_WINDOW,
+    // The size the last editor was left at; the place is the system's cascade.
+    ...savedBoundsFor("editor", EDITOR_WINDOW),
     title: "New document — Marasca",
     titleBarStyle: IS_MAC ? "hiddenInset" : "default",
     trafficLightPosition: TRAFFIC_LIGHTS,
@@ -55,6 +58,7 @@ export function openEditorWindow({ path, draft }: EditorTarget = {}): BrowserWin
   });
   win.once("ready-to-show", () => win.show());
   win.on("closed", () => editors.remove(win));
+  rememberBounds(win, "editor");
   editors.add(win, { path: path ?? null, draftKey, seed: draft ?? null });
   loadRoute(win, `editor?${new URLSearchParams(query).toString()}`);
 

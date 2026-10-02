@@ -100,7 +100,8 @@ await win.click("text=Use another method");
 await win.click("text=Start local, connect later");
 await win.waitForSelector("text=Where should the vault live?");
 await win.screenshot({ path: join(out, "smoke-2-repo.png") });
-await win.click('button:has-text("Continue")');
+// The button says what it does; for "Start local" that is creating a local vault.
+await win.click('button:has-text("Create local vault")');
 await win.waitForSelector("text=Your vault is ready", { timeout: 30000 });
 await win.waitForTimeout(500);
 await win.screenshot({ path: join(out, "smoke-3-done.png") });
@@ -135,7 +136,9 @@ await editor.waitForSelector("text=atlas-api/rate-limiting-at-the-edge.md");
 await editor.waitForSelector(".mermaid-block svg", { timeout: 20000 });
 await editor.waitForTimeout(300);
 await editor.screenshot({ path: join(out, "smoke-5-editor.png") });
-// Escape on a document with unsaved changes asks rather than throwing work away.
+// Escape on a document with unsaved changes asks rather than throwing work away. From
+// outside the fields: Escape inside one belongs to the field, not the window.
+await editor.click("text=saves to");
 await editor.keyboard.press("Escape");
 await editor.waitForSelector("text=Unsaved changes", { timeout: 5000 });
 await editor.waitForTimeout(300);
@@ -164,16 +167,22 @@ if (blank.isClosed()) throw new Error("Escape inside the editor closed the windo
 if (await blank.evaluate(() => !!document.activeElement?.closest(".cm-editor")))
   throw new Error("Escape then Tab did not move focus out of the editor");
 console.log("Escape then Tab leaves the markdown editor");
-await blank.focus('input[aria-label="Title"]');
-// Escape from a field closes the window, which can tear the page down while `press` is still in
-// flight — so the press rejecting here means it worked. The close event is the result.
+// Escape inside a field is the field's: it doesn't close the window.
+await blank.getByLabel("Title", { exact: true }).focus();
+await blank.keyboard.press("Escape");
+await blank.waitForTimeout(300);
+if (blank.isClosed()) throw new Error("Escape in the Title field closed the window");
+// From outside the fields, Escape closes an empty editor. That can tear the page down
+// while `press` is still in flight — so the press rejecting here means it worked. The
+// close event is the result.
+await blank.getByRole("separator").first().focus();
 await Promise.all([
   blank.waitForEvent("close", { timeout: 5000 }),
   blank.keyboard.press("Escape").catch(() => undefined),
 ]);
 if (app.windows().some((w) => /#editor/.test(w.url())))
   throw new Error("empty editor did not close on Escape");
-console.log("empty editor closed on Escape");
+console.log("empty editor stays open on Escape in a field, closes from outside one");
 
 const { execSync } = await import("node:child_process");
 const log = execSync("git log --oneline -1", { cwd: root }).toString().trim();
@@ -361,9 +370,13 @@ await win.screenshot({ path: join(out, "smoke-21b-conflicts-long.png") });
 console.log("long versions scroll in place:", JSON.stringify(longPair.panes));
 
 // Keep both on the long one: it stays, renamed so the two are told apart.
-await win.click('[data-testid="conflict-sheet"] >> section:has-text("Runbook") >> text=Keep both');
+// The button, not the line under the cards that explains it ("Keep both leaves two files").
+await win.click(
+  '[data-testid="conflict-sheet"] >> section:has-text("Runbook") >> button:has-text("Keep both")',
+);
 await win.waitForFunction(
   () => document.querySelectorAll('[data-testid="conflict-sheet"] section').length === 1,
+  undefined,
   { timeout: 10000 },
 );
 if (!readFileSync(join(root, LONG_COPY), "utf8").includes("Runbook (from GitHub)"))
@@ -374,17 +387,10 @@ if (!readFileSync(join(root, LONG_COPY), "utf8").includes("Runbook (from GitHub)
 await win.click(
   '[data-testid="conflict-sheet"] >> section:has-text("Deploy checklist") >> text=GitHub >> xpath=../.. >> text=Use this one',
 );
-await win.waitForSelector('[data-testid="conflict-sheet"] >> text=Nothing to review', {
-  timeout: 10000,
-});
+// Settling the last pair closes the sheet: a sheet saying "nothing to review" was one
+// more thing to dismiss.
+await win.waitForSelector('[data-testid="conflict-sheet"]', { state: "detached", timeout: 10000 });
 await win.waitForTimeout(600);
-// With nothing left to show, the sheet keeps a floor rather than collapsing to a strip.
-const settled = await win.evaluate(() =>
-  Math.round(
-    document.querySelector('[data-testid="conflict-sheet"]').getBoundingClientRect().height,
-  ),
-);
-if (settled < 220) throw new Error("the empty review collapsed to " + settled + "px");
 await win.screenshot({ path: join(out, "smoke-22-conflicts-done.png") });
 const winner = readFileSync(join(root, CONFLICT_DOC), "utf8");
 if (!winner.includes("AFTER the deploy")) throw new Error("the chosen version did not win");
@@ -392,8 +398,6 @@ if (winner.includes("conflict:")) throw new Error("the conflict stamp survived t
 if (existsSync(join(root, CONFLICT_COPY))) throw new Error("the copy was left behind");
 if (!existsSync(join(root, ".trash", CONFLICT_DOC)))
   throw new Error("the version that lost was deleted instead of trashed");
-await win.keyboard.press("Escape");
-await win.waitForSelector('[data-testid="conflict-sheet"]', { state: "detached" });
 if (await win.locator(REVIEW).count())
   throw new Error("the badge still asks for a review after the last pair was settled");
 console.log("conflict review: resolved, loser in the trash, badge cleared");
@@ -462,14 +466,14 @@ if ((await paletteCursor()) !== 0) throw new Error("one ArrowUp did not return t
 console.log("palette: one keypress moved one row");
 await win.keyboard.press("Enter");
 await win.waitForSelector("text=Rate limiting at the edge");
-await win.click('button[aria-label="toggle sidebar"]');
+await win.click('header button[aria-label*="sidebar" i]');
 await win.click("text=Split");
 await win.waitForTimeout(400);
 await win.screenshot({ path: join(out, "smoke-9-rail-split.png") });
-await win.click('button[aria-label="toggle sidebar"]');
+await win.click('header button[aria-label*="sidebar" i]');
 await win.waitForTimeout(300);
 await win.screenshot({ path: join(out, "smoke-10-hidden.png") });
-await win.click('button[aria-label="toggle sidebar"]');
+await win.click('header button[aria-label*="sidebar" i]');
 // ---- images referenced from a doc load through marasca://asset
 await win.keyboard.press("Control+K");
 await win.waitForSelector('input[aria-label="search"]');
@@ -489,7 +493,9 @@ await win.waitForSelector('[role="dialog"] >> text=Badges', { timeout: 5000 });
 await win.waitForTimeout(200);
 await win.keyboard.press("Enter");
 await win.waitForSelector('[role="dialog"]', { state: "detached" });
-await win.waitForSelector(".prose-doc img");
+// The last document stays up, dimmed, while the next one loads: count once it's this one.
+await win.waitForSelector("text=research-log/badges.md");
+await win.waitForSelector('main[aria-busy="false"] .prose-doc img');
 const rows = await win.evaluate(() =>
   [...document.querySelectorAll(".prose-doc img")].map((el) => el.getBoundingClientRect().top),
 );
@@ -536,11 +542,10 @@ await win.click('button[aria-label^="Reset zoom"]');
 await win.waitForSelector('button[aria-label^="Reset zoom"]:has-text("100%")', { timeout: 5000 });
 console.log("mermaid zoom: 150% then reset");
 // ---- M4: the ⌃⌥V sheet, driven through main (xvfb has no global hotkey)
-await app.evaluate(async ({ clipboard }) => {
-  await clipboard.writeText(
-    "# Edge POP inventory\n\nRegion, capacity and provider for each point of presence.\n\n- fra1\n- ams2\n",
-  );
-});
+// The clip goes straight into the sheet's payload. Never through the system clipboard:
+// on a developer's Mac that is their real clipboard, and the test used to overwrite it.
+const EDGE_CLIP =
+  "# Edge POP inventory\n\nRegion, capacity and provider for each point of presence.\n\n- fra1\n- ams2\n";
 const capture = await app.evaluate(({ BrowserWindow }) => {
   const w = BrowserWindow.getAllWindows().find((x) => x.webContents.getURL().includes("#capture"));
   if (!w) return false;
@@ -550,9 +555,8 @@ const capture = await app.evaluate(({ BrowserWindow }) => {
 if (!capture) throw new Error("capture window missing");
 const sheet = app.windows().find((w) => /#capture/.test(w.url()));
 sheet.on("console", (m) => m.type() === "error" && errors.push("capture: " + m.text()));
-await app.evaluate(async ({ BrowserWindow, clipboard }) => {
+await app.evaluate(({ BrowserWindow }, text) => {
   const w = BrowserWindow.getAllWindows().find((x) => x.webContents.getURL().includes("#capture"));
-  const text = await clipboard.readText();
   w.webContents.send("capture:shown", {
     text,
     words: 12,
@@ -561,7 +565,7 @@ await app.evaluate(async ({ BrowserWindow, clipboard }) => {
     detectedSource: "claude",
     detectedTitle: "Edge POP inventory",
   });
-});
+}, EDGE_CLIP);
 await sheet.waitForSelector("text=Capture from clipboard");
 await sheet.waitForSelector("text=Edge POP inventory");
 const hitsSelect = await sheet.evaluate(() => {
@@ -600,19 +604,15 @@ writeFileSync(
   join(srcDir, "docs", "hero-flyin.gif"),
   Buffer.from("R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7", "base64"),
 );
-await app.evaluate(async ({ clipboard }) => {
-  await clipboard.writeText(
-    "# Concorde\n\nA flight through history.\n\n![hero](docs/hero-flyin.gif)\n",
-  );
-});
+const CONCORDE_CLIP = "# Concorde\n\nA flight through history.\n\n![hero](docs/hero-flyin.gif)\n";
 await app.evaluate(
-  async ({ BrowserWindow, clipboard }, sourcePath) => {
+  ({ BrowserWindow }, [sourcePath, text]) => {
     const w = BrowserWindow.getAllWindows().find((x) =>
       x.webContents.getURL().includes("#capture"),
     );
     w.show();
     w.webContents.send("capture:shown", {
-      text: await clipboard.readText(),
+      text,
       words: 8,
       lines: 5,
       looksLikeMarkdown: true,
@@ -621,7 +621,7 @@ await app.evaluate(
       sourcePath,
     });
   },
-  join(srcDir, "README.md"),
+  [join(srcDir, "README.md"), CONCORDE_CLIP],
 );
 await sheet.waitForSelector('[data-testid="asset-panel"] >> text=1 image referenced');
 await sheet.waitForSelector('[data-testid="asset-panel"] >> text=1 found');
@@ -710,8 +710,8 @@ console.log("delete forever asked first, and deleted only on yes");
 await win.waitForSelector("text=All documents", { timeout: 10000 });
 await win.keyboard.press("Control+,");
 await win.waitForSelector("text=Back to vault");
-await win.waitForSelector('button[aria-label="capture shortcut"]');
-await win.click('button[aria-label="capture shortcut"]');
+await win.waitForSelector('button[aria-label^="Capture shortcut"]');
+await win.click('button[aria-label^="Capture shortcut"]');
 await win.keyboard.press("Control+Alt+J");
 await win.waitForSelector("kbd:has-text('J')", { timeout: 5000 });
 await win.waitForTimeout(400);

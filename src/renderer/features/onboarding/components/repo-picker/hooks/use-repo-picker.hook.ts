@@ -3,7 +3,7 @@ import { REPO_LIST_LIMIT, REPO_NAME_PATTERN } from "@/constants";
 import { errorMessage } from "@/helpers";
 import { api, fire } from "@/lib/api";
 import { useApp } from "@/stores/app";
-import { CREATE_REPO_FORBIDDEN, DEFAULT_VAULT_NAME } from "@shared/constants";
+import { CREATE_REPO_FORBIDDEN, DEFAULT_VAULT_NAME, MARASCA_REPO_MARK } from "@shared/constants";
 import type { GitHubRepo } from "@shared/types";
 import type { RepoChoice } from "../repo-picker.types";
 
@@ -30,6 +30,12 @@ export function useRepoPicker(onDone: () => void, preferLocal = false) {
   const [choice, setChoice] = useState<RepoChoice | null>(() =>
     initialChoice(config?.remote ?? null, signedIn, preferLocal, tokenUser),
   );
+  // Chosen by the person (or already settled): nothing picks for them after that.
+  const touched = useRef(!!config?.remote || preferLocal);
+  const choose = useCallback((c: RepoChoice) => {
+    touched.current = true;
+    setChoice(c);
+  }, []);
   const [newName, setNewName] = useState(DEFAULT_VAULT_NAME);
   const [localPath, setLocalPath] = useState(existingRoot ?? "");
   const [busy, setBusy] = useState(false);
@@ -48,10 +54,17 @@ export function useRepoPicker(onDone: () => void, preferLocal = false) {
     api("github:listRepos")
       .then((r) => {
         if (cancelled) return;
-        setRepos(r);
+        const sorted = vaultsFirst(r);
+        setRepos(sorted);
         // A token scoped to one repo lists exactly that repo: nothing else to pick.
         const [only] = r;
         if (only && r.length === 1) setChoice((c) => c ?? only.fullName);
+        // A vault Marasca made before — a second Mac, a run after Reset — is the answer
+        // unless the person has already chosen. Offering to create another sent people
+        // to "name already exists", or worse, to a second, empty vault.
+        const vault = sorted.find(isMarascaVault);
+        if (vault && !touched.current)
+          setChoice((c) => (c === "new" || c === null ? vault.fullName : c));
       })
       .catch((e: unknown) => !cancelled && setListError(errorMessage(e)));
 
@@ -73,6 +86,21 @@ export function useRepoPicker(onDone: () => void, preferLocal = false) {
     if (existingRoot || pickedFolder.current) return;
     fire(api("vault:defaultPath", folderName(choice, newName)).then(setLocalPath));
   }, [choice, newName, existingRoot]);
+
+  // iCloud Drive syncing the same folder git does leaves duplicates and missing files;
+  // the default, ~/Documents, is exactly such a folder on many Macs.
+  const [folderWarning, setFolderWarning] = useState<string | null>(null);
+  useEffect(() => {
+    if (!localPath) return;
+    let live = true;
+    api("vault:folderWarning", localPath)
+      .then((w) => live && setFolderWarning(w))
+      .catch(() => undefined);
+
+    return () => {
+      live = false;
+    };
+  }, [localPath]);
 
   const matching = useMemo(() => {
     const f = filter.trim().toLowerCase();
@@ -133,7 +161,10 @@ export function useRepoPicker(onDone: () => void, preferLocal = false) {
     filter,
     setFilter,
     choice,
-    setChoice,
+    setChoice: choose,
+    continueLabel: continueLabel(choice, login, newName, !!existingRoot),
+    folderWarning: existingRoot ? null : folderWarning,
+    isMarascaVault,
     newName,
     setNewName,
     nameError,
@@ -162,6 +193,35 @@ function initialChoice(
   if (!signedIn || preferLocal) return "local";
 
   return tokenUser ? null : "new";
+}
+
+/** A repo Marasca created: it says so in its description. */
+function isMarascaVault(repo: GitHubRepo): boolean {
+  return MARASCA_REPO_MARK.test(repo.description ?? "");
+}
+
+/** Vaults Marasca made come first; otherwise GitHub's order (most recently pushed). */
+function vaultsFirst(repos: GitHubRepo[]): GitHubRepo[] {
+  return [...repos.filter(isMarascaVault), ...repos.filter((r) => !isMarascaVault(r))];
+}
+
+/**
+ * What Continue will do, said on the button: "Create nunu/vault", "Use nunu/notes",
+ * "Create local vault". A bare "Continue" left people unsure whether pressing it made a
+ * repo on GitHub.
+ */
+export function continueLabel(
+  choice: RepoChoice | null,
+  login: string,
+  newName: string,
+  attaching: boolean,
+): string {
+  if (choice === "local") return attaching ? "Keep it local" : "Create local vault";
+  if (choice === "new")
+    return `Create ${login ? `${login}/` : ""}${newName.trim() || DEFAULT_VAULT_NAME}`;
+  if (choice) return attaching ? `Connect ${choice}` : `Use ${choice}`;
+
+  return "Continue";
 }
 
 /** The folder name to suggest for a choice. */

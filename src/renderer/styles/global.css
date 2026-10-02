@@ -291,6 +291,13 @@ input {
   .dark :focus-visible:where(:not(.cm-content, [tabindex="-1"])) {
     outline-color: var(--color-cherry-3);
   }
+  /* A heading or a panel given focus by a script, so a screen reader says where you have
+     landed (a setup step, Settings), is not a control: no ring. Excluding it from ours
+     wasn't enough — the browser then drew its own, in the system's accent colour, round
+     "Your vault is ready". */
+  [tabindex="-1"]:focus {
+    outline: none;
+  }
 }
 
 /* Reduced motion. Sheets, popovers and toasts still fade in — a plain opacity change is

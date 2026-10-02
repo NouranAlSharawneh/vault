@@ -1,4 +1,4 @@
-import { CREATE_REPO_FORBIDDEN } from "@shared/constants";
+import { CREATE_REPO_FORBIDDEN, MARASCA_REPO_DESCRIPTION } from "@shared/constants";
 import type { GitHubRepo } from "@shared/types";
 import { githubApi, NetworkError } from "../axios";
 import type { RawGitHubRepo } from "./github.types";
@@ -10,7 +10,8 @@ export async function createRepo(name: string, isPrivate: boolean): Promise<GitH
       name,
       private: isPrivate,
       auto_init: false,
-      description: "Markdown vault — captured with Marasca",
+      // How setup on another Mac recognises this repo as a vault it can offer.
+      description: MARASCA_REPO_DESCRIPTION,
     });
 
     return mapRepo(data);

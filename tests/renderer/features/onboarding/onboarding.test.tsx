@@ -28,6 +28,23 @@ describe("Onboarding — Back from the repo picker", () => {
     expect(screen.queryByText("Where should the vault live?")).toBeNull();
   });
 
+  it("lets the wrong account sign out from the title bar, back to sign-in", async () => {
+    // A work login still in the browser used to mean finishing setup, then Settings.
+    const { invoke } = mockMarascaApi({
+      "github:listRepos": [],
+      "vault:defaultPath": (name: string) => `/Users/nunu/Documents/${name}`,
+      "auth:state": { status: "signed-out", user: null, method: null },
+      "auth:methods": { device: true },
+    });
+    render(<Onboarding />);
+    await screen.findByText("Where should the vault live?");
+    expect(screen.getByText(/Step 3 of 5/)).toBeTruthy();
+    await userEvent.click(screen.getByRole("button", { name: "Not you? Sign out" }));
+
+    expect(invoke).toHaveBeenCalledWith("auth:signOut");
+    expect(await screen.findByText("What GitHub will ask you to approve")).toBeTruthy();
+  });
+
   it("and forward again from welcome lands back on the repo picker", async () => {
     render(<Onboarding />);
     await userEvent.click(await screen.findByRole("button", { name: "Back" }));

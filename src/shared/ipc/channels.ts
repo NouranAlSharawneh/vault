@@ -25,6 +25,7 @@ export const INVOKE_CHANNELS = [
   "vault:index",
   "vault:updateConfig",
   "vault:revealInFinder",
+  "vault:folderWarning",
   "vault:reopen",
   "doc:read",
   "doc:save",
@@ -46,6 +47,7 @@ export const INVOKE_CHANNELS = [
   "sync:status",
   "sync:pushNow",
   "sync:pull",
+  "sync:nudge",
   "conflicts:list",
   "conflicts:resolve",
   "views:list",
@@ -71,10 +73,16 @@ export const INVOKE_CHANNELS = [
   "window:setEdited",
   "app:version",
   "app:checkForUpdates",
+  "app:updateStatus",
   "app:platform",
   "hotkey:status",
   "app:openExternal",
   "app:reset",
+  "app:loginItem",
+  "app:setLoginItem",
+  "app:copyDiagnostics",
+  "app:shortcuts",
+  "file:open",
 ] as const satisfies readonly InvokeChannel[];
 
 export const EVENT_CHANNELS = [
@@ -90,6 +98,7 @@ export const EVENT_CHANNELS = [
   "editor:docGone",
   "shortcut",
   "navigate",
+  "app:updateStatus",
 ] as const satisfies readonly EventChannel[];
 
 /**

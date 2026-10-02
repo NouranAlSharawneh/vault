@@ -8,6 +8,7 @@ import { getMainWindow, IS_MAC, openEditorWindow, openMainWindow } from "../../w
 import { toggleCapture } from "../hotkey/hotkey";
 import { showMainWindow } from "../session/launch-route";
 import { resetApp } from "../session/reset-app";
+import { checkForUpdatesFromMenu } from "./check-updates-from-menu";
 import type { MenuAction, MenuItemData, MenuSectionData } from "./menu.types";
 
 type Click = (item: Electron.MenuItem, win: Electron.BaseWindow | undefined) => void;
@@ -36,19 +37,25 @@ function run(action: MenuAction): Click {
     case "openSettings":
       return () => openMainWindow("settings");
     case "search":
-      return searchFromAnywhere;
+      return () => toMain("search");
+    // The sheet lives in the main window, so it comes forward to show it from anywhere.
+    case "keyboardShortcuts":
+      return () => toMain("shortcuts");
+    case "checkForUpdates":
+      return () => fire(checkForUpdatesFromMenu(), "checking for updates");
   }
 }
 
-function searchFromAnywhere(): void {
+/** A shortcut only the main window acts on, from whichever window the menu was used in. */
+function toMain(shortcut: "search" | "shortcuts"): void {
   const main = getMainWindow();
   if (main && BrowserWindow.getFocusedWindow() === main) {
-    main.webContents.send("shortcut", "search");
+    main.webContents.send("shortcut", shortcut);
 
     return;
   }
   const win = openMainWindow();
-  if (!win.webContents.isLoading()) win.webContents.send("shortcut", "search");
+  if (!win.webContents.isLoading()) win.webContents.send("shortcut", shortcut);
 }
 
 function toItem(item: MenuItemData): Electron.MenuItemConstructorOptions {

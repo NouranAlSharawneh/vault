@@ -141,7 +141,9 @@ Repo layout: `README.md` (generated index), `<project-slug>/<title-slug>.md`, `_
 
 - **Main** (3-pane, sidebar states full/rail/hidden via `⌘\`).
 - **Capture sheet**: frameless, always-on-top, `vibrancy`, centred on active display; `globalShortcut('Control+Alt+V')`, reads clipboard on show, `⌘↵` saves, `Esc` hides. Hidden, not destroyed — shows in <50 ms.
-- **Tray** icon with sync status (green/amber) + quick actions.
+- **Tray** (menu bar) item: the logo as a template image, so it follows the menu bar's own colour. Its menu leads with the sync state in words, then Capture Clipboard, Open Marasca and the five documents captured last (each opens the library on it). Destroyed on quit.
+- **Window bounds**: the main window reopens where it was, and editors at the last editor's size, fitted to the displays attached now.
+- **Files from outside** (`open-file`, launch arguments, a drop on any window): a `.md` inside the vault opens as itself; one elsewhere opens as a new unsaved document whose save files it into the vault — the original is never written to.
 
 ## 9. Decisions I'm making beyond the PRD
 

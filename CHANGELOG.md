@@ -74,6 +74,8 @@ To release: add a section for the new version here, run `npm run release -- <pat
 - **Toasts wait while you read them.** Resting the pointer on one, or tabbing to its Undo, stops every toast's clock; each gets at least two more seconds once you leave.
 - **Focus lands where you are going.** A document opened from ⌘K or a link takes focus, so Space and Page Down read on; History opens on its selected commit (↑/↓ move through the commits) and hands focus back when it closes; Settings arrives on its heading; each setup step arrives on its title; and coming back to the library puts you in the document list.
 - **⌘Y works straight after moving through the list.** Pressed while the next document was still loading, it did nothing.
+- **Setup's step titles aren't outlined.** A step's heading takes focus so a screen reader announces it, and the browser drew its own ring round it in the system accent colour.
+- **Tooltips appear for the keyboard, not under a click,** and go when their window loses focus: clicking New left "New document ⌘N" on screen behind the new editor.
 - **Screen readers hear what changes:** the list's name and count as filters change, how many results ⌘K found, "Saved" after ⌘S, the new-project and "last used" hints, and a setup progress bar that says how far it has got.
 - **Every field has a name that matches its label:** Project, From and Tags are real labels (a click focuses the field), settings rows name and describe their controls, the push delay is called what it says on screen, and the token and new-repo fields point at their errors. The new-repo name is no longer hidden inside a radio button, where assistive tech could skip it.
 - Settings groups, sidebar sections and the list title are headings, so you can jump between them. The logo is no longer read out twice beside the wordmark.
@@ -88,6 +90,7 @@ To release: add a section for the new version here, run `npm run release -- <pat
 
 ### Added
 
+- **The Settings gear wears a cherry dot when a newer Marasca is out.** Marasca checks GitHub quietly a little after launch and every six hours; the gear's tooltip names the version, and Settings ▸ Updates opens with its download ready.
 - **⌘S saves and keeps the editor open.** The footer then says "Saved"; ⌘↵ still saves and closes.
 - **Find and replace in the editor** (⌘F, then ⌘G for the next match), with other copies of the selected word highlighted.
 - **Paste or drop an image into the editor.** It shows in the preview straight away, and the save copies it into the document's `assets/` folder — whichever project the document ends up in — and points the link there. Nothing lands in the vault until you save.
@@ -104,6 +107,16 @@ To release: add a section for the new version here, run `npm run release -- <pat
 - **Esc no longer throws a capture away.** The title, project, tags and image choices you made come back when the same clip is captured again, until it is saved.
 - **Screenshots and copied pictures can be captured.** The image goes into the project's `assets/` folder, with a document that shows it.
 - **Saving a capture gets out of the way at once.** A notification says it was saved, with Open and Undo (Undo moves it to the trash).
+- **A menu bar item.** Capture the clipboard, open Marasca, see at a glance whether everything has reached GitHub, and jump to the five documents captured last.
+- **Open at login** (Settings ▸ Capture), so the capture shortcut works from the moment the Mac starts. Started that way, Marasca opens no window — the menu bar item is how you know it's there.
+- **Help ▸ Keyboard Shortcuts (⌘/)**, read from the menus themselves — your capture shortcut included — with the keys that work inside a window. Also under Settings ▸ Capture.
+- **Check for Updates…** in the Marasca menu.
+- **Open markdown files from Finder**, or drop one on any window. A document in the vault opens as itself; one from elsewhere opens as a new document, and the original is never changed.
+- **Windows reopen where you left them** — the library on its screen (or the nearest one still attached), editors at the size you last used.
+- **Sync catches up when the Mac wakes, unlocks or gets its network back**, instead of waiting out a retry that could be minutes away.
+- **Settings ▸ GitHub:** a Sync row with when this Mac last pushed and pulled, when it tries again, and Push now; Open on GitHub beside the repository; and a warning a week before a pasted token expires, with a way to paste a new one.
+- **Copy diagnostics** (Settings ▸ Updates): versions, git, the vault and sync state and the last error, ready to paste into an issue — no token, and paths shortened to ~.
+- **Setup:** Continue says what it will do ("Create nunu/vault", "Use nunu/notes", "Create local vault"); a vault Marasca made before is found, marked and picked for you on a second Mac; the title bar shows which step you're on; the wrong GitHub account can sign out from there; the Done screen shows the first push as it happens; and a folder iCloud also syncs gets a warning before anything is created in it.
 
 ## [0.0.2] - 2026-09-28
 

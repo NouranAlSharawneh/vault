@@ -1,5 +1,19 @@
 import { CAPTURE_HOTKEY_LABEL, MOD_KEY } from "@/constants";
-import type { FeatureData, ScopeData, ShortcutData } from "@/features/onboarding/onboarding.types";
+import type {
+  FeatureData,
+  OnboardingStep,
+  ScopeData,
+  ShortcutData,
+} from "@/features/onboarding/onboarding.types";
+
+/** Setup's steps in order, with what each is for — said to a screen reader as "Step 2 of 5". */
+export const ONBOARDING_STEPS: { step: OnboardingStep; name: string }[] = [
+  { step: "welcome", name: "Welcome" },
+  { step: "signin", name: "Connect GitHub" },
+  { step: "repo", name: "Choose where the vault lives" },
+  { step: "scan", name: "Read the vault" },
+  { step: "done", name: "Ready" },
+];
 
 /** Welcome screen: the three things Marasca does. */
 export const WELCOME_FEATURES: FeatureData[] = [

@@ -15,6 +15,8 @@ describe("application menu", () => {
     expect(menu[0]?.label).toBe("Marasca");
     expect(section(menu, "Marasca")).toEqual([
       "role:about",
+      // Where every Mac app keeps it.
+      "Check for Updates…",
       "---",
       "Settings…",
       "Reset Marasca…",
@@ -37,7 +39,19 @@ describe("application menu", () => {
     const menu = appMenu("Ctrl+Alt+V", { mac: false, dev: false });
     expect(menu.some((s) => s.label === "Marasca")).toBe(false);
     expect(section(menu, "File")).toEqual(expect.arrayContaining(["Settings…", "Reset Marasca…"]));
-    expect(section(menu, "Help")).toEqual(["Marasca on GitHub"]);
+    // No app menu elsewhere: Help is where an update check is looked for.
+    expect(section(menu, "Help")).toEqual([
+      "Keyboard Shortcuts",
+      "---",
+      "Marasca on GitHub",
+      "Check for Updates…",
+    ]);
+  });
+
+  it("lists the keyboard shortcuts under Help, on ⌘/", () => {
+    const help = appMenu("", { mac: true, dev: false }).find((s) => s.label === "Help");
+    const item = help?.items?.find((i) => "label" in i && i.label === "Keyboard Shortcuts");
+    expect(item && "accelerator" in item ? item.accelerator : null).toBe("CmdOrCtrl+/");
   });
 
   it("offers reload and the dev tools only in development", () => {

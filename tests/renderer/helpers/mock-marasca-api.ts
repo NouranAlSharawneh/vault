@@ -25,7 +25,12 @@ export function mockMarascaApi(answers: Partial<Record<InvokeChannel, unknown>> 
   const emit = <C extends EventChannel>(channel: C, payload: IpcEvents[C]) => {
     for (const l of listeners.get(channel) ?? []) l(payload);
   };
-  Object.defineProperty(window, "marasca", { value: { invoke, on }, configurable: true });
+  // A dropped file's path, as the preload would find it: here, from its name.
+  const pathForFile = vi.fn((file: File) => `/drop/${file.name}`);
+  Object.defineProperty(window, "marasca", {
+    value: { invoke, on, pathForFile },
+    configurable: true,
+  });
 
   return { invoke, on, emit };
 }

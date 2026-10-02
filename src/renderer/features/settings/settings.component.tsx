@@ -4,9 +4,12 @@ import { usePageArrival } from "@/app/hooks/use-page-arrival.hook";
 import { Button, Empty, PathText, SettingGroup } from "@/components/ui";
 import { isEditableTarget, plural, shortPath } from "@/helpers";
 import { api, fire, rescanVault } from "@/lib/api";
+import { useShortcutsSheet } from "@/stores/shortcuts";
+import { DiagnosticsRow } from "./components/diagnostics-row/diagnostics-row.component";
 import { GitRow } from "./components/git-row/git-row.component";
 import { GitHubGroup } from "./components/github-group/github-group.component";
 import { HotkeyRecorder } from "./components/hotkey-recorder/hotkey-recorder.component";
+import { LoginItemRow } from "./components/login-item-row/login-item-row.component";
 import { SettingRow } from "./components/setting-row/setting-row.component";
 import { UpdateCheck } from "./components/update-check/update-check.component";
 import { useSettings } from "./hooks/use-settings.hook";
@@ -104,6 +107,15 @@ export function Settings() {
                 busy={s.busy === "hotkey"}
               />
             </SettingRow>
+            <LoginItemRow />
+            <SettingRow
+              label="Keyboard shortcuts"
+              description="Every shortcut in the menus, and the ones that work inside a window."
+            >
+              <Button variant="outline" onClick={() => useShortcutsSheet.getState().setOpen(true)}>
+                Show all
+              </Button>
+            </SettingRow>
           </SettingGroup>
 
           <GitHubGroup s={s} config={config} />
@@ -182,6 +194,7 @@ export function Settings() {
 
           <SettingGroup title="Updates">
             <UpdateCheck version={s.version || "…"} />
+            <DiagnosticsRow />
           </SettingGroup>
 
           <SettingGroup title="Danger zone" tone="danger">

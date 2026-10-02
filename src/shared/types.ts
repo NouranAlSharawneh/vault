@@ -259,6 +259,10 @@ export interface SyncStatus {
   failure: PushFailure | null;
   /** Which way the failure was going: a failed pull is not a failed push. */
   failedOp?: "push" | "pull" | null;
+  /** When a pull last came back cleanly (epoch ms). */
+  lastPullAt?: number | null;
+  /** When the next automatic push attempt is due, while one is waiting on a back-off. */
+  nextRetryAt?: number | null;
 }
 
 /**
@@ -414,6 +418,19 @@ export type UpdateCheck =
   | { status: "none"; current: string };
 
 /** Enough about the stored credential to explain a sign-out, with no secret in it. */
+/** Open at login: whether it is on, and whether this build can turn it on at all. */
+export interface LoginItemState {
+  openAtLogin: boolean;
+  /** Only an installed Marasca can be a login item; a development run would register Electron. */
+  available: boolean;
+}
+
+/** One section of Help ▸ Keyboard Shortcuts, as the menus declare them. */
+export interface ShortcutGroup {
+  title: string;
+  items: { label: string; accelerator: string }[];
+}
+
 export interface TokenStatus {
   present: boolean;
   /** Epoch ms, or null when the token does not expire. */

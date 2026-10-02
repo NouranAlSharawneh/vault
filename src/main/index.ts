@@ -1,3 +1,4 @@
+import { existsSync } from "node:fs";
 import { join } from "node:path";
 import { electronApp, optimizer } from "@electron-toolkit/utils";
 import { app, dialog, globalShortcut, nativeTheme } from "electron";
@@ -5,10 +6,15 @@ import { APP_ID, PASTED_DIR } from "@shared/constants";
 import { attachContextMenu } from "./app/context-menu/context-menu";
 import { registerHotkey } from "./app/hotkey/hotkey";
 import { registerIpcHandlers } from "./app/ipc/ipc";
+import { openedAtLogin } from "./app/login-item/login-item";
 import { buildAppMenu } from "./app/menu/menu";
+import { isMarkdownFile, openMarkdownFile } from "./app/open-file/open-file";
 import { registerAssetProtocol, registerAssetScheme } from "./app/protocol/protocol";
 import { showMainWindow } from "./app/session/launch-route";
 import { session } from "./app/session/session";
+import { watchForReconnect } from "./app/session/sync-watch";
+import { createTray, destroyTray } from "./app/tray/tray";
+import { stopWatchingForUpdates, watchForUpdates } from "./app/updates/update-watch";
 import { fire } from "./lib/fire";
 import { configureNetwork } from "./network/axios";
 import { pruneStaged, setStagingDir } from "./services/assets";
@@ -23,9 +29,43 @@ if (!app.requestSingleInstanceLock()) app.exit(0);
 
 registerAssetScheme();
 
+/**
+ * A markdown file handed over from outside — Finder's "Open With", a double-click once
+ * Marasca is the default, a path on the command line — opened in an editor once the
+ * session is up. One that can't be opened says why; failing silently looked like a hang.
+ */
+function openFromOutside(path: string): void {
+  fire(
+    boot
+      .then(() => openMarkdownFile(path))
+      .catch((e: unknown) =>
+        dialog.showMessageBox({
+          type: "warning",
+          message: "Marasca couldn't open that file",
+          detail: e instanceof Error ? e.message : String(e),
+        }),
+      ),
+    "opening a file from outside",
+  );
+}
+
+/** Markdown files among launch arguments (Windows and Linux pass opened files this way). */
+const filesIn = (argv: string[]) => argv.slice(1).filter((a) => isMarkdownFile(a) && existsSync(a));
+
+// macOS sends files as events, and may do so before the app is ready; registered here,
+// before anything is awaited, so none is missed.
+app.on("open-file", (e, path) => {
+  e.preventDefault();
+  openFromOutside(path);
+});
+
 // A second launch can arrive before this one has restored the session; wait for it, or the
 // window would open before the app is ready and on the wrong route.
-app.on("second-instance", () => fire(boot.then(showMainWindow), "showing the main window"));
+app.on("second-instance", (_e, argv) => {
+  const files = filesIn(argv);
+  if (files.length) return files.forEach(openFromOutside);
+  fire(boot.then(showMainWindow), "showing the main window");
+});
 
 const boot = app.whenReady().then(async () => {
   electronApp.setAppUserModelId(APP_ID);
@@ -52,7 +92,12 @@ const boot = app.whenReady().then(async () => {
   buildAppMenu(settings.vault?.hotkey);
   if (settings.vault && session.vault) registerHotkey(settings.vault.hotkey);
   getCaptureWindow(); // pre-warm so the sheet appears instantly
-  showMainWindow();
+  createTray();
+  watchForReconnect();
+  watchForUpdates();
+  // Started by the login item: no window. The menu bar item and the shortcut are there.
+  if (!openedAtLogin()) showMainWindow();
+  if (!IS_MAC) filesIn(process.argv).forEach(openFromOutside);
 
   // The dock icon brings the vault back even when only editor windows are open.
   app.on("activate", () => {
@@ -82,6 +127,9 @@ app.on("window-all-closed", () => {
 let shutDown = false;
 app.on("will-quit", (e) => {
   globalShortcut.unregisterAll();
+  // The menu bar item goes with the app; one left behind answers nothing.
+  destroyTray();
+  stopWatchingForUpdates();
   if (shutDown) return;
   shutDown = true;
   e.preventDefault();

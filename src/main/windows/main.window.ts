@@ -2,6 +2,7 @@ import { BrowserWindow } from "electron";
 import { MAIN_WINDOW, PAPER_BG, TRAFFIC_LIGHTS } from "@shared/constants";
 import type { DocReveal, SavedNotice } from "@shared/types";
 import { COMMON_WINDOW_OPTIONS, IS_MAC, loadRoute } from "./load-route";
+import { rememberBounds, savedBoundsFor } from "./window-bounds";
 
 let mainWin: BrowserWindow | null = null;
 
@@ -27,6 +28,8 @@ export function openMainWindow(route?: string): BrowserWindow {
   mainWin = new BrowserWindow({
     ...COMMON_WINDOW_OPTIONS,
     ...MAIN_WINDOW,
+    // Where it was last, on a screen that is still there.
+    ...savedBoundsFor("main", MAIN_WINDOW),
     title: "Marasca",
     titleBarStyle: IS_MAC ? "hiddenInset" : "default",
     trafficLightPosition: TRAFFIC_LIGHTS,
@@ -35,6 +38,7 @@ export function openMainWindow(route?: string): BrowserWindow {
   });
   mainWin.once("ready-to-show", () => mainWin?.show());
   mainWin.on("closed", () => (mainWin = null));
+  rememberBounds(mainWin, "main");
   loadRoute(mainWin, route ?? "main");
 
   return mainWin;

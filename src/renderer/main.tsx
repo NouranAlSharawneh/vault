@@ -3,6 +3,7 @@ import { createRoot } from "react-dom/client";
 import { IS_MAC } from "@/constants";
 import { App } from "./app/app.component";
 import { ErrorBoundary } from "./components/error-boundary/error-boundary.component";
+import { installWindowEvents } from "./lib/window-events";
 import "./styles/global.css";
 
 // The capture sheet is a transparent macOS window. Painting the body here — before
@@ -19,17 +20,10 @@ if (window.location.hash.startsWith("#capture")) {
 document.documentElement.classList.toggle("is-mac", IS_MAC);
 
 // A file dropped anywhere nothing takes it is not an instruction to leave the app:
-// Chromium's default is to navigate the window to it. Text dragged into a field is
-// untouched — only drags that carry files are stopped here.
-const carriesFiles = (e: DragEvent) => !!e.dataTransfer?.types.includes("Files");
-window.addEventListener("dragover", (e) => {
-  if (!carriesFiles(e) || e.defaultPrevented) return;
-  e.preventDefault();
-  e.dataTransfer!.dropEffect = "none";
-});
-window.addEventListener("drop", (e) => {
-  if (carriesFiles(e)) e.preventDefault();
-});
+// Chromium's default is to navigate the window to it. A markdown file opens in an editor
+// instead; text dragged into a field is untouched. And the network coming back retries
+// sync at once.
+installWindowEvents();
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>

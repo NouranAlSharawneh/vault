@@ -10,6 +10,9 @@ import type { AuthMethod, GitHubRepo, VaultConfig } from "@shared/types";
 import { mockMarascaApi } from "../../helpers/mock-marasca-api";
 
 const noop = () => undefined;
+/** The primary button says what it will do; "Use it" (no slash) is a different button. */
+const CONTINUE =
+  /^(Create \S*\/\S+|Use \S+\/\S+|Connect \S+|Keep it local|Create local vault|Continue)$/;
 
 const repo = (fullName: string) =>
   ({ fullName, private: true, defaultBranch: "main" }) as unknown as GitHubRepo;
@@ -65,7 +68,7 @@ describe("RepoPicker — when the repo list fails", () => {
     });
     render(<RepoPicker onDone={onDone} onBack={noop} />);
     await screen.findByText(/Couldn’t load your repos/);
-    await userEvent.click(screen.getByRole("button", { name: /Continue/ }));
+    await userEvent.click(screen.getByRole("button", { name: CONTINUE }));
     expect(invoke).toHaveBeenCalledWith("github:createRepo", "vault", true);
     expect(await screen.findByText("name already exists on this account")).toBeTruthy();
     expect(screen.getByText(/Couldn’t load your repos/)).toBeTruthy();
@@ -107,9 +110,9 @@ describe("RepoPicker — signed in with a pasted token", () => {
     mockMarascaApi({ ...base, "github:listRepos": [repo("nunu/a"), repo("nunu/b")] });
     render(<RepoPicker onDone={noop} onBack={noop} />);
     await screen.findByText("nunu/a");
-    expect(screen.getByRole("button", { name: /Continue/ })).toHaveProperty("disabled", true);
+    expect(screen.getByRole("button", { name: CONTINUE })).toHaveProperty("disabled", true);
     await userEvent.click(screen.getByText("nunu/b"));
-    expect(screen.getByRole("button", { name: /Continue/ })).toHaveProperty("disabled", false);
+    expect(screen.getByRole("button", { name: CONTINUE })).toHaveProperty("disabled", false);
   });
 
   it("a 403 from create says what to do, moves to the list and refreshes it", async () => {
@@ -125,7 +128,7 @@ describe("RepoPicker — signed in with a pasted token", () => {
     await screen.findByText(/This token can’t push to any repo/);
     await userEvent.click(screen.getByRole("radio", { name: /Create a new private repo/ }));
     made = true; // they go and make it on GitHub while the request is out
-    await userEvent.click(screen.getByRole("button", { name: /Continue/ }));
+    await userEvent.click(screen.getByRole("button", { name: CONTINUE }));
     expect(await screen.findByText(CREATE_REPO_FORBIDDEN)).toBeTruthy();
     expect(screen.queryByText(/Resource not accessible/)).toBeNull();
     expect(await screen.findByText("nunu/vault")).toBeTruthy();
@@ -167,15 +170,12 @@ describe("RepoPicker — git", () => {
     useApp.setState({ gitStatus: { state: "installing", startedAt: 1 } });
     render(<RepoPicker onDone={noop} onBack={noop} />);
     expect(screen.getByText("Installing Apple's Command Line Tools")).toBeTruthy();
-    expect(screen.getByRole("button", { name: /Continue/ })).toHaveProperty("disabled", true);
+    expect(screen.getByRole("button", { name: CONTINUE })).toHaveProperty("disabled", true);
 
     useApp.setState({
       gitStatus: { state: "ready", version: "2.39.5", binary: "/usr/bin/git", source: "apple" },
     });
-    expect(await screen.findByRole("button", { name: /Continue/ })).toHaveProperty(
-      "disabled",
-      false,
-    );
+    expect(await screen.findByRole("button", { name: CONTINUE })).toHaveProperty("disabled", false);
   });
 
   it("reuses the repo it made when setup failed, instead of making another", async () => {
@@ -194,10 +194,10 @@ describe("RepoPicker — git", () => {
     const onDone = vi.fn();
     render(<RepoPicker onDone={onDone} onBack={noop} />);
 
-    await userEvent.click(screen.getByRole("button", { name: /Continue/ }));
+    await userEvent.click(screen.getByRole("button", { name: CONTINUE }));
     expect(await screen.findByText(/needs git/)).toBeTruthy();
     setupFails = false;
-    await userEvent.click(screen.getByRole("button", { name: /Continue/ }));
+    await userEvent.click(screen.getByRole("button", { name: CONTINUE }));
     await vi.waitFor(() => expect(onDone).toHaveBeenCalled());
     expect(invoke.mock.calls.filter(([c]) => c === "github:createRepo")).toHaveLength(1);
   });
@@ -232,5 +232,53 @@ describe("RepoPicker — choices that used to be lost", () => {
     expect(screen.getByRole("radio", { name: /nunu\/vault/ }).getAttribute("aria-checked")).toBe(
       "true",
     );
+  });
+});
+
+describe("RepoPicker — a vault Marasca made before", () => {
+  const vault = (fullName: string) =>
+    ({ ...repo(fullName), description: "Markdown vault — captured with Marasca" }) as GitHubRepo;
+
+  it("comes first, marked, and is picked instead of creating another", async () => {
+    mockMarascaApi({
+      ...base,
+      "github:listRepos": [repo("nunu/site"), vault("nunu/notes-vault")],
+    });
+    render(<RepoPicker onDone={noop} onBack={noop} />);
+    const found = await screen.findByRole("radio", { name: /nunu\/notes-vault/ });
+    await vi.waitFor(() => expect(found.getAttribute("aria-checked")).toBe("true"));
+    expect(found.textContent).toContain("Marasca vault");
+    const names = screen.getAllByRole("radio").map((r) => r.textContent ?? "");
+    expect(names.findIndex((n) => n.includes("notes-vault"))).toBeLessThan(
+      names.findIndex((n) => n.includes("nunu/site")),
+    );
+    expect(screen.getByRole("button", { name: "Use nunu/notes-vault" })).toBeTruthy();
+  });
+
+  it("leaves a choice already made alone", async () => {
+    let answer: (r: GitHubRepo[]) => void = () => undefined;
+    mockMarascaApi({
+      ...base,
+      "github:listRepos": () => new Promise<GitHubRepo[]>((r) => (answer = r)),
+    });
+    render(<RepoPicker onDone={noop} onBack={noop} />);
+    await userEvent.click(await screen.findByRole("radio", { name: /Keep it on this Mac/ }));
+    answer([vault("nunu/notes-vault")]);
+    await screen.findByText("nunu/notes-vault");
+    expect(
+      screen.getByRole("radio", { name: /Keep it on this Mac/ }).getAttribute("aria-checked"),
+    ).toBe("true");
+  });
+});
+
+describe("RepoPicker — a folder iCloud syncs", () => {
+  it("says so under the folder, before anything is created", async () => {
+    mockMarascaApi({
+      ...base,
+      "github:listRepos": [],
+      "vault:folderWarning": "iCloud syncs your Documents folder. It is safer elsewhere.",
+    });
+    render(<RepoPicker onDone={noop} onBack={noop} />);
+    expect(await screen.findByText(/iCloud syncs your Documents folder/)).toBeTruthy();
   });
 });

@@ -26,6 +26,9 @@ describe("focus indicator", () => {
 
   it("leaves the editor's text surface and script-only focus targets alone", () => {
     expect(css).toMatch(/:focus-visible:where\(:not\(\.cm-content, \[tabindex="-1"\]\)\)/);
+    // …and keeps the browser's own ring off them too: a setup step's heading, focused so a
+    // screen reader announces it, was drawn in the system accent colour.
+    expect(css).toMatch(/\[tabindex="-1"\]:focus \{\s*outline: none;/);
   });
 
   it("rings a field that holds its own input, in the colour its surface needs", () => {

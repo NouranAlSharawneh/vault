@@ -6,6 +6,7 @@ const SETTINGS: MenuItemData = {
   action: "openSettings",
 };
 const RESET: MenuItemData = { label: "Reset Marasca…", action: "resetApp" };
+const UPDATES: MenuItemData = { label: "Check for Updates…", action: "checkForUpdates" };
 const SEPARATOR: MenuItemData = { type: "separator" };
 
 /**
@@ -22,6 +23,7 @@ export const appMenu = (captureHotkey: string, { mac, dev }: MenuTarget): MenuSe
           label: "Marasca",
           items: [
             { role: "about" as const },
+            UPDATES,
             SEPARATOR,
             SETTINGS,
             RESET,
@@ -84,7 +86,13 @@ export const appMenu = (captureHotkey: string, { mac, dev }: MenuTarget): MenuSe
   { role: "windowMenu" },
   {
     label: "Help",
-    items: [{ label: "Marasca on GitHub", action: "openOnGitHub" }],
+    items: [
+      { label: "Keyboard Shortcuts", accelerator: "CmdOrCtrl+/", action: "keyboardShortcuts" },
+      SEPARATOR,
+      { label: "Marasca on GitHub", action: "openOnGitHub" },
+      // The app menu has it on macOS; elsewhere Help is where it is looked for.
+      ...(mac ? [] : [UPDATES]),
+    ],
   },
 ];
 

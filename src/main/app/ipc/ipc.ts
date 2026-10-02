@@ -1,10 +1,11 @@
 import { existsSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
-import { app, BrowserWindow, dialog, ipcMain, Notification, shell } from "electron";
+import { app, BrowserWindow, clipboard, dialog, ipcMain, Notification, shell } from "electron";
+import { DEFAULT_HOTKEY } from "@shared/constants";
 import type { InvokeChannel, IpcInvoke } from "@shared/ipc";
 import type { DevicePollStatus } from "@shared/types";
-import { APP_REPO } from "../../data/menu.data";
+import { appMenu } from "../../data/menu.data";
 import { fire } from "../../lib/fire";
 import {
   createRepo,
@@ -16,13 +17,13 @@ import {
 import { resolveAssets, stageImage } from "../../services/assets";
 import { readClipboard } from "../../services/capture/capture.service";
 import { notifyCaptureSaved } from "../../services/capture/notify-saved";
+import { icloudWarning } from "../../services/fs/icloud";
 import {
   currentGitStatus,
   installGitTools,
   onGitStatus,
   refreshGitStatus,
 } from "../../services/git/git-status.service";
-import { checkForUpdates } from "../../services/updates/check-for-updates";
 import { clearDraft, loadDraft, saveDraft } from "../../store/draft.store";
 import { getOAuthConfig } from "../../store/oauth-config";
 import { getSettings, updateSettings } from "../../store/settings.store";
@@ -45,10 +46,16 @@ import {
   isAppUrl,
   isSafeExternal,
 } from "../../windows";
+import { collectDiagnostics } from "../diagnostics/collect-diagnostics";
 import { hotkeyStatus, registerHotkey } from "../hotkey/hotkey";
+import { loginItemState, setLoginItem } from "../login-item/login-item";
 import { buildAppMenu } from "../menu/menu";
+import { openMarkdownFile } from "../open-file/open-file";
 import { resetApp } from "../session/reset-app";
 import { session } from "../session/session";
+import { nudgeSync } from "../session/sync-watch";
+import { shortcutGroups } from "../shortcuts/shortcut-groups";
+import { refreshUpdateStatus, updateStatus } from "../updates/update-watch";
 import { sanitizeConfigPatch } from "./config-patch";
 import { confirmPurge } from "./confirm-purge";
 import type { IpcHandler, IpcSenderHandler } from "./ipc.types";
@@ -96,8 +103,23 @@ let deviceAbort: AbortController | null = null;
 
 export function registerIpcHandlers(): void {
   handle("app:version", () => app.getVersion());
-  handle("app:checkForUpdates", () => checkForUpdates(APP_REPO, app.getVersion()));
+  handle("app:checkForUpdates", () => refreshUpdateStatus());
+  handle("app:updateStatus", () => updateStatus());
   handle("app:platform", () => process.platform);
+  handle("app:loginItem", () => loginItemState());
+  handle("app:setLoginItem", (open) => setLoginItem(open));
+  handle("app:copyDiagnostics", async () => {
+    const text = await collectDiagnostics();
+    await clipboard.writeText(text);
+
+    return text;
+  });
+  handle("app:shortcuts", () =>
+    shortcutGroups(
+      appMenu(getSettings().vault?.hotkey ?? DEFAULT_HOTKEY, { mac: IS_MAC, dev: false }),
+    ),
+  );
+  handle("file:open", (path) => openMarkdownFile(path));
   handle("hotkey:status", () => hotkeyStatus());
   handle("app:openExternal", async (url) => {
     // Web pages and mail drafts only: anything else (file:, custom schemes) could launch
@@ -241,6 +263,7 @@ export function registerIpcHandlers(): void {
     if (!existsSync(target)) throw new Error(`${target} isn’t there any more`);
     shell.showItemInFolder(target);
   });
+  handle("vault:folderWarning", (path) => icloudWarning(path));
   handle("vault:reopen", async () => {
     const vault = await session.reopenVault();
     registerHotkey(vault.config.hotkey);
@@ -298,6 +321,7 @@ export function registerIpcHandlers(): void {
   handle("sync:status", () => session.requireVault().status());
   handle("sync:pushNow", () => session.requireVault().pushNow());
   handle("sync:pull", () => session.requireVault().pull());
+  handle("sync:nudge", () => nudgeSync());
   handle("conflicts:list", () => session.requireVault().conflicts());
   handle("conflicts:resolve", (p, choice) => session.requireVault().resolveConflict(p, choice));
 

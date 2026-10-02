@@ -8,3 +8,4 @@ export { openOnGitHub } from "./open-on-github";
 export { refreshAccessToken } from "./refresh-token";
 export { listReleases } from "./list-releases";
 export { toCredentials } from "./token-grant";
+export { fetchUserWithExpiry, parseTokenExpiry } from "./token-expiry";

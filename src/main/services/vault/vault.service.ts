@@ -493,6 +493,11 @@ export class VaultService extends EventEmitter {
     return this.syncEngine.pull();
   }
 
+  /** Retry what is waiting, now: the Mac woke up or the network came back. */
+  async nudge(): Promise<void> {
+    return this.syncEngine.nudge();
+  }
+
   // ---- conflicts --------------------------------------------------------------------
 
   async conflicts(): Promise<ConflictPair[]> {

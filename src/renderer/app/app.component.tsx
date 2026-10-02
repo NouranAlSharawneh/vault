@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { KeyboardShortcuts } from "@/components/keyboard-shortcuts/keyboard-shortcuts.component";
 import { Logo, type ToastPlacement, Toasts } from "@/components/ui";
 import { ROUTES } from "@/routes";
 import { subscribeToMain, useApp } from "@/stores/app";
@@ -40,6 +41,8 @@ export function App() {
   return (
     <div className="relative h-full">
       {ready ? <RouteView route={route} /> : <Booting />}
+      {/* The main window's sheet: Help ▸ Keyboard Shortcuts brings this window forward. */}
+      {ready && (route === "main" || route === "settings") && <KeyboardShortcuts />}
       <Toasts
         toasts={toasts}
         announced={announced}
