@@ -17,4 +17,5 @@ export function subscribeToMain(): void {
   on("auth:state", (auth) => useApp.setState({ auth }));
   on("git:status", (gitStatus) => useApp.setState({ gitStatus }));
   on("app:updateStatus", (update) => useApp.setState({ update }));
+  on("app:updateInstall", (install) => useApp.setState({ install }));
 }

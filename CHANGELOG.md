@@ -6,6 +6,10 @@ To release: add a section for the new version here, run `npm run release -- <pat
 
 ## [Unreleased]
 
+### Added
+
+- **Updates install themselves.** When a new version is out, Settings ▸ Updates says **Update to X**, and Marasca ▸ Check for Updates… says **Update and Restart**. One click downloads the new version, checks it against the release's checksums and that it really is that Marasca, then quits and reopens on it. The progress shows in Settings and on the Dock icon. Editor windows with unsaved text still ask first. Where Marasca can't replace itself (a folder that needs an administrator, or running from the disk image), it says why and opens the download page as before. This starts with the next update: from 0.0.4 or earlier, update to this version the old way once.
+
 ### Fixed
 
 - **Quitting quits.** With nothing waiting to push, ⌘Q closed the windows but could leave Marasca running in the Dock: the second quit after the vault closed came too soon, and Electron ignored it.

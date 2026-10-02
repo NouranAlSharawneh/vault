@@ -15,6 +15,7 @@ import { quitAfter } from "./app/session/quit-after";
 import { session } from "./app/session/session";
 import { watchForReconnect } from "./app/session/sync-watch";
 import { createTray, destroyTray } from "./app/tray/tray";
+import { sweepUpdateLeftovers } from "./app/updates/update-install";
 import { stopWatchingForUpdates, watchForUpdates } from "./app/updates/update-watch";
 import { fire } from "./lib/fire";
 import { configureNetwork } from "./network/axios";
@@ -96,6 +97,7 @@ const boot = app.whenReady().then(async () => {
   createTray();
   watchForReconnect();
   watchForUpdates();
+  fire(sweepUpdateLeftovers(), "clearing what an interrupted update left");
   // Started by the login item: no window. The menu bar item and the shortcut are there.
   if (!openedAtLogin()) showMainWindow();
   if (!IS_MAC) filesIn(process.argv).forEach(openFromOutside);

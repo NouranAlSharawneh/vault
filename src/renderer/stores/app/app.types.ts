@@ -1,5 +1,6 @@
 import type {
   UpdateCheck,
+  UpdateInstall,
   AuthState,
   GitStatus,
   IndexSnapshot,
@@ -29,6 +30,9 @@ export interface AppState {
   /** The last update check's answer; null until one has come back. "available" puts a
    *  dot on the Settings gear. */
   update: UpdateCheck | null;
+  /** Whether this copy can install an update itself, or how far one has got; null until
+   *  main has answered. */
+  install: UpdateInstall | null;
   boot: () => Promise<void>;
   /** Ask main to open the configured vault again, then load it as boot would. */
   reopenVault: () => Promise<void>;

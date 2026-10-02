@@ -17,7 +17,7 @@
 | Watcher   | `chokidar`                                                                                                                                        | Picks up edits made in Obsidian/vim/github pulls.                                                                           |
 | Secrets   | Electron `safeStorage` → encrypted blob in `userData`                                                                                             | Uses macOS Keychain for the key; no `keytar` (unmaintained).                                                                |
 | Tests     | vitest (core logic), Playwright + Electron (smoke)                                                                                                |                                                                                                                             |
-| Packaging | electron-builder (dmg, unsigned for now — signing costs $99/yr, skipped)                                                                          |                                                                                                                             |
+| Packaging | electron-builder (dmg, ad-hoc signed; notarizing is $99/yr). Updates install in-app: see `docs/INSTALL.md` ▸ Updating                             |                                                                                                                             |
 
 ## 2. Code conventions
 

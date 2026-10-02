@@ -2,15 +2,20 @@ import { useCallback, useState } from "react";
 import { errorMessage } from "@/helpers";
 import { api } from "@/lib/api";
 import { useApp } from "@/stores/app";
+import type { UpdateInstall } from "@shared/types";
 import type { UpdateCheckState } from "../update-check.types";
+
+/** Until main has said otherwise, assume this copy can update itself. */
+const READY: UpdateInstall = { phase: "ready" };
 
 /**
  * On demand, not on open: Settings shouldn't hit the network just because it was shown.
  * It starts from what the background check last heard, so the version the gear's dot
- * announced is offered for download straight away.
+ * announced is offered straight away.
  */
 export function useUpdateCheck() {
   const known = useApp((s) => s.update);
+  const install = useApp((s) => s.install) ?? READY;
   const [state, setState] = useState<UpdateCheckState>(() =>
     known ? { phase: "done", result: known } : { phase: "idle" },
   );
@@ -24,9 +29,22 @@ export function useUpdateCheck() {
     }
   }, []);
 
+  /** The release page: the way when this copy can't replace itself, or the update failed. */
   const download = useCallback((url: string) => api("app:openExternal", url), []);
 
-  return { state, check, download };
+  /**
+   * Download, install, quit and reopen. Progress arrives as `app:updateInstall` events; a
+   * failure is one too, and is also kept here in case the event was missed.
+   */
+  const update = useCallback(async (version: string) => {
+    try {
+      await api("app:installUpdate", version);
+    } catch (e) {
+      useApp.setState({ install: { phase: "failed", version, message: errorMessage(e) } });
+    }
+  }, []);
+
+  return { state, install, check, download, update };
 }
 
 /**

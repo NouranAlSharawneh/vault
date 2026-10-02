@@ -56,6 +56,7 @@ import { resetApp } from "../session/reset-app";
 import { session } from "../session/session";
 import { nudgeSync } from "../session/sync-watch";
 import { shortcutGroups } from "../shortcuts/shortcut-groups";
+import { installUpdate, updateInstallState } from "../updates/update-install";
 import { refreshUpdateStatus, updateStatus } from "../updates/update-watch";
 import { sanitizeConfigPatch } from "./config-patch";
 import { confirmPurge } from "./confirm-purge";
@@ -106,6 +107,8 @@ export function registerIpcHandlers(): void {
   handle("app:version", () => app.getVersion());
   handle("app:checkForUpdates", () => refreshUpdateStatus());
   handle("app:updateStatus", () => updateStatus());
+  handle("app:installUpdate", (version) => installUpdate(version));
+  handle("app:updateInstall", () => updateInstallState());
   handle("app:platform", () => process.platform);
   handle("app:loginItem", () => loginItemState());
   handle("app:setLoginItem", (open) => setLoginItem(open));

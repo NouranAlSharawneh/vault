@@ -151,6 +151,11 @@ export const TOKEN_EXPIRY_WARN_MS = 7 * 24 * 60 * 60_000;
  *  vault, then every six hours — well inside GitHub's 60 unsigned requests an hour. */
 export const UPDATE_FIRST_CHECK_MS = 15_000;
 export const UPDATE_CHECK_EVERY_MS = 6 * 60 * 60_000;
+/** An update download that receives nothing for this long has stalled, and is dropped. */
+export const UPDATE_STALL_MS = 30_000;
+/** How long the swap waits for Marasca to finish quitting (pushes included) before it
+ *  gives up and leaves this version in place. */
+export const UPDATE_HELPER_WAIT_S = 300;
 /** Documents under "Recent" in the menu bar item. */
 export const TRAY_RECENT_COUNT = 5;
 /** A resize or a move is saved once it settles. */

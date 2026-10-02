@@ -438,6 +438,20 @@ export type UpdateCheck =
   /** No published release to compare against (none yet, or the repo isn't public). */
   | { status: "none"; current: string };
 
+/**
+ * Where installing an update has got to. "ready" means this copy can replace itself;
+ * "manual" means it can't where it's running from, so the download page is offered instead.
+ */
+export type UpdateInstall =
+  | { phase: "ready" }
+  | { phase: "manual"; reason: string }
+  | { phase: "downloading"; version: string; received: number; total: number | null }
+  /** Checking the download and putting the new app next to this one. */
+  | { phase: "installing"; version: string }
+  /** Handed over: Marasca is quitting, and the new version opens once it has. */
+  | { phase: "restarting"; version: string }
+  | { phase: "failed"; version: string; message: string };
+
 /** Enough about the stored credential to explain a sign-out, with no secret in it. */
 /** Open at login: whether it is on, and whether this build can turn it on at all. */
 export interface LoginItemState {

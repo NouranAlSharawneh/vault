@@ -4,9 +4,9 @@ import { NetworkError } from "../../network/axios";
 import { listReleases } from "../../network/github";
 
 /**
- * Compares `current` with the newest published release of `repo`. There is no
- * auto-update: the app is not notarized, so Squirrel can't install one. This only tells
- * you a new version exists and where to download it.
+ * Compares `current` with the newest published release of `repo`: whether a new version
+ * exists, and its release page. Installing it is `installUpdate`'s job — not Squirrel's,
+ * which needs a notarized app — and the page is the way when that can't run.
  *
  * A 404 means there is nothing to compare against (no releases yet, or the repo is
  * private), which is not an error for the user. Anything else (offline, rate limited)
