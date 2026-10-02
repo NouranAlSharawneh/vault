@@ -60,6 +60,15 @@ const printUrl = (env: Record<string, string> = {}) =>
   });
 
 describe("install.sh", () => {
+  it("never lets a character after a variable become part of its name", () => {
+    // macOS's own bash (3.2) reads the first byte of "…" in `$target…` as part of the
+    // name, and under `set -u` the install stopped dead after the checksum, on every Mac.
+    // CI's newer bash doesn't, so this is checked by reading the script: a bare `$name`
+    // straight before a non-ASCII character must be written `${name}`.
+    const bare = [...read("install.sh").matchAll(/\$[A-Za-z_][A-Za-z0-9_]*(?=\P{ASCII})/gu)];
+    expect(bare.map((m) => m[0])).toEqual([]);
+  });
+
   it("is valid bash", async () => {
     await expect(run("bash", ["-n", "install.sh"], { cwd: root })).resolves.toBeTruthy();
   });
