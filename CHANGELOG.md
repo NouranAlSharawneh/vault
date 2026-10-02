@@ -4,6 +4,16 @@ All notable changes to Marasca. The format follows [Keep a Changelog](https://ke
 
 To release: add a section for the new version here, run `npm run release -- <patch|minor|major>`, then `git push --follow-tags`. The tag builds the DMG and opens a draft release with this section as its notes.
 
+## [0.0.4] - 2026-10-02
+
+### Changed
+
+- **The keyboard shortcuts sheet (⌘/) is easier to read.** Each key gets its own cap, rows have room and a hairline between them, groups sit well apart, and the two columns come out the same height. Bold, Italic and Inline code each have a row of their own.
+
+### Fixed
+
+- **The one-line install works again.** macOS's own bash read the script differently from the newer bash CI tests with, so the install stopped right after "Checksum OK." on every Mac and nothing was installed.
+
 ## [0.0.3] - 2026-10-02
 
 ### Added
