@@ -11,7 +11,13 @@ const BRAND_FILL: Record<LogoCell, string> = {
 };
 
 /** The pixel cherry. The 16×16 drawing below 32px, the 20×20 one from 32px up. */
-export function Logo({ size = 28, tone = "brand", bounce = false, className }: LogoProps) {
+export function Logo({
+  size = 28,
+  tone = "brand",
+  bounce = false,
+  decorative = false,
+  className,
+}: LogoProps) {
   const grid = size < LOGO_LARGE_MIN_PX ? LOGO_16 : LOGO_20;
   const rows = useHop(bounce ? grid.hop : undefined) ?? grid.still;
 
@@ -22,8 +28,7 @@ export function Logo({ size = 28, tone = "brand", bounce = false, className }: L
       viewBox={`0 0 ${rows[0].length} ${rows.length}`}
       shapeRendering="crispEdges"
       className={className}
-      role="img"
-      aria-label="Marasca"
+      {...(decorative ? { "aria-hidden": true } : { role: "img", "aria-label": "Marasca" })}
     >
       {pixelRuns(rows).map((run) => (
         <rect

@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { TOAST_ACTION_MS, TOAST_MAX, TOAST_MS } from "@/constants";
+import { TOAST_ACTION_MS, TOAST_MAX, TOAST_MS, TOAST_RESUME_MS } from "@/constants";
 import { useToast } from "@/stores/toast";
 
 const messages = () => useToast.getState().toasts.map((t) => t.message);
@@ -59,6 +59,40 @@ describe("toast store", () => {
     dismiss(a);
     expect(messages()).toEqual(["b"]);
     // Its timer went with it: nothing fires later against a toast that is gone.
+    vi.advanceTimersByTime(TOAST_MS);
+    expect(messages()).toEqual([]);
+  });
+});
+
+describe("a toast being read", () => {
+  beforeEach(() => vi.useFakeTimers());
+  afterEach(() => {
+    useToast.getState().dismiss();
+    vi.useRealTimers();
+  });
+
+  it("waits while the pointer or focus is on it, then gets time to finish", () => {
+    const { show, hold, release } = useToast.getState();
+    show("Couldn’t push: the network is offline");
+    vi.advanceTimersByTime(TOAST_MS - 100);
+    hold();
+    vi.advanceTimersByTime(60_000);
+    expect(messages()).toEqual(["Couldn’t push: the network is offline"]);
+    release();
+    // 100ms were left; it gets the resume allowance instead of vanishing at once.
+    vi.advanceTimersByTime(TOAST_RESUME_MS - 1);
+    expect(messages()).toHaveLength(1);
+    vi.advanceTimersByTime(1);
+    expect(messages()).toEqual([]);
+  });
+
+  it("lets the others run again once one is dismissed by hand", () => {
+    // The dismissed toast was under the pointer and may never report that it left.
+    const { show, hold, dismiss } = useToast.getState();
+    const first = show("one");
+    show("two");
+    hold();
+    dismiss(first);
     vi.advanceTimersByTime(TOAST_MS);
     expect(messages()).toEqual([]);
   });

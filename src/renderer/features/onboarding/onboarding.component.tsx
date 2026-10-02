@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Button, Dot, Spinner } from "@/components/ui";
 import { isEditableTarget } from "@/helpers";
 import { useApp } from "@/stores/app";
@@ -8,10 +8,13 @@ import { RepoPicker } from "./components/repo-picker/repo-picker.component";
 import { SignIn } from "./components/sign-in/sign-in.component";
 import { Welcome } from "./components/welcome/welcome.component";
 import { useOnboardingStep } from "./hooks/use-onboarding-step.hook";
+import { useStepFocus } from "./hooks/use-step-focus.hook";
 
 /** Five screens, target ninety seconds. Success = one document saved. */
 export function Onboarding() {
   const { step, setStep, signedIn, user, auth, hasVault } = useOnboardingStep();
+  const stepHost = useRef<HTMLDivElement>(null);
+  useStepFocus(step, stepHost);
   const installing = useApp((s) => s.gitStatus?.state === "installing");
   // "Start local" from Welcome: the picker opens on keeping it on this Mac, even when
   // signed in — it used to open on "Create a new private repo".
@@ -67,7 +70,7 @@ export function Onboarding() {
         </div>
       </div>
       <div className="flex flex-1 items-start justify-center overflow-y-auto px-6 pb-10">
-        <div className="mt-8 w-full max-w-130 animate-fade-in" key={step}>
+        <div ref={stepHost} className="mt-8 w-full max-w-130 animate-fade-in" key={step}>
           {step === "welcome" && (
             <Welcome
               onNext={() => {

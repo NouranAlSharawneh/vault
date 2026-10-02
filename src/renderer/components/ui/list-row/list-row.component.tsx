@@ -61,7 +61,9 @@ export function ListRow({
   return (
     <button
       type={type}
-      {...selectionProps(kind, selected)}
+      // A row that says it is a radio (the repo list) reports aria-checked itself; a
+      // pressed state on top of that was a second, conflicting answer.
+      {...(rest.role === "radio" ? {} : selectionProps(kind, selected))}
       className={cx(
         full && "w-full text-left",
         "transition-colors",

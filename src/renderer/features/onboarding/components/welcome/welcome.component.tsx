@@ -8,7 +8,7 @@ import type { WelcomeProps } from "./welcome.types";
 export function Welcome({ onNext, onLocal }: WelcomeProps) {
   return (
     <div className="pt-10">
-      <Logo size={72} bounce className="mb-5 -ml-1" />
+      <Logo size={72} bounce decorative className="mb-5 -ml-1" />
       <h1 className="text-ink">
         <Wordmark height={30} />
       </h1>

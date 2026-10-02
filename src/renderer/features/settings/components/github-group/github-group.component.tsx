@@ -112,7 +112,7 @@ export function GitHubGroup({ s, config }: GitHubGroupProps) {
               value={config.pushDebounceMs}
               disabled={s.busy === "pushDebounceMs"}
               onChange={(e) => fire(s.update({ pushDebounceMs: Number(e.target.value) }))}
-              aria-label="push delay"
+              aria-label="Push after saving"
             >
               {PUSH_DEBOUNCE_LABELS.map((o) => (
                 <option key={o.ms} value={o.ms}>

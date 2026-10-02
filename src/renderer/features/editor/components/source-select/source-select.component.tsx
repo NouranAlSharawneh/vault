@@ -4,12 +4,13 @@ import { cx } from "@/helpers";
 import { toSource } from "@shared/helpers";
 import type { SourceSelectProps } from "./source-select.types";
 
-export function SourceSelect({ value, onChange, dark, hint }: SourceSelectProps) {
+export function SourceSelect({ value, onChange, dark, hint, id }: SourceSelectProps) {
   return (
     <div className="field relative">
       {/* The select fills the control. The hint and chevron used to be siblings beside
           it, so clicking either of them — or the gap — missed the select entirely. */}
       <select
+        id={id}
         className={cx(
           "min-w-0 flex-1 appearance-none bg-transparent outline-none",
           hint ? "pr-16" : "pr-5",

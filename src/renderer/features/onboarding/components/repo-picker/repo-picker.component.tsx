@@ -1,4 +1,5 @@
 import { ArrowRight, FolderOpen, Laptop, Plus, Search } from "lucide-react";
+import { useId } from "react";
 import { GitNotice } from "@/components/git-notice/git-notice.component";
 import { Button, Card, ListRow, Option, PathText, SectionLabel, Spinner } from "@/components/ui";
 import { REPO_LIST_LIMIT } from "@/constants";
@@ -10,6 +11,7 @@ import type { RepoPickerProps } from "./repo-picker.types";
 
 export function RepoPicker({ onDone, onBack, preferLocal }: RepoPickerProps) {
   const p = useRepoPicker(onDone, preferLocal);
+  const nameErrorId = useId();
 
   return (
     <Card className="p-7">
@@ -25,40 +27,42 @@ export function RepoPicker({ onDone, onBack, preferLocal }: RepoPickerProps) {
             selected={p.choice === "new"}
             onClick={() => p.setChoice("new")}
             badge={p.tokenUser ? undefined : "recommended"}
+            detail={
+              p.choice === "new" && (
+                <>
+                  <div className="flex items-center gap-1 font-mono text-xs">
+                    <span className="text-ink-4">{p.login}/</span>
+                    <input
+                      className="input input-sm w-44 font-mono"
+                      aria-label="New repository name"
+                      aria-invalid={!!p.nameError}
+                      aria-describedby={p.nameError ? nameErrorId : undefined}
+                      value={p.newName}
+                      onChange={(e) => p.setNewName(e.target.value)}
+                    />
+                  </div>
+                  {p.nameError && (
+                    <div
+                      id={nameErrorId}
+                      className="mt-1 flex items-center gap-2 text-xs text-cherry"
+                      role="alert"
+                    >
+                      {p.nameError}
+                      {p.existing && (
+                        <Button variant="link" onClick={() => p.setChoice(p.existing!.fullName)}>
+                          Use it
+                        </Button>
+                      )}
+                    </div>
+                  )}
+                </>
+              )
+            }
           >
             <div className="flex items-center gap-2">
               <Plus size={14} className="text-ink-3" />
               <span className="font-medium">Create a new private repo</span>
             </div>
-            {p.choice === "new" && (
-              <div className="mt-2 flex items-center gap-1 font-mono text-xs">
-                <span className="text-ink-4">{p.login}/</span>
-                <input
-                  className="input input-sm w-44 font-mono"
-                  aria-label="New repository name"
-                  aria-invalid={!!p.nameError}
-                  value={p.newName}
-                  onChange={(e) => p.setNewName(e.target.value)}
-                  onClick={(e) => e.stopPropagation()}
-                />
-              </div>
-            )}
-            {p.nameError && (
-              <div className="mt-1 flex items-center gap-2 text-xs text-cherry" role="alert">
-                {p.nameError}
-                {p.existing && (
-                  <Button
-                    variant="link"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      p.setChoice(p.existing!.fullName);
-                    }}
-                  >
-                    Use it
-                  </Button>
-                )}
-              </div>
-            )}
           </Option>
           <Option selected={p.choice === "local"} onClick={() => p.setChoice("local")}>
             <div className="flex items-center gap-2">

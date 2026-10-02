@@ -1,4 +1,4 @@
-import { render, screen, within } from "@testing-library/react";
+import { cleanup, render, screen, within } from "@testing-library/react";
 // @vitest-environment jsdom
 import { describe, expect, it } from "vitest";
 import { Settings } from "@/features/settings/settings.component";
@@ -37,8 +37,10 @@ function renderSettings(patch: Partial<VaultConfig> = {}, auth: AuthState = sign
 describe("Settings layout", () => {
   it("puts the settings in five titled groups, the danger zone last", () => {
     renderSettings();
-    const groups = screen.getAllByRole("region").map((g) => g.getAttribute("aria-label"));
-    expect(groups).toEqual(["Capture", "GitHub", "Storage", "Updates", "Danger zone"]);
+    const titles = ["Capture", "GitHub", "Storage", "Updates", "Danger zone"];
+    // Each group is a region named by its own heading, so heading navigation reaches it.
+    expect(screen.getAllByRole("heading", { level: 2 }).map((h) => h.textContent)).toEqual(titles);
+    for (const name of titles) expect(screen.getByRole("region", { name })).toBeTruthy();
     expect(screen.getByRole("heading", { name: "Settings" })).toBeTruthy();
   });
 
@@ -52,9 +54,26 @@ describe("Settings layout", () => {
   });
 
   it("shows the push delay only when there is somewhere to push", () => {
+    // Named as it reads on screen, "Push after saving" — it used to be "push delay".
+    renderSettings();
+    expect(screen.getByRole("combobox", { name: "Push after saving" })).toBeTruthy();
+    cleanup();
     renderSettings({ remote: null });
-    expect(screen.queryByLabelText("push delay")).toBeNull();
+    expect(screen.queryByRole("combobox", { name: "Push after saving" })).toBeNull();
     expect(screen.getByText("Connect a repo")).toBeTruthy();
+  });
+
+  it("arrives on its heading, and names the window after itself", () => {
+    renderSettings();
+    expect(document.activeElement).toBe(screen.getByRole("heading", { name: "Settings" }));
+    expect(document.title).toBe("Settings — Marasca");
+  });
+
+  it("ties each setting's explanation to the control beside it", () => {
+    renderSettings();
+    const row = screen.getByRole("group", { name: "Push after saving" });
+    expect(row.getAttribute("aria-describedby")).toBeTruthy();
+    expect(within(row).getByRole("combobox")).toBeTruthy();
   });
 
   it("offers sign-in, not a repo, when signed out of a local vault", () => {

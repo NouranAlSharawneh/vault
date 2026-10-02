@@ -30,15 +30,19 @@ describe("Option — keyboard", () => {
     expect(onClick).toHaveBeenCalledTimes(2);
   });
 
-  it("leaves keys typed into a field inside it alone", async () => {
+  it("keeps its field outside the radio, where keys typed into it are its own", async () => {
+    // A radio's children are presentational: a field nested in one could vanish for a
+    // screen reader, and its Enter selected the option.
     const onClick = vi.fn();
     render(
-      <Option selected onClick={onClick}>
-        <input aria-label="name" />
+      <Option selected onClick={onClick} detail={<input aria-label="name" />}>
+        New repo
       </Option>,
     );
-    await userEvent.type(screen.getByLabelText("name"), "my vault{Enter}");
-    expect((screen.getByLabelText("name") as HTMLInputElement).value).toBe("my vault");
-    expect(onClick).toHaveBeenCalledTimes(1); // the click that focused the field, not the keys
+    const field = screen.getByLabelText("name");
+    expect(screen.getByRole("radio").contains(field)).toBe(false);
+    await userEvent.type(field, "my vault{Enter}");
+    expect((field as HTMLInputElement).value).toBe("my vault");
+    expect(onClick).not.toHaveBeenCalled();
   });
 });

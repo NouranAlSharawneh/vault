@@ -25,6 +25,8 @@ export function CapturePreview({ clip, compact }: CapturePreviewProps) {
         <pre
           ref={box}
           tabIndex={0}
+          // A named region: aria-label on a bare <pre> is not announced.
+          role="region"
           aria-label="Clipboard preview"
           onScroll={measure}
           className={cx(

@@ -25,4 +25,7 @@ export interface DocumentReaderProps {
   /** A section to scroll to once that document is showing. */
   anchor?: { path: string; id: string } | null;
   onAnchorShown?: () => void;
+  /** A document opened from ⌘K or a link: focus its text once it is showing. */
+  focusDoc?: string | null;
+  onDocFocused?: () => void;
 }

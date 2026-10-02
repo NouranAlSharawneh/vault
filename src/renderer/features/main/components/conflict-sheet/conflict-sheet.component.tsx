@@ -247,7 +247,10 @@ function VersionCard({
       <div
         ref={paneRef}
         onScroll={onScroll}
-        className="mt-2 max-h-72 min-h-24 overflow-auto rounded-xs bg-paper p-2"
+        // Reachable, so the whole version can be read from the keyboard before choosing.
+        tabIndex={0}
+        aria-label={`The ${where} version`}
+        className="mt-2 max-h-72 min-h-24 overflow-auto rounded-xs bg-paper p-2 -outline-offset-2"
       >
         {lines ? (
           lines.map((line, i) => (

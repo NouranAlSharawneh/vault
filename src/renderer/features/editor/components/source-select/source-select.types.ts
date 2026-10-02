@@ -5,4 +5,6 @@ export interface SourceSelectProps {
   onChange: (source: Source) => void;
   dark?: boolean;
   hint?: string;
+  /** The field's id, for the <label> that names it. */
+  id?: string;
 }

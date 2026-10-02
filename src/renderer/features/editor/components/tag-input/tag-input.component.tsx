@@ -1,4 +1,4 @@
-import { useId } from "react";
+import { useId, useRef } from "react";
 import { Chip, ListRow } from "@/components/ui";
 import { cx } from "@/helpers";
 import { useTagInput } from "./hooks/use-tag-input.hook";
@@ -11,9 +11,11 @@ export function TagInput({
   dark,
   placeholder = "type to add…",
   placement = "above",
+  id,
 }: TagInputProps) {
   const t = useTagInput(value, onChange, suggestions);
   const listId = useId();
+  const input = useRef<HTMLInputElement>(null);
   const expanded = t.matches.length > 0;
 
   return (
@@ -21,14 +23,30 @@ export function TagInput({
       <div
         // Chips sit closer to the edge than text does; with none, the placeholder starts
         // on the same column as the other fields' text.
-        className={cx("field flex-wrap gap-1 py-1", value.length ? "pl-1.5" : "")}
+        className={cx("field cursor-text flex-wrap gap-1 py-1", value.length ? "pl-1.5" : "")}
+        // A click in the box's empty space goes to the field.
+        onMouseDown={(e) => {
+          if (e.target !== e.currentTarget) return;
+          e.preventDefault();
+          input.current?.focus();
+        }}
       >
         {value.map((tag) => (
-          <Chip key={tag} onRemove={() => t.remove(tag)} removeLabel={`Remove ${tag}`}>
+          <Chip
+            key={tag}
+            onRemove={() => {
+              t.remove(tag);
+              // The × goes with its chip; focus stays in the field instead of on <body>.
+              input.current?.focus();
+            }}
+            removeLabel={`Remove ${tag}`}
+          >
             #{tag}
           </Chip>
         ))}
         <input
+          ref={input}
+          id={id}
           className={cx(
             "min-w-20 flex-1 bg-transparent outline-none",
             dark ? "text-overlay-ink placeholder:text-overlay-ink-3" : "placeholder:text-ink-4",

@@ -33,7 +33,7 @@ export function Done() {
 
   return (
     <Card className="p-7">
-      <Logo size={56} className="mb-5 -ml-1" />
+      <Logo size={56} decorative className="mb-5 -ml-1" />
       <h2 className="font-serif text-4xl font-medium text-ink">Your vault is ready</h2>
       <p className="mt-1.5 text-md text-ink-2">
         {plural(count, "document")} indexed.{" "}

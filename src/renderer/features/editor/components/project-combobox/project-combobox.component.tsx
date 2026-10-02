@@ -1,5 +1,5 @@
 import { ChevronDown } from "lucide-react";
-import { useId } from "react";
+import { useId, useRef } from "react";
 import { Dot, ListRow } from "@/components/ui";
 import { cx } from "@/helpers";
 import { INBOX_COLOR } from "@shared/constants";
@@ -14,18 +14,32 @@ export function ProjectCombobox({
   dark,
   hint,
   placement = "above",
+  id,
 }: ProjectComboboxProps) {
   const c = useCombobox(value, onChange, projects);
   const listId = useId();
+  const hintId = useId();
+  const input = useRef<HTMLInputElement>(null);
   const expanded = c.open && c.matches.length > 0;
   const isNew =
     value.trim() && !projects.some((p) => p.toLowerCase() === value.trim().toLowerCase());
 
   return (
     <div className="relative">
-      <div className="field">
+      {/* A click anywhere in the box — the dot, the hint, the chevron that looks like a
+          button — goes to the field. The chevron used to do nothing at all. */}
+      <div
+        className="field cursor-text"
+        onMouseDown={(e) => {
+          if (e.target === input.current) return;
+          e.preventDefault();
+          input.current?.focus();
+        }}
+      >
         <Dot color={value.trim() ? projectColor(projectSlug(value)) : INBOX_COLOR} />
         <input
+          ref={input}
+          id={id}
           className={cx(
             "min-w-0 flex-1 bg-transparent outline-none",
             dark ? "text-overlay-ink placeholder:text-overlay-ink-3" : "placeholder:text-ink-4",
@@ -45,11 +59,17 @@ export function ProjectCombobox({
           aria-expanded={expanded}
           aria-controls={expanded ? listId : undefined}
           aria-activedescendant={expanded && c.cursor >= 0 ? `${listId}-${c.cursor}` : undefined}
+          // "new" and "last used" are said, not only seen.
+          aria-describedby={isNew || hint ? hintId : undefined}
         />
         {isNew ? (
-          <span className="text-2xs text-ink-4">new</span>
+          <span id={hintId} className="text-2xs text-ink-4">
+            new
+          </span>
         ) : hint ? (
-          <span className="text-2xs text-ink-4">{hint}</span>
+          <span id={hintId} className="text-2xs text-ink-4">
+            {hint}
+          </span>
         ) : null}
         <ChevronDown size={12} className="text-ink-4" />
       </div>
