@@ -30,22 +30,23 @@ describe("capture sheet keys", () => {
     expect(onHide).not.toHaveBeenCalled();
   });
 
-  it("saves on ⌘↵ without asking to open Marasca", () => {
+  it("saves on ⌘↵ without asking to open Marasca", async () => {
     const onSave = vi.fn();
     renderHook(() =>
       useCaptureKeys({ onSave, onOpenEditor: vi.fn(), onActions: vi.fn(), onHide: vi.fn() }),
     );
     press({ key: "Enter", metaKey: true });
-    expect(onSave).toHaveBeenCalledWith(false);
+    // A turn later, once a half-typed tag this same keypress added has landed.
+    await vi.waitFor(() => expect(onSave).toHaveBeenCalledWith(false));
   });
 
-  it("saves and asks to open Marasca on ⌥⌘↵", () => {
+  it("saves and asks to open Marasca on ⌥⌘↵", async () => {
     const onSave = vi.fn();
     renderHook(() =>
       useCaptureKeys({ onSave, onOpenEditor: vi.fn(), onActions: vi.fn(), onHide: vi.fn() }),
     );
     press({ key: "Enter", metaKey: true, altKey: true });
-    expect(onSave).toHaveBeenCalledWith(true);
+    await vi.waitFor(() => expect(onSave).toHaveBeenCalledWith(true));
   });
 
   it("toggles the actions menu on ⌘K", () => {

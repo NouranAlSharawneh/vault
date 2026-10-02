@@ -58,8 +58,12 @@ export interface AssetRef {
   /** As written in the markdown, e.g. `docs/hero.gif`. */
   ref: string;
   name: string;
-  /** `unknown` = nowhere to look, so nothing has been looked for. */
-  status: "found" | "missing" | "unsupported" | "unknown";
+  /**
+   * `unknown` = nowhere to look, so nothing has been looked for. `outside` = it points out
+   * of the folder it is relative to, and is never copied: `../../Documents/scan.pdf` in a
+   * pasted README would have been committed and pushed.
+   */
+  status: "found" | "missing" | "unsupported" | "unknown" | "outside";
   bytes: number;
 }
 

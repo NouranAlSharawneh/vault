@@ -10,9 +10,15 @@ import { showMainWindow } from "../session/launch-route";
 import { resetApp } from "../session/reset-app";
 import type { MenuAction, MenuItemData, MenuSectionData } from "./menu.types";
 
-function run(action: MenuAction): () => void {
+type Click = (item: Electron.MenuItem, win: Electron.BaseWindow | undefined) => void;
+
+function run(action: MenuAction): Click {
   if (typeof action === "object") {
-    return () => BrowserWindow.getFocusedWindow()?.webContents.send("shortcut", action.shortcut);
+    // The window the menu acted on, as Electron hands it over; the focused one otherwise.
+    return (_, win) => {
+      const target = win instanceof BrowserWindow ? win : BrowserWindow.getFocusedWindow();
+      target?.webContents.send("shortcut", action.shortcut);
+    };
   }
   switch (action) {
     case "newDocument":

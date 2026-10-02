@@ -18,6 +18,15 @@ describe("analyseClipboard", () => {
 });
 
 describe("detectSource", () => {
+  it("knows a GitHub page about OpenAI is still GitHub", () => {
+    expect(
+      detectSource(
+        "# openai-python",
+        '<article class="markdown-body">OpenAI Python library</article>',
+      ),
+    ).toBe("github");
+  });
+
   it("uses the HTML flavour first, then leading text", () => {
     expect(detectSource("x", '<div data-origin="https://claude.ai/chat">')).toBe("claude");
     expect(detectSource("x", '<meta content="chatgpt.com">')).toBe("chatgpt");

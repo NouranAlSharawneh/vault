@@ -46,14 +46,15 @@ describe("useAssetPlan", () => {
     expect(result.current.found).toBe(2);
     expect(result.current.missing).toBe(1);
     expect(result.current.detected).toBe(false);
+    // The 20 MB video is left out until asked for: git keeps whatever it's given for good.
     expect(result.current.request).toEqual({
       baseDir: "/Users/nunu/Coding/concorde",
-      refs: ["docs/a.gif", "docs/big.mp4"],
+      refs: ["docs/a.gif"],
     });
+    expect(result.current.bytes).toBe(1024);
 
     act(() => result.current.toggle("docs/big.mp4"));
-    expect(result.current.request?.refs).toEqual(["docs/a.gif"]);
-    expect(result.current.bytes).toBe(1024);
+    expect(result.current.request?.refs).toEqual(["docs/a.gif", "docs/big.mp4"]);
   });
 
   it("adopts the folder main worked out when it was given none", async () => {
@@ -72,7 +73,7 @@ describe("useAssetPlan", () => {
     await waitFor(() => expect(result.current.refs).toHaveLength(3));
     expect(result.current.baseDir).toBe("/Users/nunu/Coding/concorde");
     expect(result.current.detected).toBe(true);
-    expect(result.current.request?.refs).toEqual(["docs/a.gif", "docs/big.mp4"]);
+    expect(result.current.request?.refs).toEqual(["docs/a.gif"]);
   });
 
   it("counts every ref that won't be in the commit, so the sheet can say so", async () => {
@@ -80,9 +81,62 @@ describe("useAssetPlan", () => {
     useApp.setState({ config });
     const { result } = renderHook(() => useAssetPlan({ body: BODY, project: "Concorde" }));
     await waitFor(() => expect(result.current.refs).toHaveLength(3));
-    expect(result.current.stranded).toBe(1); // the missing one
-    act(() => result.current.toggle("docs/big.mp4")); // skipping one strands it too
+    expect(result.current.stranded).toBe(2); // the missing one, and the large one not asked for
+    act(() => result.current.toggle("docs/big.mp4")); // asking for it brings it along
+    expect(result.current.stranded).toBe(1);
+    act(() => result.current.toggle("docs/a.gif")); // skipping one strands it
     expect(result.current.stranded).toBe(2);
+  });
+
+  it("never copies a file over GitHub's 100 MB limit", async () => {
+    const huge = [
+      { ref: "docs/huge.mov", name: "huge.mov", status: "found", bytes: 101 * 1024 * 1024 },
+    ];
+    mockMarascaApi({
+      "assets:resolve": () => ({ baseDir: "/src", detected: false, refs: huge }),
+    });
+    useApp.setState({ config });
+    const { result } = renderHook(() =>
+      useAssetPlan({ body: "![v](docs/huge.mov)", project: "P" }),
+    );
+    await waitFor(() => expect(result.current.refs).toHaveLength(1));
+    act(() => result.current.toggle("docs/huge.mov"));
+    expect(result.current.request).toBeUndefined();
+  });
+
+  it("starts each new text with nothing picked or skipped", async () => {
+    // The capture sheet is never unmounted: a folder or a skip from one clip carried over.
+    mockMarascaApi({ "assets:resolve": asMain });
+    useApp.setState({ config });
+    const { result, rerender } = renderHook(
+      ({ body }) => useAssetPlan({ body, project: "Concorde" }),
+      {
+        initialProps: { body: BODY },
+      },
+    );
+    await waitFor(() => expect(result.current.refs).toHaveLength(3));
+    act(() => result.current.toggle("docs/a.gif"));
+    expect(result.current.excluded).toContain("docs/a.gif");
+    rerender({ body: `${BODY}\nmore` });
+    await waitFor(() => expect(result.current.refs).toHaveLength(3));
+    expect(result.current.excluded).not.toContain("docs/a.gif");
+  });
+
+  it("says it is still looking, and lets a save wait for the answer", async () => {
+    let answer: ((r: AssetResolution) => void) | null = null;
+    mockMarascaApi({
+      "assets:resolve": () => new Promise<AssetResolution>((r) => (answer = r)),
+    });
+    useApp.setState({ config });
+    const { result } = renderHook(() => useAssetPlan({ body: BODY, project: "Concorde" }));
+    expect(result.current.pending).toBe(true);
+    let waited = false;
+    const wait = result.current.whenSettled().then(() => (waited = true));
+    await waitFor(() => expect(answer).not.toBeNull());
+    await act(async () => answer?.(asMain("/src")));
+    await act(() => wait);
+    expect(waited).toBe(true);
+    expect(result.current.pending).toBe(false);
   });
 
   it("prefers the copied file's folder, and remembers a chosen folder per project", async () => {

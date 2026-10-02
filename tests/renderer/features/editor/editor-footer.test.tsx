@@ -9,6 +9,7 @@ const footer = (overrides: Partial<EditorFooterProps>) =>
     <EditorFooter
       pathPreview="inbox/untitled.md"
       hasRemote={false}
+      branch="main"
       saving={null}
       canSave={false}
       dirty={false}
@@ -38,11 +39,12 @@ describe("EditorFooter", () => {
 });
 
 describe("EditorFooter errors", () => {
-  it("wraps a save error instead of cutting it off", () => {
-    const error = "Couldn’t commit — another git process is running in this repository";
+  it("gives a save error its own row, in plain words, with the original a hover away", () => {
+    const error = "EACCES: permission denied, open '/var/folders/xy/T/vault/a.md'";
     footer({ canSave: true, dirty: true, error });
-    const shown = screen.getByText(error);
+    const shown = screen.getByRole("alert");
+    expect(shown.textContent).toMatch(/isn’t allowed to write to the vault folder/);
+    expect(shown.getAttribute("title")).toBe(error);
     expect(shown.className).not.toContain("truncate");
-    expect(shown.className).toContain("wrap-break-word");
   });
 });

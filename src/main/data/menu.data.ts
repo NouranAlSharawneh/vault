@@ -42,7 +42,13 @@ export const appMenu = (captureHotkey: string, { mac, dev }: MenuTarget): MenuSe
     items: [
       { label: "New Document", accelerator: "CmdOrCtrl+N", action: "newDocument" },
       { label: "Capture from Clipboard", accelerator: captureHotkey, action: "capture" },
-      { label: "Save", accelerator: "CmdOrCtrl+Enter", action: { shortcut: "save" } },
+      // ⌘S keeps the window open, as it does in every other Mac app; ⌘↵ is done with it.
+      { label: "Save", accelerator: "CmdOrCtrl+S", action: { shortcut: "save" } },
+      {
+        label: "Save and Close",
+        accelerator: "CmdOrCtrl+Enter",
+        action: { shortcut: "saveClose" },
+      },
       SEPARATOR,
       { label: "Move to Trash", accelerator: "CmdOrCtrl+Backspace", action: { shortcut: "trash" } },
       SEPARATOR,

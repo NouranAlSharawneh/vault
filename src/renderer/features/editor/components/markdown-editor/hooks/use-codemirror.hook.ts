@@ -2,6 +2,7 @@ import { defaultKeymap, history, historyKeymap, indentWithTab } from "@codemirro
 import { markdown, markdownLanguage } from "@codemirror/lang-markdown";
 import { HighlightStyle, syntaxHighlighting } from "@codemirror/language";
 import { languages } from "@codemirror/language-data";
+import { highlightSelectionMatches, search, searchKeymap } from "@codemirror/search";
 import { Annotation, Compartment, EditorState, Transaction } from "@codemirror/state";
 import { EditorView, keymap, placeholder as placeholderExt, drawSelection } from "@codemirror/view";
 import { tags } from "@lezer/highlight";
@@ -26,6 +27,21 @@ const mdHighlight = HighlightStyle.define([
 const vaultTheme = EditorView.theme({
   ".cm-content": { fontFamily: "var(--font-mono)" },
   ".cm-cursor, .cm-dropCursor": { borderLeftColor: "var(--color-cherry)" },
+  // ⌘F's find and replace bar, in the app's own paper and type rather than the default grey.
+  ".cm-panels": {
+    backgroundColor: "var(--color-paper-2)",
+    color: "var(--color-ink-2)",
+    fontFamily: "var(--font-sans)",
+  },
+  ".cm-panels-top": { borderBottom: "1px solid var(--color-line)" },
+  ".cm-search": { fontSize: "var(--text-xs)", padding: "6px 12px" },
+  ".cm-search input, .cm-search button": {
+    fontFamily: "inherit",
+    fontSize: "inherit",
+    borderRadius: "var(--radius-xs)",
+  },
+  ".cm-searchMatch": { backgroundColor: "var(--color-cherry-tint-2)" },
+  ".cm-searchMatch-selected": { backgroundColor: "var(--color-warn)" },
 });
 
 /**
@@ -93,7 +109,11 @@ export function useCodeMirror({
             },
           },
         ]),
-        keymap.of([...defaultKeymap, ...historyKeymap, indentWithTab]),
+        // ⌘F finds, ⌘G / ⇧⌘G step through, ⌥⌘F replaces — a 1 MB document had no way
+        // to find anything in it.
+        search({ top: true }),
+        highlightSelectionMatches(),
+        keymap.of([...defaultKeymap, ...historyKeymap, ...searchKeymap, indentWithTab]),
         editable.current.of(EditorState.readOnly.of(readOnly)),
         EditorView.updateListener.of((u) => {
           if (!u.docChanged) return;

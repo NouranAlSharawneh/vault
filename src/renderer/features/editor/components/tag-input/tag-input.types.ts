@@ -5,4 +5,6 @@ export interface TagInputProps {
   suggestions: string[];
   dark?: boolean;
   placeholder?: string;
+  /** Where the list opens. The capture sheet grows to fit a list below; above, it was cut off. */
+  placement?: "above" | "below";
 }

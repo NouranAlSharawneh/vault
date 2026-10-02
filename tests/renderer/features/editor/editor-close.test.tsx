@@ -55,7 +55,7 @@ describe("useEditorShortcuts", () => {
 
   it("routes Escape to the close handler", () => {
     const onEscape = vi.fn();
-    renderHook(() => useEditorShortcuts({ onSave: vi.fn(), onEscape }));
+    renderHook(() => useEditorShortcuts({ onSave: vi.fn(), onSaveClose: vi.fn(), onEscape }));
     press("Escape");
     expect(onEscape).toHaveBeenCalledTimes(1);
   });
@@ -63,7 +63,7 @@ describe("useEditorShortcuts", () => {
   it("ignores an Escape a dropdown already used", () => {
     // Dismissing a project suggestion list must not also close the window.
     const onEscape = vi.fn();
-    renderHook(() => useEditorShortcuts({ onSave: vi.fn(), onEscape }));
+    renderHook(() => useEditorShortcuts({ onSave: vi.fn(), onSaveClose: vi.fn(), onEscape }));
     press("Escape", true);
     press("a");
     expect(onEscape).not.toHaveBeenCalled();
@@ -79,18 +79,19 @@ describe("useEditorShortcuts", () => {
     // Tab indents there, so Escape-then-Tab is the only keyboard way out. Closing the
     // window on that Escape is what used to make it unreachable.
     const onEscape = vi.fn();
-    renderHook(() => useEditorShortcuts({ onSave: vi.fn(), onEscape }));
+    renderHook(() => useEditorShortcuts({ onSave: vi.fn(), onSaveClose: vi.fn(), onEscape }));
     document.body.innerHTML =
       '<div class="cm-editor"><div class="cm-scroller"><div class="cm-content" contenteditable="true"></div></div></div>';
     pressIn(document.querySelector(".cm-content")!);
     expect(onEscape).not.toHaveBeenCalled();
   });
 
-  it("still closes on Escape from the title field", () => {
+  it("leaves an Escape in the title field to the field", () => {
+    // Pressed to back out of a field, it used to close a clean document outright.
     const onEscape = vi.fn();
-    renderHook(() => useEditorShortcuts({ onSave: vi.fn(), onEscape }));
+    renderHook(() => useEditorShortcuts({ onSave: vi.fn(), onSaveClose: vi.fn(), onEscape }));
     document.body.innerHTML = '<label><input aria-label="Title" /></label>';
     pressIn(document.querySelector("input")!);
-    expect(onEscape).toHaveBeenCalledTimes(1);
+    expect(onEscape).not.toHaveBeenCalled();
   });
 });

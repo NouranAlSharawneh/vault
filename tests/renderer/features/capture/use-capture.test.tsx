@@ -174,11 +174,17 @@ describe("useCapture", () => {
     expect(channels(invoke)).not.toContain("capture:hide");
   });
 
-  it("a failed save shows the error and can retry", async () => {
-    mockMarascaApi({
+  it("a failed save shows the error, and Try again saves again", async () => {
+    // Try again only cleared the error; the save then needed a second, separate ⌘↵.
+    let fail = true;
+    const { invoke } = mockMarascaApi({
       "capture:readClipboard": () => clip,
       "doc:pathPreview": () => "",
-      "doc:save": new Error("boom"),
+      "doc:save": () => {
+        if (fail) throw new Error("boom");
+
+        return { path: "inbox/x.md", meta: { path: "inbox/x.md" }, committed: true };
+      },
     });
     const { result } = renderHook(() => useCapture());
     await waitFor(() => expect(result.current.phase).toBe("ready"));
@@ -187,7 +193,9 @@ describe("useCapture", () => {
     });
     expect(result.current.phase).toBe("error");
     expect(result.current.error).toBe("boom");
+    fail = false;
     act(() => result.current.retry());
-    expect(result.current.phase).toBe("ready");
+    await waitFor(() => expect(result.current.phase).toBe("saved"));
+    expect(invoke.mock.calls.filter((c) => c[0] === "doc:save")).toHaveLength(2);
   });
 });

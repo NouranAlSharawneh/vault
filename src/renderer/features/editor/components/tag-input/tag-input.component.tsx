@@ -10,6 +10,7 @@ export function TagInput({
   suggestions,
   dark,
   placeholder = "type to add…",
+  placement = "above",
 }: TagInputProps) {
   const t = useTagInput(value, onChange, suggestions);
   const listId = useId();
@@ -54,7 +55,8 @@ export function TagInput({
           role="listbox"
           aria-label="Tag suggestions"
           className={cx(
-            "absolute bottom-full left-0 z-10 mb-1 w-48 rounded-md border p-1 shadow-pop",
+            "absolute left-0 z-10 w-48 rounded-md border p-1 shadow-pop",
+            placement === "above" ? "bottom-full mb-1" : "top-full mt-1",
             dark ? "border-overlay-line bg-overlay-2" : "border-line bg-paper",
           )}
         >

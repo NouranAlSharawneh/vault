@@ -1,6 +1,7 @@
 import { promises as fs } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { clipboard } from "electron";
+import { CAPTURE_FILE_MAX_BYTES } from "@shared/constants";
 import type { ClipboardCapture } from "@shared/types";
 import { analyseClipboard } from "./analyse-clipboard";
 
@@ -43,6 +44,9 @@ async function readClipboardFile(): Promise<{ path: string; text: string } | nul
       if (!url.startsWith("file:")) return null;
       const path = fileURLToPath(url);
       if (!/\.(md|markdown|txt)$/i.test(path)) return null;
+      // A notes file, not a log: a 200 MB `.txt` copied in Finder was read whole, sent over
+      // IPC and drawn a line at a time.
+      if ((await fs.stat(path)).size > CAPTURE_FILE_MAX_BYTES) return null;
 
       return { path, text: await fs.readFile(path, "utf8") };
     }

@@ -85,6 +85,7 @@ export const EVENT_CHANNELS = [
   "capture:shown",
   "capture:hidden",
   "doc:reveal",
+  "editor:docGone",
   "shortcut",
   "navigate",
 ] as const satisfies readonly EventChannel[];

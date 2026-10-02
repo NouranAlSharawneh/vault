@@ -1,6 +1,7 @@
 import { useMemo, useState, type KeyboardEvent } from "react";
 
-const clean = (t: string) => t.replace(/^#/, "").trim().toLowerCase();
+/** `#Some Tag` → `some-tag`: the search box reads `tags:` up to the first space. */
+const clean = (t: string) => t.replace(/^#/, "").trim().toLowerCase().replace(/\s+/g, "-");
 
 /** Chip input: type, Enter/comma/Tab to add, Backspace on empty to pop, arrows through suggestions. */
 export function useTagInput(
@@ -18,8 +19,10 @@ export function useTagInput(
     const q = clean(text);
     if (!q) return [];
 
+    // The tag exactly as typed comes first, so Enter adds it rather than a longer one.
     return suggestions
       .filter((s) => s.toLowerCase().startsWith(q) && !value.includes(s))
+      .sort((a, b) => Number(b.toLowerCase() === q) - Number(a.toLowerCase() === q))
       .slice(0, 6);
   }, [text, suggestions, value]);
 
@@ -37,7 +40,14 @@ export function useTagInput(
   const remove = (tag: string) => onChange(value.filter((t) => t !== tag));
 
   const onKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Enter" || e.key === "," || (e.key === "Tab" && text)) {
+    if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
+      // The window's save: keep what's typed, exactly — not a suggestion — and let it through.
+      if (text) add(text);
+    } else if (e.key === ",") {
+      // A comma always means "this, as typed": the one way to add `api` beside `api-design`.
+      e.preventDefault();
+      add(text);
+    } else if (e.key === "Enter" || (e.key === "Tab" && text)) {
       e.preventDefault();
       add(matches[cursor] ?? text);
     } else if (e.key === "Backspace" && !text && value.length) {

@@ -28,7 +28,10 @@ export interface DraftState {
 export type SaveMode = "local" | "commit";
 
 export interface EditorShortcutHandlers {
+  /** ⌘S: commit and stay. */
   onSave: () => void;
+  /** ⌘↵: commit and close. */
+  onSaveClose: () => void;
   /** Escape: close a document with nothing to lose, or ask about one that has. */
   onEscape: () => void;
 }

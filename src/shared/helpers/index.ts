@@ -14,3 +14,6 @@ export { isSource, toSource } from "./source";
 export { compareVersions } from "./compare-versions";
 export { parseGitVersion } from "./parse-git-version";
 export { isVersionAtLeast } from "./is-version-at-least";
+export { splitCode } from "./split-code";
+export type { Segment } from "./split-code";
+export { normalizeRef } from "./normalize-ref";

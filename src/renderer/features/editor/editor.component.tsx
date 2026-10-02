@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useDeferredValue, useEffect, useMemo, useState } from "react";
 import { AssetPanel, useAssetPlan } from "@/components/asset-panel";
 import { AuthExpiredBanner } from "@/components/auth-expired-banner/auth-expired-banner.component";
 import { Markdown } from "@/components/markdown";
@@ -7,10 +7,11 @@ import { SyncBadge } from "@/components/sync-badge/sync-badge.component";
 import { SectionLabel, SplitPane } from "@/components/ui";
 import { EDITOR_LEAVE_HINT, EDITOR_PLACEHOLDER } from "@/data/editor.data";
 import { parentDir, plural } from "@/helpers";
-import { api, fire, fireQuietly } from "@/lib/api";
+import { api, fire, fireQuietly, on } from "@/lib/api";
 import { useApp } from "@/stores/app";
 import { countWords } from "@shared/helpers";
 import type { SavedNotice } from "@shared/types";
+import { EditorBanners } from "./components/editor-banners/editor-banners.component";
 import { EditorFooter } from "./components/editor-footer/editor-footer.component";
 import { MarkdownEditor } from "./components/markdown-editor/markdown-editor.component";
 import { MetadataBar } from "./components/metadata-bar/metadata-bar.component";
@@ -37,13 +38,22 @@ export function Editor() {
   });
   // Until the document is in, a save would have no path and write a new file beside it.
   const ready = opened.status.kind === "ready";
+  // The preview, the word count and the image scan follow the text at their own pace: on
+  // a large document each keystroke re-ran the whole markdown pipeline before it showed.
+  const settledBody = useDeferredValue(d.body);
+  const words = useMemo(() => countWords(settledBody), [settledBody]);
   const plan = useAssetPlan({
-    body: d.body,
+    body: settledBody,
     project: d.meta.project,
     sourceDir: d.sourcePath ? parentDir(d.sourcePath) : docFolder(config?.root, d.existingPath),
   });
   const guard = useUnsavedGuard(d.dirty);
   useDocumentEdited(d.dirty);
+  // Trashed from the main window while open here: said, so a save that brings it back is
+  // a choice rather than a surprise.
+  const [gone, setGone] = useState(false);
+  const holding = d.existingPath;
+  useEffect(() => on("editor:docGone", ({ path }) => path === holding && setGone(true)), [holding]);
   /**
    * Save, then close at once. This used to hold the window open for the "Saved" flash,
    * which read as the window refusing to go — so what the save did travels with the
@@ -81,8 +91,13 @@ export function Editor() {
     [ready, d, plan.request, guard],
   );
   const commit = useCallback(() => saveAndClose("commit"), [saveAndClose]);
+  /** ⌘S: commit and keep writing. The footer says "Saved". */
+  const commitAndStay = useCallback(() => {
+    if (ready) fire(d.save("commit", plan.request));
+  }, [ready, d, plan.request]);
   useEditorShortcuts({
-    onSave: commit,
+    onSave: commitAndStay,
+    onSaveClose: commit,
     // Nothing to lose: go straight out. Otherwise ask, the same as clicking the X.
     onEscape: useCallback(() => (d.dirty ? guard.prompt() : guard.closeNow()), [d.dirty, guard]),
   });
@@ -115,6 +130,13 @@ export function Editor() {
       </div>
       <AuthExpiredBanner />
       <NoWriteAccessBanner />
+      <EditorBanners
+        gone={gone}
+        // Unsaved text still gets its question.
+        onClose={() => (d.dirty ? guard.prompt() : guard.closeNow())}
+        staleDraft={d.staleDraft}
+        onStaleDraft={d.resolveStaleDraft}
+      />
       {opened.status.kind === "failed" ? (
         <OpenFailed
           path={opened.status.path}
@@ -133,7 +155,7 @@ export function Editor() {
                 <div className="flex h-8 shrink-0 items-center justify-between px-6">
                   <SectionLabel>Markdown</SectionLabel>
                   <span className="text-2xs text-ink-4">
-                    {EDITOR_LEAVE_HINT} · {plural(countWords(d.body), "word")}
+                    {EDITOR_LEAVE_HINT} · {plural(words, "word")}
                   </span>
                 </div>
                 <MarkdownEditor
@@ -153,8 +175,8 @@ export function Editor() {
                 </div>
                 <div className="min-h-0 flex-1 overflow-y-auto px-8 pb-16">
                   <article className="mx-auto max-w-170">
-                    {d.body.trim() ? (
-                      <Markdown source={d.body} docPath={d.existingPath ?? d.pathPreview} />
+                    {settledBody.trim() ? (
+                      <Markdown source={settledBody} docPath={d.existingPath ?? d.pathPreview} />
                     ) : (
                       <div className="text-sm text-ink-4">Nothing to preview yet.</div>
                     )}
@@ -175,6 +197,7 @@ export function Editor() {
           <EditorFooter
             pathPreview={d.pathPreview}
             hasRemote={!!config?.remote}
+            branch={config?.branch ?? "main"}
             saving={d.saving}
             canSave={d.canSave && ready}
             dirty={d.dirty}

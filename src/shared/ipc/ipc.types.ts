@@ -160,7 +160,16 @@ export interface IpcInvoke {
 /** Main → renderer push events. */
 /** Named so both the menu and the window keydown that raise it can agree on the list. */
 export type Shortcut =
-  "search" | "new" | "toggleSidebar" | "history" | "save" | "trash" | "settings";
+  | "search"
+  | "new"
+  | "toggleSidebar"
+  | "history"
+  /** ⌘S: commit and keep the window open. */
+  | "save"
+  /** ⌘↵: commit and close. */
+  | "saveClose"
+  | "trash"
+  | "settings";
 
 export interface IpcEvents {
   "index:changed": IndexSnapshot;
@@ -174,6 +183,8 @@ export interface IpcEvents {
   "capture:hidden": null;
   /** Select this document in the main window, clearing filters if it isn't in the list. */
   "doc:reveal": DocReveal;
+  /** The document an editor window holds was moved from under it (to the trash, say). */
+  "editor:docGone": { path: string; reason: "trashed" };
   shortcut: Shortcut;
   navigate: string;
 }

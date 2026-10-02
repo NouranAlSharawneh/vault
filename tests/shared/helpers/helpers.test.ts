@@ -40,10 +40,36 @@ describe("projectSlug", () => {
 });
 
 describe("inferTitle", () => {
-  it("prefers the first heading", () => {
-    expect(inferTitle("intro\n## Second\n# First")).toBe("Second");
+  it("takes the top heading, else the first heading, else the first line", () => {
+    expect(inferTitle("intro\n## Second\n# First")).toBe("First");
+    expect(inferTitle("intro\n## Second\n### Third")).toBe("Second");
     expect(inferTitle("just a line\nmore")).toBe("just a line");
     expect(inferTitle("")).toBeNull();
+  });
+
+  it("ignores headings inside code", () => {
+    // A shell comment in an answer's code block used to become its title.
+    expect(inferTitle("Run this:\n\n```bash\n# install deps\nnpm i\n```\n")).toBe("Run this:");
+  });
+
+  it("reads a README's HTML title ahead of the sections under it", () => {
+    expect(inferTitle('<h1 align="center">Concorde</h1>\n\n## Features\n')).toBe("Concorde");
+  });
+
+  it("keeps the numbers a title starts with, and drops list markers only", () => {
+    expect(inferTitle("3D printing notes")).toBe("3D printing notes");
+    expect(inferTitle("2026 roadmap")).toBe("2026 roadmap");
+    expect(inferTitle("- first point")).toBe("first point");
+    expect(inferTitle("1. step one")).toBe("step one");
+  });
+
+  it("reads markup as the words it shows, and cuts long prose at a word", () => {
+    expect(inferTitle("# **Rate** limiting [at the edge](x)")).toBe("Rate limiting at the edge");
+    const long = inferTitle(
+      "This paragraph goes on for a good while without ever reaching a full stop anywhere at all really",
+    );
+    expect(long?.endsWith("…")).toBe(true);
+    expect(long!.length).toBeLessThanOrEqual(73);
   });
 });
 

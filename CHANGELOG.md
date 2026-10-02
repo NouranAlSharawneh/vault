@@ -51,6 +51,25 @@ To release: add a section for the new version here, run `npm run release -- <pat
 - Titles sort naturally (Doc 2 before Doc 10), the tag filter ignores case, more than 40 tags get "Show all", and the rail scrolls past its ninth project.
 - `created:2026-03-14` means that day in your time zone; `created:>1` no longer means 2001.
 - The split between list and reader can be moved with the arrow keys, remembers a double-click reset, and stays within sensible widths.
+- **Capture waits for its images.** ⌘↵ pressed while the images were still being looked for committed broken links without a warning; it now waits up to three seconds, then says what's missing.
+- **A capture saved after Esc stays out of the next one.** A late save no longer shows "Committed" with the old path over a new clip and then hides it.
+- **Every clip starts fresh.** A folder picked or a file skipped for one capture no longer carries over to the next, and the first capture after launch reads the clipboard of the moment, not the one from launch.
+- **⌘↵ in Project or Tags saves what you typed.** A new project called "API" no longer becomes "Atlas API", a new tag `api` can be added when `api-design` exists, and a project typed in a different case joins the existing one instead of renaming it. The suggestions open below the field, inside the sheet.
+- **Images in a captured README are found where they are.** `./img.png` resolves, image links inside code blocks are left alone, a link that leaves the folder (`../../secret.pdf`) is flagged and never copied, a bare file name found somewhere on the disk is only a suggestion, and one Spotlight search failing no longer hides the others. Files over the size warning are left out unless you include them.
+- **The capture title** skips headings inside code blocks, reads an HTML `<h1>`, and keeps a leading number ("3D printing", not "D printing").
+- "detected" appears next to the source only when Marasca recognised one, and a GitHub page about OpenAI counts as GitHub.
+- A failed capture can be retried with ⌘↵ or Try again, and its error can be read in full. A Finder file over 2 MB isn't read whole, and a very long clip previews its first 300 lines.
+- **An open document moved to the trash says so** in its editor, instead of a save quietly bringing it back.
+- **Unsaved text older than the file is offered, not restored.** Restoring it silently let the next save overwrite whatever had changed the file since (a pull, another editor).
+- **Save errors are in plain words** on a row of their own ("Marasca isn’t allowed to write to the vault folder"), with git's message on hover. The Save button names the branch it commits to.
+- Esc in the title, project or tag field no longer closes the editor.
+- Long documents stay quick to type in: the preview, word count and image check catch up once you pause.
+- Drafts are written so a crash can't leave half a file.
+
+### Added
+
+- **⌘S saves and keeps the editor open.** The footer then says "Saved"; ⌘↵ still saves and closes.
+- **Find and replace in the editor** (⌘F, then ⌘G for the next match), with other copies of the selected word highlighted.
 
 ## [0.0.2] - 2026-09-28
 

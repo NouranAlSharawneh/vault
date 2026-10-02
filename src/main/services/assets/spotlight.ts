@@ -14,20 +14,18 @@ const run = promisify(execFile);
  * checks the returned folder actually holds the files.
  */
 export async function spotlightRoots(probes: string[]): Promise<string[]> {
-  const out: string[] = [];
-  for (const probe of probes) {
-    try {
-      const { stdout } = await run("mdfind", ["-name", basename(probe)], {
+  // All at once, and one failure costs only its own answer: a common name like `logo.png`
+  // overflowed the buffer, and that used to end the search for every probe after it.
+  const answers = await Promise.allSettled(
+    probes.map((probe) =>
+      run("mdfind", ["-name", basename(probe)], {
         timeout: SPOTLIGHT_BUDGET_MS,
-        maxBuffer: 1 << 20,
-      });
-      out.push(...rootsFromHits(stdout, probe));
-    } catch {
-      return out; // no Spotlight on this platform, or it timed out — the walk takes over
-    }
-  }
+        maxBuffer: 8 << 20,
+      }).then(({ stdout }) => rootsFromHits(stdout, probe)),
+    ),
+  );
 
-  return out;
+  return answers.flatMap((a) => (a.status === "fulfilled" ? a.value : []));
 }
 
 /** `/Users/n/concorde/docs/hero.gif` + `docs/hero.gif` → `/Users/n/concorde`. */

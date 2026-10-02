@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { findAssetRefs, rewriteAssetRefs } from "@shared/helpers";
+import { findAssetRefs, normalizeRef, rewriteAssetRefs } from "@shared/helpers";
 
 const MD = `# Concorde
 
@@ -43,5 +43,32 @@ describe("rewriteAssetRefs", () => {
         "docs/Hero Fly-in.gif": "assets/hero.gif",
       }),
     ).toBe("![x](assets/hero.gif)");
+  });
+});
+
+describe("images shown as examples in code", () => {
+  const README =
+    "Add a logo:\n\n```md\n![logo](assets/logo.png)\n```\n\nor `![x](a.png)` inline.\n\n![real](docs/real.png)\n";
+
+  it("are not images to look for", () => {
+    expect(findAssetRefs(README)).toEqual(["docs/real.png"]);
+  });
+
+  it("are left exactly as written when the real ones are rewritten", () => {
+    const out = rewriteAssetRefs(README, {
+      "assets/logo.png": "assets/moved.png",
+      "docs/real.png": "assets/real.png",
+    });
+    expect(out).toContain("![logo](assets/logo.png)");
+    expect(out).toContain("`![x](a.png)`");
+    expect(out).toContain("![real](assets/real.png)");
+  });
+});
+
+describe("normalizeRef", () => {
+  it("reads ./ and a repo-root / as the plain path under the base folder", () => {
+    expect(normalizeRef("./shots/one.png")).toBe("shots/one.png");
+    expect(normalizeRef("/docs/hero.png")).toBe("docs/hero.png");
+    expect(normalizeRef("a/./b/../c.png")).toBe("a/c.png");
   });
 });

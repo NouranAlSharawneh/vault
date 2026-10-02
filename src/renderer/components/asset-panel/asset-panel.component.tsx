@@ -1,8 +1,8 @@
 import { FolderOpen, Image, TriangleAlert } from "lucide-react";
-import { Button, Chip } from "@/components/ui";
+import { Button, Chip, Spinner } from "@/components/ui";
 import { cx, formatBytes, plural, shortPath } from "@/helpers";
 import { fire } from "@/lib/api";
-import { ASSET_WARN_BYTES } from "@shared/constants";
+import { ASSET_MAX_BYTES, ASSET_WARN_BYTES } from "@shared/constants";
 import type { AssetPanelProps } from "./asset-panel.types";
 
 /**
@@ -15,25 +15,32 @@ import type { AssetPanelProps } from "./asset-panel.types";
  * relative link either way and a link with nothing behind it renders as a broken image.
  */
 export function AssetPanel({ plan, dark, className }: AssetPanelProps) {
-  if (!plan.refs.length) return null;
   const muted = dark ? "text-overlay-ink-3" : "text-ink-4";
   const strong = dark ? "text-overlay-ink" : "text-ink";
+  const frame = cx(
+    "rounded-md border px-3 py-2 text-xs",
+    dark ? "border-overlay-line bg-black/20" : "border-line bg-paper-2",
+    className,
+  );
+  // Said while it happens: the panel used to stay hidden until the search came back, and
+  // a save pressed meanwhile went ahead as if there were no images at all.
+  if (plan.pending)
+    return (
+      <div className={cx(frame, "flex items-center gap-2", muted)} role="status">
+        <Spinner /> Looking for {plural(plan.lookingFor, "image")}…
+      </div>
+    );
+  if (!plan.refs.length) return null;
 
   return (
-    <div
-      className={cx(
-        "rounded-md border px-3 py-2 text-xs",
-        dark ? "border-overlay-line bg-black/20" : "border-line bg-paper-2",
-        className,
-      )}
-      data-testid="asset-panel"
-    >
+    <div className={frame} data-testid="asset-panel">
       <div className="flex items-center gap-2">
         <Image size={13} className={muted} />
-        <span className={cx("font-medium", strong)}>
+        <span className={cx("shrink-0 font-medium", strong)}>
           {plural(plan.refs.length, "image")} referenced
         </span>
-        <span className={muted}>
+        {/* One line, however long the folder: the full path is a hover away. */}
+        <span className={cx("min-w-0 truncate", muted)} title={plan.baseDir ?? undefined}>
           {plan.baseDir ? (
             <>
               {plan.found} found in <span className="font-mono">{shortPath(plan.baseDir)}</span>
@@ -47,7 +54,7 @@ export function AssetPanel({ plan, dark, className }: AssetPanelProps) {
         <Button
           variant={dark ? "ghost" : "outline"}
           size="sm"
-          className={cx("ml-auto", dark && "text-overlay-ink-2 hover:bg-overlay-3")}
+          className={cx("ml-auto shrink-0", dark && "text-overlay-ink-2 hover:bg-overlay-3")}
           onClick={() => fire(plan.chooseFolder())}
         >
           <FolderOpen size={11} /> {plan.baseDir ? "Change folder" : "Choose folder…"}
@@ -57,6 +64,8 @@ export function AssetPanel({ plan, dark, className }: AssetPanelProps) {
         {plan.refs.map((r) => {
           const off = plan.excluded.includes(r.ref);
           const big = r.bytes > ASSET_WARN_BYTES;
+          // GitHub refuses it, and a commit carrying it would block every push after.
+          const tooBig = r.bytes > ASSET_MAX_BYTES;
 
           return (
             <li key={r.ref} className="flex items-center gap-2 font-mono">
@@ -69,11 +78,21 @@ export function AssetPanel({ plan, dark, className }: AssetPanelProps) {
                 <>
                   <span className={big ? (dark ? "text-warn" : "text-warn-2") : muted}>
                     {formatBytes(r.bytes)}
-                    {big && " · large — this goes into git for good"}
+                    {tooBig
+                      ? " · over GitHub’s 100 MB limit"
+                      : big &&
+                        " · large — git keeps it for good, so it’s left out unless you copy it"}
                   </span>
-                  <Chip tone="neutral" selected={!off} onClick={() => plan.toggle(r.ref)}>
-                    {off ? "skip" : "copy"}
-                  </Chip>
+                  {!tooBig && (
+                    <Chip
+                      tone="neutral"
+                      selected={!off}
+                      onClick={() => plan.toggle(r.ref)}
+                      aria-label={`${off ? "Copy" : "Skip"} ${r.ref}`}
+                    >
+                      {off ? "skip" : "copy"}
+                    </Chip>
+                  )}
                 </>
               ) : (
                 <span
@@ -81,7 +100,11 @@ export function AssetPanel({ plan, dark, className }: AssetPanelProps) {
                     r.status === "unsupported" ? muted : dark ? "text-cherry-3" : "text-cherry"
                   }
                 >
-                  {r.status === "unsupported" ? "unsupported type" : "not found"}
+                  {r.status === "unsupported"
+                    ? "unsupported type"
+                    : r.status === "outside"
+                      ? "outside that folder — not copied"
+                      : "not found"}
                 </span>
               )}
             </li>

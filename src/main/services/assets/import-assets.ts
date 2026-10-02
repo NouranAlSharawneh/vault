@@ -1,9 +1,10 @@
 import { promises as fs, existsSync, statSync } from "node:fs";
-import { basename, extname, isAbsolute, join, relative, resolve } from "node:path";
+import { basename, extname, isAbsolute, join, relative } from "node:path";
 import { ASSET_MAX_BYTES, ASSETS_DIR } from "@shared/constants";
 import { slugify } from "@shared/helpers";
 import type { AssetImport } from "@shared/types";
 import type { ImportedAssets } from "./assets.types";
+import { refPath } from "./resolve-assets";
 
 /**
  * Copy referenced files into `<docFolder>/assets/` (slugified, de-duplicated names) and
@@ -26,8 +27,9 @@ export async function importAssets(
   const paths: string[] = [];
   try {
     for (const ref of req.refs) {
-      const src = isAbsolute(ref) ? ref : resolve(req.baseDir, ref);
-      if (!existsSync(src) || isWithin(home, src)) continue;
+      // Only inside the folder the refs are relative to: never `../../` out of it.
+      const src = refPath(req.baseDir, ref);
+      if (!src || !existsSync(src) || isWithin(home, src)) continue;
       if (statSync(src).size > ASSET_MAX_BYTES) continue;
       await fs.mkdir(dir, { recursive: true });
       const name = uniqueName(dir, basename(ref));

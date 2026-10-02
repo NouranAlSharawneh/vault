@@ -54,13 +54,16 @@ export function useCapture() {
   const showing = useRef(0);
 
   // First paint may happen before main sends the event; ask once, then follow events.
+  // Only when the sheet is on screen: it is made hidden at launch, and reading then put
+  // whatever was on the clipboard at launch in front of the first ⌃⌥V, ready to be saved.
   useEffect(() => {
     const first = showing.current;
-    api("capture:readClipboard")
-      .then((clip) => {
-        if (showing.current === first) load(clip);
-      })
-      .catch(() => undefined);
+    if (document.visibilityState === "visible")
+      api("capture:readClipboard")
+        .then((clip) => {
+          if (showing.current === first) load(clip);
+        })
+        .catch(() => undefined);
 
     const offShown = on("capture:shown", (clip) => {
       const mine = ++showing.current;
@@ -110,16 +113,39 @@ export function useCapture() {
   const setForm = (patch: Partial<CaptureForm>) =>
     setState((s) => ({ ...s, form: { ...s.form, ...patch } }));
 
-  const hide = useCallback(() => fireQuietly(api("capture:hide"), "hiding the sheet"), []);
+  // Esc mid-save would hide a sheet whose save is still landing; it waits.
+  const phase = state.phase;
+  const hide = useCallback(() => {
+    if (phase !== "saving") fireQuietly(api("capture:hide"), "hiding the sheet");
+  }, [phase]);
+
+  // The plan as it is now, for a save that waited on it.
+  const latestAssets = useRef(assets);
+  useEffect(() => {
+    latestAssets.current = assets;
+  });
 
   /** ⌘↵ saves and hands focus back to the app you were in; ⌥⌘↵ also opens it in Marasca. */
   const save = useCallback(
     async (reveal = false) => {
-      if (!state.clip || state.phase !== "ready") return;
+      if (!state.clip || (state.phase !== "ready" && state.phase !== "error")) return;
+      const clip = state.clip;
+      const mine = showing.current;
       setState((s) => ({ ...s, phase: "saving", error: null }));
+      // Pressed before the images were looked for: wait for the answer. If some turn out
+      // not to travel, stop so the panel can say so — the button then reads "Save anyway".
+      if (latestAssets.current.pending) {
+        await latestAssets.current.whenSettled();
+        if (showing.current !== mine) return;
+        if (latestAssets.current.stranded > 0) {
+          setState((s) => ({ ...s, phase: "ready" }));
+
+          return;
+        }
+      }
       try {
         const res = await api("doc:save", {
-          body: state.clip.text,
+          body: clip.text,
           frontmatter: {
             title,
             project: state.form.project,
@@ -127,8 +153,11 @@ export function useCapture() {
             source: state.form.source,
           },
           commit: true,
-          assets: assets.request,
+          assets: latestAssets.current.request,
         });
+        // The sheet was dismissed and shown again while this was saving: the answer
+        // belongs to that earlier capture. It used to take over the new one and hide it.
+        if (showing.current !== mine) return;
         setState((s) => ({ ...s, phase: "saved", savedPath: res.path }));
         // Flash the committed path, then get out of the way.
         cancelPending();
@@ -139,15 +168,18 @@ export function useCapture() {
           else fireQuietly(api("capture:hide"), "hiding the sheet");
         }, CAPTURE_SAVED_FLASH_MS);
       } catch (e) {
-        setState((s) => ({ ...s, phase: "error", error: errorMessage(e) }));
+        if (showing.current === mine)
+          setState((s) => ({ ...s, phase: "error", error: errorMessage(e) }));
       }
     },
-    [state.clip, state.phase, state.form, title, assets.request, cancelPending],
+    [state.clip, state.phase, state.form, title, cancelPending],
   );
 
   const openInEditor = useCallback(() => {
+    // Through the sheet even when there's nothing to bring: it hides first, rather than
+    // floating over the new editor until it lost focus.
     if (!state.clip?.text.trim()) {
-      fire(api("window:openEditor"));
+      fire(api("capture:openEditor", { body: "" }));
 
       return;
     }
@@ -165,7 +197,8 @@ export function useCapture() {
     );
   }, [state.clip, state.form, title]);
 
-  const retry = () => setState((s) => ({ ...s, phase: "ready", error: null }));
+  /** Try the save again, as it was asked for. */
+  const retry = () => fire(save(false));
 
   return {
     ...state,

@@ -22,6 +22,7 @@ export function CaptureFields({
           value={form.project}
           onChange={(project) => onChange({ project })}
           projects={projects}
+          placement="below"
           hint={lastProject && form.project === lastProject ? "last used" : undefined}
         />
       </div>
@@ -41,6 +42,7 @@ export function CaptureFields({
           value={form.tags}
           onChange={(t) => onChange({ tags: t })}
           suggestions={tags}
+          placement="below"
         />
       </div>
     </div>

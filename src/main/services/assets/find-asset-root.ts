@@ -10,6 +10,7 @@ import {
   ASSET_WALK_MAX_DIRS,
   ASSET_WALK_SKIP,
 } from "@shared/constants";
+import { normalizeRef } from "@shared/helpers";
 import { spotlightRoots } from "./spotlight";
 
 /**
@@ -26,11 +27,12 @@ import { spotlightRoots } from "./spotlight";
  * excludes the folder; it stays shallow and time-boxed because the capture sheet is waiting.
  */
 export async function findAssetRoot(refs: string[], known: string[] = []): Promise<string | null> {
-  const probes = pickProbes(refs);
+  const plain = refs.map(normalizeRef);
+  const probes = pickProbes(plain);
   if (!probes.length) return null;
 
   return (
-    (await best(await spotlightRoots(probes), refs)) ?? best(await walkRoots(probes, known), refs)
+    (await best(await spotlightRoots(probes), plain)) ?? best(await walkRoots(probes, known), plain)
   );
 }
 
@@ -97,15 +99,26 @@ async function walkRoots(probes: string[], known: string[]): Promise<string[]> {
 async function best(candidates: string[], refs: string[]): Promise<string | null> {
   let winner: string | null = null;
   let score = 0;
+  let specific = false;
   for (const dir of new Set(candidates)) {
     let hits = 0;
-    for (const ref of refs) if (await isFile(join(dir, ref))) hits++;
+    let deep = false;
+    for (const ref of refs)
+      if (await isFile(join(dir, ref))) {
+        hits++;
+        deep ||= ref.includes("/");
+      }
     const shallower = !!winner && dir.split(sep).length < winner.split(sep).length;
     if (hits > score || (hits === score && hits > 0 && shallower)) {
       winner = dir;
       score = hits;
+      specific = deep;
     }
   }
+  // One bare filename found once is a guess, not a match: `screenshot.png` was matched to
+  // the shallowest folder on the disk holding one — the Desktop — and set to be copied.
+  // Nothing is guessed: a folder in the path, or more than one file, or no answer.
+  if (score === 1 && !specific) return null;
 
   return score > 0 ? winner : null;
 }

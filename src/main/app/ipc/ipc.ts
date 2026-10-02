@@ -37,6 +37,7 @@ import {
   resizeCaptureWindow,
   revealDoc,
   takeReveal,
+  notifyDocGone,
   setEditorPath,
   takeEditorSeed,
   whileCaptureDialogOpen,
@@ -263,7 +264,12 @@ export function registerIpcHandlers(): void {
 
     return res;
   });
-  handle("doc:trash", (p) => session.requireVault().trash(p));
+  handle("doc:trash", async (p) => {
+    const trashed = await session.requireVault().trash(p);
+    notifyDocGone(p);
+
+    return trashed;
+  });
   handle("trash:list", () => session.requireVault().listTrash());
   handle("trash:read", (p) => session.requireVault().readTrashed(p));
   handle("trash:restore", (p) => session.requireVault().restoreFromTrash(p));
