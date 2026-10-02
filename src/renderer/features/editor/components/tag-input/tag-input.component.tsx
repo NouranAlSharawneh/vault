@@ -19,12 +19,9 @@ export function TagInput({
   return (
     <div className="relative">
       <div
-        className={cx(
-          "flex min-h-8 flex-wrap items-center gap-1 rounded-sm border px-1.5 py-1",
-          dark
-            ? "border-overlay-line bg-overlay-2 focus-within:ring-2 focus-within:ring-cherry-3"
-            : "border-line bg-paper focus-within:ring-2 focus-within:ring-cherry",
-        )}
+        // Chips sit closer to the edge than text does; with none, the placeholder starts
+        // on the same column as the other fields' text.
+        className={cx("field flex-wrap gap-1 py-1", value.length ? "pl-1.5" : "")}
       >
         {value.map((tag) => (
           <Chip key={tag} onRemove={() => t.remove(tag)} removeLabel={`Remove ${tag}`}>
@@ -33,7 +30,7 @@ export function TagInput({
         ))}
         <input
           className={cx(
-            "min-w-20 flex-1 bg-transparent text-sm outline-none",
+            "min-w-20 flex-1 bg-transparent outline-none",
             dark ? "text-overlay-ink placeholder:text-overlay-ink-3" : "placeholder:text-ink-4",
           )}
           value={t.text}

@@ -18,7 +18,8 @@ export function SettingRow({
     <div
       className={cx(
         "flex items-center justify-between gap-5 pr-3.5",
-        nested ? "min-h-11 bg-paper-2 py-1.5 pl-7" : "min-h-13 py-2.5 pl-3.5",
+        // Half the page's tint: a full paper-2 read as a hole through the card to the page.
+        nested ? "min-h-11 bg-paper-2/50 py-1.5 pl-7" : "min-h-13 py-2.5 pl-3.5",
       )}
     >
       <div className="flex min-w-0 items-center gap-2.5">

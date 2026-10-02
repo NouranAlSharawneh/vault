@@ -12,7 +12,20 @@ const EDGE = 8;
  * A hover label for controls that show only an icon. The browser's own `title` can't be
  * styled and arrives too late to answer "what does this do?", so the app draws its own.
  */
-export function Tooltip({ label, keys, side = "bottom", children, className }: TooltipProps) {
+const ALIGN_CLASS = {
+  start: "left-0",
+  center: "left-1/2 -translate-x-1/2",
+  end: "right-0",
+} as const;
+
+export function Tooltip({
+  label,
+  keys,
+  side = "bottom",
+  align = "center",
+  children,
+  className,
+}: TooltipProps) {
   const [open, setOpen] = useState(false);
   const timer = useRef<ReturnType<typeof setTimeout>>(undefined);
 
@@ -57,8 +70,9 @@ export function Tooltip({ label, keys, side = "bottom", children, className }: T
           ref={place}
           role="tooltip"
           className={cx(
-            "pointer-events-none absolute left-1/2 z-50 -translate-x-1/2 animate-fade-in",
-            "rounded-xs bg-overlay px-1.5 py-1 text-2xs whitespace-nowrap text-overlay-ink shadow-pop",
+            "pointer-events-none absolute z-50 animate-fade-in",
+            ALIGN_CLASS[align],
+            "rounded-xs bg-overlay px-2 py-1 text-xs whitespace-nowrap text-overlay-ink shadow-pop",
             side === "bottom" ? "top-full mt-1.5" : "bottom-full mb-1.5",
           )}
         >

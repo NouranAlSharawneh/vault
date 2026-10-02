@@ -17,6 +17,19 @@ const SIZE_CLASS: Record<ButtonSize, string> = {
   sm: "h-6 px-2 text-xs",
   md: "",
   lg: "h-9 px-4 text-base",
+  // Icon-only: square, the icon centred. Every icon button used to be a text button
+  // squeezed with `w-7 px-0`, at four slightly different sizes.
+  icon: "w-7 justify-center px-0",
+  "icon-sm": "h-6 w-6 justify-center px-0 text-xs",
+};
+
+/** The spinner takes the size of the text it replaces. */
+const SPINNER_SIZE: Record<ButtonSize, 12 | 14> = {
+  sm: 12,
+  md: 14,
+  lg: 14,
+  icon: 14,
+  "icon-sm": 12,
 };
 
 /** The one button. `className` is merged last so callers can override anything. */
@@ -27,6 +40,7 @@ export function Button({
   tooltip,
   tooltipKeys,
   tooltipSide,
+  tooltipAlign,
   className,
   children,
   disabled,
@@ -41,13 +55,13 @@ export function Button({
       disabled={disabled || loading}
       {...rest}
     >
-      {loading && <Spinner />}
+      {loading && <Spinner size={SPINNER_SIZE[size]} />}
       {children}
     </button>
   );
 
   return tooltip ? (
-    <Tooltip label={tooltip} keys={tooltipKeys} side={tooltipSide}>
+    <Tooltip label={tooltip} keys={tooltipKeys} side={tooltipSide} align={tooltipAlign}>
       {el}
     </Tooltip>
   ) : (

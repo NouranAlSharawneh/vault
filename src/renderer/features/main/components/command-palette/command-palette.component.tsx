@@ -91,8 +91,7 @@ export function CommandPalette({
     <DialogShell
       label="Search"
       onClose={onClose}
-      backdropClassName="items-start bg-ink/25 pt-20"
-      className="dark flex h-105 w-165 max-w-[94vw] animate-pop-in flex-col overflow-hidden rounded-lg bg-overlay text-overlay-ink shadow-sheet"
+      className="dark flex h-105 max-h-full w-165 max-w-full animate-pop-in flex-col overflow-hidden rounded-lg bg-overlay text-overlay-ink shadow-sheet"
       initialFocus='input[aria-label="search"]'
     >
       <div className="flex items-center gap-2 border-b border-overlay-line px-4">
@@ -121,7 +120,7 @@ export function CommandPalette({
         />
         <Kbd dark>esc</Kbd>
       </div>
-      <div className="grid min-h-0 flex-1 grid-cols-[1.2fr_1fr]">
+      <div className="grid min-h-0 flex-1 grid-cols-palette">
         <div className="min-h-0 overflow-y-auto py-2">
           {p.groups.length === 0 && (
             <div className="px-4 py-6 text-sm text-overlay-ink-3">
@@ -167,7 +166,7 @@ export function CommandPalette({
                         onMouseMove={() => i !== activeIndex && p.setCursor(i)}
                         onClick={() => p.choose(item)}
                       >
-                        <Icon size={13} className="mt-0.5 shrink-0 text-overlay-ink-3" />
+                        <Icon size={14} className="mt-0.5 shrink-0 text-overlay-ink-3" />
                         <span className="min-w-0 flex-1">
                           {item.kind === "action" ? (
                             <span className="text-base">{item.label}</span>

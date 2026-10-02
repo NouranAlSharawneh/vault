@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react";
 import { Button, Card } from "@/components/ui";
 import { NEW_REPO_PATH, TOKEN_SETTINGS_PATH } from "@/data/onboarding.data";
 import { api, fire } from "@/lib/api";
+import { StepFooter } from "../step-footer/step-footer.component";
 import { useTokenSignIn } from "./hooks/use-token-sign-in.hook";
 import type { TokenFormProps } from "./token-form.types";
 
@@ -15,7 +16,7 @@ export function TokenForm({ onBack }: TokenFormProps) {
     <Card className="p-7">
       <h2 className="font-serif text-2xl font-medium text-ink">Paste a fine-grained token</h2>
       {/* The repo comes first: a token scoped to one repo can't create it afterwards. */}
-      <ol className="mt-3 list-decimal space-y-1.5 pl-4 text-sm text-ink-2">
+      <ol className="mt-4 list-decimal space-y-1.5 pl-4 text-sm text-ink-2">
         <li>
           Create a private repo for the vault at{" "}
           <Button
@@ -51,7 +52,7 @@ export function TokenForm({ onBack }: TokenFormProps) {
       <input
         ref={ref}
         type="password"
-        className="input mt-5 font-mono text-xs"
+        className="input mt-6 font-mono text-xs"
         placeholder="github_pat_…"
         value={token}
         onChange={(e) => setToken(e.target.value)}
@@ -59,19 +60,17 @@ export function TokenForm({ onBack }: TokenFormProps) {
         spellCheck={false}
       />
       {error && <div className="mt-2 text-xs text-cherry">{error}</div>}
-      <div className="mt-5 flex items-center justify-between">
-        <Button variant="subtle" onClick={onBack}>
-          Back
-        </Button>
+      <StepFooter onBack={onBack}>
         <Button
           variant="primary"
+          size="lg"
           loading={busy}
           disabled={!canSubmit}
           onClick={() => fire(submit())}
         >
           Sign in
         </Button>
-      </div>
+      </StepFooter>
     </Card>
   );
 }

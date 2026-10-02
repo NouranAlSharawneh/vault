@@ -120,7 +120,7 @@ export function Editor() {
 
   return (
     <div className="relative flex h-full flex-col">
-      <div className="flex h-12 shrink-0 items-center justify-between pr-4 pl-titlebar drag">
+      <div className="flex h-12 shrink-0 items-center justify-between pr-5 pl-titlebar drag">
         <span className="text-sm text-ink-3">
           {d.existingPath ?? target.path ?? "New document"}
         </span>
@@ -152,7 +152,8 @@ export function Editor() {
             storageKey="editor-split"
             left={
               <>
-                <div className="flex h-8 shrink-0 items-center justify-between px-6">
+                {/* Labels start on the text's own column, in both panes. */}
+                <div className="flex h-8 shrink-0 items-center justify-between px-measure">
                   <SectionLabel>Markdown</SectionLabel>
                   <span className="text-2xs text-ink-4">
                     {EDITOR_LEAVE_HINT} · {plural(words, "word")}
@@ -170,10 +171,11 @@ export function Editor() {
             }
             right={
               <>
-                <div className="flex h-8 shrink-0 items-center px-6">
+                <div className="flex h-8 shrink-0 items-center px-measure">
                   <SectionLabel>Preview</SectionLabel>
                 </div>
-                <div className="min-h-0 flex-1 overflow-y-auto px-8 pb-16">
+                {/* pt-5: the preview's first line sits level with the editor's. */}
+                <div className="min-h-0 flex-1 overflow-y-auto px-measure pt-5 pb-16">
                   <article className="mx-auto max-w-170">
                     {settledBody.trim() ? (
                       <Markdown source={settledBody} docPath={d.existingPath ?? d.pathPreview} />
@@ -185,14 +187,16 @@ export function Editor() {
               </>
             }
           />
-          <AssetPanel plan={plan} className="mx-4 mb-2" />
+          <AssetPanel plan={plan} className="mx-5 mb-2" />
           <MetadataBar
             meta={d.meta}
             inferredTitle={d.inferredTitle}
             onChange={d.setMeta}
             projects={projects}
             tags={tags}
-            lastProject={config?.lastProject ?? null}
+            // "last used" explains a new document's default. On a saved one the project is
+            // its own, whatever the last capture was.
+            lastProject={d.existingPath ? null : (config?.lastProject ?? null)}
           />
           <EditorFooter
             pathPreview={d.pathPreview}

@@ -13,10 +13,11 @@ export function ScopeItem({ granted, title, description }: ScopeItemProps) {
       <span
         className={cx(
           "mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full",
-          granted ? "bg-cherry text-white" : "bg-line-2 text-paper",
+          // The lock is a shape that has to be seen: paper on line-2 was 1.4:1.
+          granted ? "bg-cherry text-paper" : "bg-line text-ink-3",
         )}
       >
-        {granted ? <Check size={10} strokeWidth={3} /> : <Lock size={9} />}
+        {granted ? <Check size={10} strokeWidth={3} /> : <Lock size={10} />}
       </span>
       <div>
         <div className="text-sm font-medium text-ink">{title}</div>

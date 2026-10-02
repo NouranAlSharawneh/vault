@@ -1,10 +1,15 @@
 import { Minus, Plus } from "lucide-react";
 import { useRef, useState } from "react";
-import { Button } from "@/components/ui";
+import { Button, Segmented } from "@/components/ui";
 import { cx } from "@/helpers";
 import { useDiagramZoom } from "./hooks/use-diagram-zoom.hook";
 import { useMermaid } from "./hooks/use-mermaid.hook";
 import type { MermaidBlockProps, MermaidView } from "./mermaid-block.types";
+
+const VIEWS = [
+  { value: "rendered", label: "Rendered" },
+  { value: "code", label: "Code" },
+] as const;
 
 /** A ```mermaid fence: rendered diagram with zoom, and a toggle back to the source. */
 export function MermaidBlock({ code }: MermaidBlockProps) {
@@ -15,16 +20,19 @@ export function MermaidBlock({ code }: MermaidBlockProps) {
   const showZoom = view === "rendered" && !error && !!svg;
 
   return (
-    <div className="mermaid-block not-prose">
-      <div className="flex items-center justify-between gap-2 border-b border-line bg-paper-2 px-3 py-1.5">
-        <span className="text-2xs font-semibold tracking-widest text-ink-4 uppercase">Mermaid</span>
-        <div className="flex items-center gap-1">
+    // A container, so the header fits a narrow reader (the history drawer open): the label
+    // goes first, then the zoom percentage, instead of the controls running off the edge.
+    <div className="mermaid-block not-prose @container">
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line bg-paper-2 px-3 py-1.5">
+        <span className="hidden text-2xs font-semibold tracking-widest text-ink-4 uppercase @sm:inline">
+          Mermaid
+        </span>
+        <div className="ml-auto flex items-center gap-1">
           {showZoom && (
             <div className="mr-1 flex items-center gap-0.5">
               <Button
                 variant="ghost"
-                size="sm"
-                className="w-6 px-0"
+                size="icon-sm"
                 disabled={!z.canZoomOut}
                 onClick={z.zoomOut}
                 title="Zoom out"
@@ -35,7 +43,7 @@ export function MermaidBlock({ code }: MermaidBlockProps) {
               <Button
                 variant="ghost"
                 size="sm"
-                className="w-12 px-0 font-mono text-2xs tabular-nums"
+                className="hidden w-12 px-0 font-mono text-2xs tabular-nums @xs:inline-flex"
                 disabled={z.isDefault}
                 onClick={z.reset}
                 title="Reset to 100%"
@@ -45,8 +53,7 @@ export function MermaidBlock({ code }: MermaidBlockProps) {
               </Button>
               <Button
                 variant="ghost"
-                size="sm"
-                className="w-6 px-0"
+                size="icon-sm"
                 disabled={!z.canZoomIn}
                 onClick={z.zoomIn}
                 title="Zoom in"
@@ -56,29 +63,19 @@ export function MermaidBlock({ code }: MermaidBlockProps) {
               </Button>
             </div>
           )}
-          {(["rendered", "code"] as const).map((v) => (
-            <Button
-              key={v}
-              variant="ghost"
-              size="sm"
-              className={cx("capitalize", view === v && "bg-paper-3 text-ink")}
-              onClick={() => setView(v)}
-            >
-              {v}
-            </Button>
-          ))}
+          <Segmented label="Diagram view" options={VIEWS} value={view} onChange={setView} />
         </div>
       </div>
       {view === "code" || error ? (
         <pre className="m-0 rounded-none border-0">
           <code>{code}</code>
-          {error && <div className="mt-2 text-xs text-cherry">{error}</div>}
+          {error && <div className="mt-2 text-xs text-cherry-3">{error}</div>}
         </pre>
       ) : svg ? (
         <div
           ref={paneRef}
           className={cx(
-            "max-h-[70vh] overflow-auto p-4",
+            "max-h-diagram overflow-auto p-4",
             z.canPan && (z.dragging ? "cursor-grabbing select-none" : "cursor-grab"),
           )}
           {...z.panHandlers}

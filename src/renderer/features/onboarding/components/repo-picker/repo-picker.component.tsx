@@ -4,6 +4,7 @@ import { Button, Card, ListRow, Option, PathText, SectionLabel, Spinner } from "
 import { REPO_LIST_LIMIT } from "@/constants";
 import { cx } from "@/helpers";
 import { fire } from "@/lib/api";
+import { StepFooter } from "../step-footer/step-footer.component";
 import { useRepoPicker } from "./hooks/use-repo-picker.hook";
 import type { RepoPickerProps } from "./repo-picker.types";
 
@@ -13,19 +14,20 @@ export function RepoPicker({ onDone, onBack, preferLocal }: RepoPickerProps) {
   return (
     <Card className="p-7">
       <h2 className="font-serif text-2xl font-medium text-ink">Where should the vault live?</h2>
-      <p className="mt-1 text-sm text-ink-3">
+      <p className="mt-1.5 text-sm text-ink-3">
         One repo holds everything. You can move it later — it's just files.
       </p>
 
       {p.signedIn ? (
-        <div role="radiogroup" aria-label="Vault repository">
+        // The group spaces its options; an Option carries no margin of its own.
+        <div role="radiogroup" aria-label="Vault repository" className="mt-6 space-y-2">
           <Option
             selected={p.choice === "new"}
             onClick={() => p.setChoice("new")}
             badge={p.tokenUser ? undefined : "recommended"}
           >
             <div className="flex items-center gap-2">
-              <Plus size={13} className="text-ink-3" />
+              <Plus size={14} className="text-ink-3" />
               <span className="font-medium">Create a new private repo</span>
             </div>
             {p.choice === "new" && (
@@ -60,15 +62,15 @@ export function RepoPicker({ onDone, onBack, preferLocal }: RepoPickerProps) {
           </Option>
           <Option selected={p.choice === "local"} onClick={() => p.setChoice("local")}>
             <div className="flex items-center gap-2">
-              <Laptop size={13} className="text-ink-3" />
+              <Laptop size={14} className="text-ink-3" />
               <span className="font-medium">Keep it on this Mac for now</span>
             </div>
             <div className="mt-1 text-xs text-ink-3">
               A local git repo. Connect GitHub from Settings whenever you like.
             </div>
           </Option>
-          <SectionLabel className="mt-5">Or use one you have</SectionLabel>
-          <div className="relative mt-2">
+          <SectionLabel className="pt-4">Or use one you have</SectionLabel>
+          <div className="relative">
             <Search size={12} className="absolute top-2 left-2.5 text-ink-4" />
             <input
               className="input input-sm pl-7"
@@ -118,10 +120,11 @@ export function RepoPicker({ onDone, onBack, preferLocal }: RepoPickerProps) {
               >
                 <span
                   className={cx(
-                    "h-3 w-3 rounded-full border",
+                    "h-3 w-3 shrink-0 rounded-full border",
                     p.choice === r.fullName
                       ? "border-cherry bg-cherry ring-2 ring-paper ring-inset"
-                      : "border-line-2",
+                      : // A radio you can see before it's chosen: line-2 was 1.4:1.
+                        "border-ink-4",
                   )}
                 />
                 <span className="truncate font-mono">{r.fullName}</span>
@@ -165,19 +168,17 @@ export function RepoPicker({ onDone, onBack, preferLocal }: RepoPickerProps) {
           {p.submitError}
         </div>
       )}
-      <div className="mt-5 flex items-center justify-between">
-        <Button variant="subtle" onClick={onBack}>
-          Back
-        </Button>
+      <StepFooter onBack={onBack}>
         <Button
           variant="primary"
+          size="lg"
           loading={p.busy}
           disabled={!p.canSubmit}
           onClick={() => fire(p.submit())}
         >
-          Continue <ArrowRight size={13} />
+          Continue <ArrowRight size={14} />
         </Button>
-      </div>
+      </StepFooter>
     </Card>
   );
 }

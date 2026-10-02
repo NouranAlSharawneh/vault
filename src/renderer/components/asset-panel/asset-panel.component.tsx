@@ -19,7 +19,7 @@ export function AssetPanel({ plan, dark, className }: AssetPanelProps) {
   const strong = dark ? "text-overlay-ink" : "text-ink";
   const frame = cx(
     "rounded-md border px-3 py-2 text-xs",
-    dark ? "border-overlay-line bg-black/20" : "border-line bg-paper-2",
+    dark ? "border-overlay-line bg-overlay-well/50" : "border-line bg-paper-2",
     className,
   );
   // Said while it happens: the panel used to stay hidden until the search came back, and
@@ -35,7 +35,7 @@ export function AssetPanel({ plan, dark, className }: AssetPanelProps) {
   return (
     <div className={frame} data-testid="asset-panel">
       <div className="flex items-center gap-2">
-        <Image size={13} className={muted} />
+        <Image size={14} className={muted} />
         <span className={cx("shrink-0 font-medium", strong)}>
           {plural(plan.refs.length, "image")} referenced
         </span>
@@ -57,7 +57,7 @@ export function AssetPanel({ plan, dark, className }: AssetPanelProps) {
           className={cx("ml-auto shrink-0", dark && "text-overlay-ink-2 hover:bg-overlay-3")}
           onClick={() => fire(plan.chooseFolder())}
         >
-          <FolderOpen size={11} /> {plan.baseDir ? "Change folder" : "Choose folder…"}
+          <FolderOpen size={12} /> {plan.baseDir ? "Change folder" : "Choose folder…"}
         </Button>
       </div>
       <ul className="mt-1.5 max-h-20 space-y-0.5 overflow-y-auto">
@@ -119,7 +119,7 @@ export function AssetPanel({ plan, dark, className }: AssetPanelProps) {
       )}
       {plan.stranded > 0 && (
         <div className={cx("mt-1 flex items-center gap-1.5", dark ? "text-warn" : "text-warn-2")}>
-          <TriangleAlert size={11} />
+          <TriangleAlert size={12} />
           {plan.stranded === plan.refs.length
             ? plan.refs.length === 1
               ? "This image won't travel — the link will be broken in the saved doc."

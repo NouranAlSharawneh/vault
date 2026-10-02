@@ -60,8 +60,14 @@ export function DialogShell({
   }, [onClose]);
 
   return (
+    // One backdrop for every dialog: the same dim, faded in rather than snapped on, and a
+    // gutter so a panel capped at `max-w-full` / `max-h-full` never meets the window edge.
+    // There were three dims, and each panel carried its own viewport cap.
     <div
-      className={cx("absolute inset-0 z-30 flex justify-center", backdropClassName)}
+      className={cx(
+        "absolute inset-0 z-30 flex animate-fade items-start justify-center bg-ink/25 px-6 pb-6",
+        backdropClassName ?? "pt-20",
+      )}
       onMouseDown={onClose}
       role="presentation"
     >

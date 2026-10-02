@@ -73,7 +73,7 @@ export function Capture() {
       aria-modal="true"
       aria-label="Capture from clipboard"
       tabIndex={-1}
-      className="dark flex flex-col rounded-lg border border-overlay-line bg-overlay/95 text-overlay-ink backdrop-blur-xl outline-none"
+      className="dark flex flex-col rounded-lg border border-overlay-line bg-overlay text-overlay-ink outline-none"
     >
       <div className="flex items-center gap-2 px-5 pt-5 pb-4 text-base">
         <ArrowDownToLine size={14} className="text-overlay-ink-3" />

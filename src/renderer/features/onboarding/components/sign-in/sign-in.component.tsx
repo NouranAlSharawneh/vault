@@ -4,6 +4,7 @@ import { Button, Card, GitHubMark } from "@/components/ui";
 import { GITHUB_SCOPES } from "@/data/onboarding.data";
 import { DeviceFlow } from "../device-flow/device-flow.component";
 import { ScopeItem } from "../scope-item/scope-item.component";
+import { StepFooter } from "../step-footer/step-footer.component";
 import { TokenForm } from "../token-form/token-form.component";
 import { useAuthMethods } from "./hooks/use-auth-methods.hook";
 import type { SignInMode, SignInProps } from "./sign-in.types";
@@ -29,7 +30,7 @@ export function SignIn({ onBack, onLocal }: SignInProps) {
         No password is ever typed into this app. You approve once on github.com; the token lives in
         your macOS Keychain and is never written to the repo.
       </p>
-      <ul className="mt-5 space-y-2">
+      <ul className="mt-6 space-y-2">
         {GITHUB_SCOPES.map((s) => (
           <ScopeItem key={s.title} {...s} />
         ))}
@@ -45,7 +46,7 @@ export function SignIn({ onBack, onLocal }: SignInProps) {
             className="justify-center"
             onClick={() => setMode("device")}
           >
-            <GitHubMark size={14} /> Continue with GitHub <ArrowRight size={13} />
+            <GitHubMark size={14} /> Continue with GitHub <ArrowRight size={14} />
           </Button>
         ) : (
           <Button
@@ -54,26 +55,23 @@ export function SignIn({ onBack, onLocal }: SignInProps) {
             className="justify-center"
             onClick={() => setMode("token")}
           >
-            <KeyRound size={14} /> Paste a token <ArrowRight size={13} />
+            <KeyRound size={14} /> Paste a token <ArrowRight size={14} />
           </Button>
         )}
         {methods?.device && (
           <div className="flex items-center justify-center">
             <Button variant="subtle" onClick={() => setMode("token")}>
-              <KeyRound size={11} /> Paste a token instead
+              <KeyRound size={12} /> Paste a token instead
             </Button>
           </div>
         )}
       </div>
-      <div className="mt-6 flex items-center justify-between">
-        <Button variant="subtle" onClick={onBack}>
-          Back
-        </Button>
+      <StepFooter onBack={onBack}>
         {/* The same words as Welcome's link, for the same choice. */}
-        <Button variant="outline" onClick={onLocal}>
+        <Button variant="outline" size="lg" onClick={onLocal}>
           Start local, connect later
         </Button>
-      </div>
+      </StepFooter>
     </Card>
   );
 }

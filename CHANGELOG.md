@@ -65,6 +65,19 @@ To release: add a section for the new version here, run `npm run release -- <pat
 - Esc in the title, project or tag field no longer closes the editor.
 - Long documents stay quick to type in: the preview, word count and image check catch up once you pause.
 - Drafts are written so a crash can't leave half a file.
+- **Documents read the way they're written.** A third-level heading is no longer smaller than the text under it, a second top-level heading gets room above it, a list inside a list no longer leaves a paragraph's gap, a second paragraph in a list item keeps its space, task checkboxes hang where the bullet would be, a wide table scrolls inside the column instead of running past it, and badge rows stay square.
+- **With History open, the reader's toolbar and a diagram's header fit.** The view switch becomes three icons and the diagram drops its label rather than running into the buttons beside it.
+- **Things you have to see can be seen:** the selected result in ⌘K and in the capture sheet's menus and dropdowns (the dark ones no longer use the light pink), an unchosen repo in setup, the lock beside a permission GitHub won't grant, a toast's close button, and a diagram's error.
+- The editor's labels, text, find bar, metadata and footer start on one column, and the preview's first line sits level with the editor's. "last used" appears only on a new document's project.
+- Keys drawn on a button take the button's colour, and a dark key stays dark wherever it is.
+- Settings leaves room to scroll the Danger zone clear of a toast, and its nested rows no longer look like holes in the card.
+
+### Changed
+
+- **One set of parts, used everywhere:** square icon buttons at two sizes, one segmented control (the reader's views, a diagram's Rendered · Code), one dialog header, one empty-and-error layout, one shape for every field in the editor and the capture sheet, and one backdrop that fades in behind every dialog. Icons come in four sizes, not eight.
+- **Setup reads as one flow:** every step has the same spacing, the same large buttons, and a Back with its arrow in the same place.
+- The find bar is Marasca's own: its buttons, fields and checkboxes, laid out on three rows.
+- The capture sheet is solid rather than 95% see-through, its preview wraps long lines instead of scrolling sideways, and the dark sheets have dark scrollbars.
 
 ### Added
 

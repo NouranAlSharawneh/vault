@@ -6,19 +6,12 @@ import type { SourceSelectProps } from "./source-select.types";
 
 export function SourceSelect({ value, onChange, dark, hint }: SourceSelectProps) {
   return (
-    <div
-      className={cx(
-        "relative flex h-8 items-center rounded-sm border px-2",
-        dark
-          ? "border-overlay-line bg-overlay-2 focus-within:ring-2 focus-within:ring-cherry-3"
-          : "border-line bg-paper focus-within:ring-2 focus-within:ring-cherry",
-      )}
-    >
+    <div className="field relative">
       {/* The select fills the control. The hint and chevron used to be siblings beside
           it, so clicking either of them — or the gap — missed the select entirely. */}
       <select
         className={cx(
-          "min-w-0 flex-1 appearance-none bg-transparent text-sm outline-none",
+          "min-w-0 flex-1 appearance-none bg-transparent outline-none",
           hint ? "pr-16" : "pr-5",
           dark && "text-overlay-ink",
         )}
@@ -32,7 +25,7 @@ export function SourceSelect({ value, onChange, dark, hint }: SourceSelectProps)
           </option>
         ))}
       </select>
-      <div className="pointer-events-none absolute inset-y-0 right-2 flex items-center gap-1">
+      <div className="pointer-events-none absolute inset-y-0 right-2.5 flex items-center gap-1">
         {hint && <span className="text-2xs text-ink-4">{hint}</span>}
         <ChevronDown size={12} className="text-ink-4" />
       </div>

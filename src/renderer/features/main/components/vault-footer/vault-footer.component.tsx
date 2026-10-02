@@ -35,7 +35,7 @@ export function VaultFooter({ config, onSettings }: VaultFooterProps) {
           }
         >
           <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-sm bg-paper-3 text-ink-2">
-            {remote ? <GitHubMark size={13} /> : <FolderOpen size={13} />}
+            {remote ? <GitHubMark size={14} /> : <FolderOpen size={14} />}
           </span>
           <span className="flex min-w-0 flex-col leading-tight">
             <span className="truncate text-sm font-medium text-ink-2">{name ?? "Local vault"}</span>

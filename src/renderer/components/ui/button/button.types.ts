@@ -6,7 +6,8 @@ import type { ButtonHTMLAttributes, ReactNode, Ref } from "react";
  */
 export type ButtonVariant =
   "default" | "primary" | "outline" | "ghost" | "link" | "subtle" | "danger";
-export type ButtonSize = "sm" | "md" | "lg";
+/** sm h-6 · md h-7 · lg h-9 for hero actions · icon 28×28 · icon-sm 24×24 (icon-only). */
+export type ButtonSize = "sm" | "md" | "lg" | "icon" | "icon-sm";
 
 export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   ref?: Ref<HTMLButtonElement>;
@@ -19,4 +20,7 @@ export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   tooltipKeys?: string;
   /** Which way the tooltip opens. Default "bottom". */
   tooltipSide?: "top" | "bottom";
+  /** Which edge of the button the tooltip lines up with. Default "center"; "end" near a
+   *  panel's right edge, where a centred label would be clipped. */
+  tooltipAlign?: "start" | "center" | "end";
 }

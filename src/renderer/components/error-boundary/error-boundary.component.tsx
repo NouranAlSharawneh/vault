@@ -59,11 +59,11 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
                   window.location.reload();
                 }}
               >
-                <ArrowLeft size={11} /> Back to the vault
+                <ArrowLeft size={12} /> Back to the vault
               </Button>
             )}
             <Button variant="primary" size="sm" autoFocus onClick={() => window.location.reload()}>
-              <RotateCcw size={11} /> Reload this window
+              <RotateCcw size={12} /> Reload this window
             </Button>
           </div>
         </div>

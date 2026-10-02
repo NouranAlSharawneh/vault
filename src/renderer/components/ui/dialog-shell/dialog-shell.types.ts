@@ -6,7 +6,7 @@ export interface DialogShellProps {
   onClose: () => void;
   children: ReactNode;
   className?: string;
-  /** Backdrop classes: where the panel sits, and how dark the screen behind it goes. */
+  /** How far down the panel sits (`pt-16`). Default `pt-20`; the dim is the same for all. */
   backdropClassName?: string;
   /** Selector for what should hold focus when it opens. Defaults to the first control. */
   initialFocus?: string;

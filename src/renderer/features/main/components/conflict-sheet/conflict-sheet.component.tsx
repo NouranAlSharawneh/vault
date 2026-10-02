@@ -1,6 +1,6 @@
-import { Laptop, X } from "lucide-react";
+import { Laptop } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import { Button, DialogShell, Empty, GitHubMark, SectionLabel, Spinner } from "@/components/ui";
+import { Button, DialogHeader, DialogShell, Empty, GitHubMark, Spinner } from "@/components/ui";
 import { cx, describeResolution, errorMessage, plural } from "@/helpers";
 import { api } from "@/lib/api";
 import { useToast } from "@/stores/toast";
@@ -37,28 +37,18 @@ export function ConflictSheet({ onClose }: ConflictSheetProps) {
     <DialogShell
       label="review conflicting versions"
       onClose={onClose}
-      backdropClassName="items-start bg-ink/25 pt-16"
-      className="flex max-h-[80vh] w-235 max-w-[92vw] animate-pop-in flex-col overflow-hidden rounded-lg border border-line bg-paper shadow-sheet"
+      backdropClassName="pt-16"
+      className="flex max-h-full w-235 max-w-full animate-pop-in flex-col overflow-hidden rounded-lg border border-line bg-paper shadow-sheet"
     >
       <div data-testid="conflict-sheet" className="flex min-h-0 flex-col">
-        <header className="flex h-11 shrink-0 items-center justify-between gap-2 border-b border-line px-4">
-          <SectionLabel className="leading-none">
-            {pairs?.length
-              ? `${plural(pairs.length, "document")} changed in two places`
-              : "Versions"}
-          </SectionLabel>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="-mr-2 w-7 px-0"
-            onClick={onClose}
-            tooltip="Close"
-            tooltipKeys="Esc"
-            aria-label="close conflicts"
-          >
-            <X size={13} />
-          </Button>
-        </header>
+        <DialogHeader
+          className="border-b border-line"
+          title={
+            pairs?.length ? `${plural(pairs.length, "document")} changed in two places` : "Versions"
+          }
+          closeLabel="close conflicts"
+          onClose={onClose}
+        />
 
         {/* Loading, empty and failed all stand in the same room. Without a floor the
             sheet collapsed to a wide strip the moment the last pair was settled. */}
@@ -153,7 +143,7 @@ function ConflictRow({ pair, onResolved, settling, onSettling }: ConflictRowProp
       <div className="mt-2.5 grid grid-cols-2 gap-2">
         <VersionCard
           where="This Mac"
-          icon={<Laptop size={11} />}
+          icon={<Laptop size={12} />}
           when={relativeTime(pair.mine.mtime)}
           words={pair.mine.words}
           lines={versions?.mine ?? null}
@@ -171,7 +161,7 @@ function ConflictRow({ pair, onResolved, settling, onSettling }: ConflictRowProp
         />
         <VersionCard
           where="GitHub"
-          icon={<GitHubMark size={11} />}
+          icon={<GitHubMark size={12} />}
           when={relativeTime(pair.mark.at)}
           words={pair.theirs.words}
           lines={versions?.theirs ?? null}
