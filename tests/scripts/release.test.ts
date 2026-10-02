@@ -74,6 +74,9 @@ describe("release setup", () => {
     expect(wf).toContain("--publish never");
     expect(wf).toContain("--draft");
     expect(wf).toContain("npm run verify:sign");
+    // Settings ▸ Update installs from exactly these two files of the release.
+    expect(wf).toContain("shasum -a 256 *.dmg | tee SHA256SUMS.txt");
+    expect(wf).toMatch(/gh release create "\$TAG" release\/\*\.dmg release\/SHA256SUMS\.txt/);
     // The client ID is a variable, and no secret is ever passed to the build.
     expect(wf).not.toMatch(/CLIENT_SECRET/);
   });

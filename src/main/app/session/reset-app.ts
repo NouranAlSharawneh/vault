@@ -1,7 +1,7 @@
 import { rmSync } from "node:fs";
 import { app, BrowserWindow, dialog } from "electron";
 import { userDataDir } from "../../store/user-data-dir";
-import { dialogParent } from "../../windows";
+import { closeDocumentWindows, dialogParent } from "../../windows";
 import { session } from "./session";
 
 /** Sign out, forget the vault and the index cache, then relaunch at onboarding. The repo on disk is untouched. */
@@ -41,27 +41,4 @@ function resetDetail(unpushed: number): string {
     waiting +
     " Your markdown files and git history stay exactly where they are."
   );
-}
-
-/**
- * Close every editor window, letting each ask about unsaved text. False when one of them
- * was kept open.
- */
-async function closeDocumentWindows(): Promise<boolean> {
-  const others = BrowserWindow.getAllWindows().filter(
-    (w) => !w.isDestroyed() && /#editor/.test(w.webContents.getURL()),
-  );
-  await Promise.all(
-    others.map(
-      (w) =>
-        new Promise<void>((done) => {
-          w.once("closed", () => done());
-          // A window that cancels its close stays; give it a moment, then carry on counting.
-          setTimeout(done, 1500);
-          w.close();
-        }),
-    ),
-  );
-
-  return others.every((w) => w.isDestroyed());
 }

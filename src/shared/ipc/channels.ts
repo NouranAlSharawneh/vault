@@ -75,6 +75,8 @@ export const INVOKE_CHANNELS = [
   "app:version",
   "app:checkForUpdates",
   "app:updateStatus",
+  "app:installUpdate",
+  "app:updateInstall",
   "app:platform",
   "hotkey:status",
   "app:openExternal",
@@ -101,6 +103,7 @@ export const EVENT_CHANNELS = [
   "shortcut",
   "navigate",
   "app:updateStatus",
+  "app:updateInstall",
 ] as const satisfies readonly EventChannel[];
 
 /**

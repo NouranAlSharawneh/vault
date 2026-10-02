@@ -34,6 +34,7 @@ import type {
   Template,
   TrashedDoc,
   UpdateCheck,
+  UpdateInstall,
   VaultConfig,
 } from "../types";
 
@@ -173,6 +174,13 @@ export interface IpcInvoke {
   "app:checkForUpdates": () => UpdateCheck;
   /** The last update check's answer, from the background watch or a check by hand. */
   "app:updateStatus": () => UpdateCheck | null;
+  /**
+   * Download `version`, put it in place of this copy, quit and reopen on it. Resolves once
+   * Marasca has started quitting; a failure rejects and is also broadcast as "failed".
+   */
+  "app:installUpdate": (version: string) => void;
+  /** How far an update install has got, or whether this copy can install one at all. */
+  "app:updateInstall": () => UpdateInstall;
   "app:platform": () => NodeJS.Platform;
   /** Whether the capture shortcut is really bound, or another app is holding it. */
   "hotkey:status": () => HotkeyStatus;
@@ -215,6 +223,8 @@ export interface IpcEvents {
   "sync:status": SyncStatus;
   /** A check found something different: a new version, or none any more. */
   "app:updateStatus": UpdateCheck;
+  /** An update install moved on: downloading, installing, restarting, or failed. */
+  "app:updateInstall": UpdateInstall;
   "auth:state": AuthState;
   "git:status": GitStatus;
   "auth:deviceStatus": { status: DevicePollStatus };

@@ -35,7 +35,25 @@ This removes the "downloaded from the internet" flag, so the prompt never appear
 
 ## Updating
 
-Download the new DMG and replace the app in Applications. macOS asks you to confirm each new version once, the same way.
+From 0.0.5 on, Marasca updates itself. When a new version is out, the Settings gear gets a dot. Click **Update to X** in Settings ▸ Updates, or **Update and Restart** in Marasca ▸ Check for Updates…. Marasca then:
+
+1. downloads the new version's DMG from the release and checks it against the release's `SHA256SUMS.txt`;
+2. copies the new app out of it, and checks that it is Marasca, the version asked for, with a signature that matches its files;
+3. quits, the same way as ⌘Q, so anything waiting to be pushed is pushed first. Editor windows with unsaved changes ask first. If you keep one open, the update stops, and the next click skips the download;
+4. swaps the new app in where the old one was, and reopens it.
+
+macOS doesn't show the "could not verify" prompt for an update, because Marasca downloaded it itself.
+
+After an update, macOS may ask once whether Marasca can use **"Marasca Safe Storage"** in your keychain. That's where your GitHub sign-in is encrypted. Click **Always Allow**. It asks because every build has its own ad-hoc signature. A Developer ID signature would stop it (see below).
+
+**When Marasca can't replace itself, it opens the download page instead and says why.** That happens when:
+
+- the app is in a folder you can't write to without an administrator;
+- it is running from the DMG or from a temporary copy macOS made.
+
+Then update the old way: run the one-line install again, or download the new DMG and replace the app in Applications. The swap writes what it did to `~/Library/Logs/Marasca/update.log`.
+
+Before 0.0.5, there is no in-app update. Use the one-line install, or download the DMG and replace the app.
 
 ## "Marasca is damaged and can't be opened"
 
@@ -46,4 +64,5 @@ That message means the app's signature doesn't match its files. Usually the down
 - `build.mac.identity` is `"-"` (ad-hoc). It is free, and on Apple Silicon it turns _"damaged"_ into the recoverable _"could not verify"_ prompt above.
 - `hardenedRuntime` is off. With an ad-hoc identity it breaks library validation for Electron's frameworks, and it only matters for notarization.
 - Check a build with `npm run verify:sign`.
-- To notarize later (Apple Developer Program, $99/yr): set `identity` to the _Developer ID Application_ certificate, turn `hardenedRuntime` back on, add entitlements, and set `notarize: true`. Auto-update (Squirrel.Mac) also needs that.
+- To notarize later (Apple Developer Program, $99/yr): set `identity` to the _Developer ID Application_ certificate, turn `hardenedRuntime` back on, add entitlements, and set `notarize: true`. Squirrel.Mac (`electron-updater`) also needs that, which is why Marasca has its own updater.
+- **The in-app update reads two files from each release:** `Marasca-<version>-arm64.dmg` and `SHA256SUMS.txt`, both uploaded by `release.yml`. A release without either can't be installed from inside the app.

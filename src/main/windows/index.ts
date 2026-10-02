@@ -18,3 +18,4 @@ export {
 export { IS_MAC } from "./load-route";
 export { dialogParent } from "./dialog-parent";
 export { hardenWebContents, isAppUrl, isSafeExternal } from "./harden";
+export { closeDocumentWindows } from "./close-document-windows";

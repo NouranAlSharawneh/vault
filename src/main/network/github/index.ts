@@ -7,5 +7,6 @@ export { pollDeviceFlow } from "./poll-device-flow";
 export { openOnGitHub } from "./open-on-github";
 export { refreshAccessToken } from "./refresh-token";
 export { listReleases } from "./list-releases";
+export { getRelease } from "./get-release";
 export { toCredentials } from "./token-grant";
 export { fetchUserWithExpiry, parseTokenExpiry } from "./token-expiry";

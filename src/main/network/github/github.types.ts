@@ -44,6 +44,14 @@ export interface RawRelease {
   html_url: string;
   draft: boolean;
   prerelease: boolean;
+  assets: RawReleaseAsset[];
+}
+
+/** A file attached to a release: the DMG, SHA256SUMS.txt. */
+export interface RawReleaseAsset {
+  name: string;
+  browser_download_url: string;
+  size: number;
 }
 
 export interface RefreshParams {

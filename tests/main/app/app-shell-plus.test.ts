@@ -1,6 +1,11 @@
 import { describe, expect, it, vi } from "vitest";
 
 vi.mock("electron", () => ({ nativeImage: {}, app: {}, BrowserWindow: {}, dialog: {}, shell: {} }));
+// The dialog's wording is under test here, not the install it starts.
+vi.mock("@main/app/updates/update-install", () => ({
+  installUpdate: vi.fn(),
+  updateInstallState: vi.fn(),
+}));
 
 import { diagnosticsText } from "@main/app/diagnostics/diagnostics";
 import { updateMessage } from "@main/app/menu/check-updates-from-menu";
@@ -152,13 +157,23 @@ describe("Help ▸ Keyboard Shortcuts", () => {
 });
 
 describe("Check for Updates…", () => {
-  it("offers the download only when there is something newer", () => {
-    expect(
-      updateMessage({ status: "available", current: "0.0.2", latest: "0.1.0", url: "u" }),
-    ).toMatchObject({ message: "Marasca 0.1.0 is available", url: "u" });
-    expect(updateMessage({ status: "up-to-date", current: "0.1.0", latest: "0.1.0" }).url).toBe(
-      undefined,
-    );
+  const newer = { status: "available", current: "0.0.2", latest: "0.1.0", url: "u" } as const;
+
+  it("offers to install only when there is something newer", () => {
+    expect(updateMessage(newer)).toMatchObject({
+      message: "Marasca 0.1.0 is available",
+      url: "u",
+      install: "0.1.0",
+    });
+    const current = updateMessage({ status: "up-to-date", current: "0.1.0", latest: "0.1.0" });
+    expect(current.url).toBe(undefined);
+    expect(current.install).toBe(undefined);
+  });
+
+  it("offers the download page, and says why, where this copy can't replace itself", () => {
+    const answer = updateMessage(newer, { phase: "manual", reason: "No room here." });
+    expect(answer.install).toBe(undefined);
+    expect(answer).toMatchObject({ url: "u", detail: expect.stringContaining("No room here.") });
   });
 });
 
