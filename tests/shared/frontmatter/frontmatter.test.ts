@@ -106,6 +106,36 @@ describe("frontmatter", () => {
     expect(parseDoc("body\n\n---\n\n```yaml\ntitle: [unclosed\n```\n").frontmatter).toBeNull();
   });
 
+  it("keeps every byte of a file whose block doesn't read as metadata", () => {
+    // The body used to come back with the block cut out, and the next save wrote the
+    // file without it — the text after the rule was gone.
+    const broken = "body\n\n---\n\n```yaml\ntitle: [unclosed\n```\n";
+    expect(parseDoc(broken).body).toBe(broken);
+    const dupes = "---\ntitle: a\ntitle: b\n---\n\nText.\n";
+    expect(parseDoc(dupes).frontmatter).toBeNull();
+    expect(parseDoc(dupes).body).toBe(dupes);
+  });
+
+  it("does not take a note's closing YAML example for its metadata", () => {
+    const note = "# Deploy notes\n\nIntro.\n\n---\n\n```yaml\nreplicas: 3\n```\n";
+    const parsed = parseDoc(note);
+    expect(parsed.frontmatter).toBeNull();
+    expect(parsed.body).toBe(note);
+  });
+
+  it("round-trips tags with brackets, commas and hashes in them", () => {
+    const fm = { ...parseDoc(SAMPLE).frontmatter!, tags: ["a]b", "x[1]", "a,b", "#x", "spec"] };
+    const out = composeDoc(fm, "Body.");
+    expect(parseDoc(out).frontmatter?.tags).toEqual(["a]b", "x[1]", "a,b", "x", "spec"]);
+    expect(out).toContain("tags: [");
+  });
+
+  it("leaves a missing created date missing instead of stamping 1970", () => {
+    const parsed = parseDoc("Body.\n\n---\n\n```yaml\ntitle: T\nsource: manual\n```\n");
+    expect(parsed.frontmatter?.created).toBe("");
+    expect(composeDoc(parsed.frontmatter!, parsed.body)).not.toContain("created:");
+  });
+
   it("normalises tags given as a string with hashes", () => {
     expect(parseDoc('---\ntitle: t\ntags: "#a, #b"\n---\nx').frontmatter?.tags).toEqual(["a", "b"]);
   });

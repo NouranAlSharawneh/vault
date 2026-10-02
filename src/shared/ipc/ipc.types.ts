@@ -80,7 +80,7 @@ export interface IpcInvoke {
   "doc:history": (path: string) => CommitInfo[];
   "doc:restore": (path: string, sha: string) => SaveResult;
   "doc:diff": (path: string, sha: string) => string;
-  "doc:pathPreview": (project: string, title: string) => string;
+  "doc:pathPreview": (project: string, title: string, existingPath?: string) => string;
 
   /** Unsaved editor text, parked outside the vault. `key` is a doc path, or `untitled:<id>`. */
   "draft:save": (key: string, draft: StoredDraft) => void;

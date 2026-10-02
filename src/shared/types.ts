@@ -49,6 +49,8 @@ export interface DocContent {
   meta: DocMeta;
   body: string;
   raw: string;
+  /** Fingerprint of `raw`, sent back with a save so a change made since can be noticed. */
+  hash?: string;
 }
 
 /** One relative image/media path in a body, checked against a base folder. */
@@ -87,6 +89,12 @@ export interface SaveRequest {
    * wrote the file and that version is committed before this one lands on top of it.
    */
   baseMtime?: number;
+  /**
+   * `DocContent.hash` of the text the editor loaded. The mtime alone cannot tell a pull
+   * or a star toggle from nothing: those commit, so the file is clean again by the time
+   * this save lands, and the older text went on top of them unannounced.
+   */
+  baseHash?: string;
   /** Commit + push, or just write to disk. */
   commit: boolean;
   assets?: AssetImport;
@@ -111,6 +119,8 @@ export interface StoredDraft {
 
 export interface SaveResult {
   path: string;
+  /** Fingerprint of the text now on disk — the next save's `baseHash`. */
+  hash?: string;
   /**
    * Set when the file had been changed outside Marasca since the editor loaded it. That
    * version was committed first, so it is one entry back in the document's history.
@@ -120,6 +130,11 @@ export interface SaveResult {
   assets?: string[];
   meta: DocMeta;
   committed: boolean;
+  /**
+   * Set when the file was written but the commit failed. The document is on disk at
+   * `path`, so a retry must continue from there rather than start a new one.
+   */
+  commitError?: string;
   /**
    * False when the save left the document exactly as it was — same text, same place, and
    * (for a commit) nothing new to record. Saying "Saved" then would claim work that did
@@ -200,7 +215,16 @@ export interface SearchHit {
  * different answer from the user: a token that is gone, and a repo that is readable but
  * not writable. As a bare message they both read "couldn't push — retry", forever.
  */
-export type PushFailure = "offline" | "bad-credentials" | "no-permission" | "other";
+export type PushFailure =
+  | "offline"
+  | "bad-credentials"
+  | "no-permission"
+  /** GitHub refused the commits themselves — a secret push protection found, a file over
+   * 100 MB. Asking again sends the same commits, so it is never retried. */
+  | "blocked"
+  /** The repo isn't there, or this account can no longer see it. */
+  | "not-found"
+  | "other";
 
 /** Only ever about pushing. Two versions of a document is a separate fact — see `conflicts`. */
 export type SyncState = "synced" | "pending" | "pushing" | "offline" | "error";
@@ -221,6 +245,8 @@ export interface SyncStatus {
   conflicts: number;
   /** What the last failure was, so the UI can say what to do; null once a push lands. */
   failure: PushFailure | null;
+  /** Which way the failure was going: a failed pull is not a failed push. */
+  failedOp?: "push" | "pull" | null;
 }
 
 /**

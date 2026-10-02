@@ -68,6 +68,11 @@ export const ASSET_MIME: Record<string, string> = {
 export const ASSETS_DIR = "assets";
 /** Above this a referenced file is flagged before it goes into git for good. */
 export const ASSET_WARN_BYTES = 10 * 1024 * 1024;
+/**
+ * GitHub refuses any file over 100 MB, and a commit carrying one blocks every push after
+ * it until history is rewritten. Such a file is never copied into the vault.
+ */
+export const ASSET_MAX_BYTES = 100 * 1024 * 1024;
 
 // ---- finding the folder relative refs belong to -----------------------------------
 /** How many refs are used as probes when working out the folder on our own. */
@@ -139,6 +144,8 @@ export const GIT_SHELL_PROBE_TIMEOUT_MS = 3_000;
 export const GIT_INSTALL_POLL_MS = 3_000;
 /** Give up waiting for the installer after this long; the user can start it again. */
 export const GIT_INSTALL_WAIT_MS = 60 * 60_000;
+/** How long a quit waits for the last push before closing anyway. */
+export const QUIT_PUSH_WAIT_MS = 5_000;
 /** What `/usr/bin/git` exits with when the Xcode licence hasn't been accepted. */
 export const GIT_LICENSE_EXIT_CODE = 69;
 /** The one command that fixes `license`; shown so it can be copied. */

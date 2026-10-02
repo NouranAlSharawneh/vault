@@ -40,7 +40,7 @@ export function Editor() {
   const plan = useAssetPlan({
     body: d.body,
     project: d.meta.project,
-    sourceDir: d.sourcePath ? parentDir(d.sourcePath) : null,
+    sourceDir: d.sourcePath ? parentDir(d.sourcePath) : docFolder(config?.root, d.existingPath),
   });
   const guard = useUnsavedGuard(d.dirty);
   useDocumentEdited(d.dirty);
@@ -141,6 +141,7 @@ export function Editor() {
                   onChange={d.setBody}
                   onSubmit={commit}
                   placeholder={EDITOR_PLACEHOLDER}
+                  readOnly={!!d.saving}
                   autoFocus
                 />
               </>
@@ -199,4 +200,15 @@ export function Editor() {
       />
     </div>
   );
+}
+
+/**
+ * The folder a vault document's relative images resolve against: its own. Without it an
+ * existing document's `assets/x.png` was looked for elsewhere — reported missing, or
+ * found in the vault by Spotlight and copied in again as `x-2.png` on every save.
+ */
+function docFolder(root: string | undefined, path: string | null): string | null {
+  if (!root || !path) return null;
+
+  return path.includes("/") ? `${root}/${parentDir(path)}` : root;
 }

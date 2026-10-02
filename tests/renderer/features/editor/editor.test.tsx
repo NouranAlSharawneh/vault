@@ -50,6 +50,8 @@ describe("Editor", () => {
     });
     render(<Editor />);
     await screen.findByRole("heading", { name: "Half a thought" });
+    // The recovered text shows a tick before the window counts as open; let it finish.
+    await act(() => new Promise((r) => setTimeout(r, 0)));
 
     act(() => {
       emit("shortcut", "save");
@@ -80,6 +82,72 @@ describe("Editor", () => {
     await waitFor(() =>
       expect(invoke).toHaveBeenCalledWith("editor:setPath", "inbox/half-a-thought.md"),
     );
+  });
+
+  describe("a document that opens", () => {
+    const SPEC = {
+      meta: {
+        path: "atlas-api/spec.md",
+        title: "Spec",
+        project: "Atlas API",
+        tags: ["spec"],
+        source: "manual",
+        created: "2026-01-01T10:00:00Z",
+        mtime: 1,
+      },
+      body: "# Spec\n\nThe text on disk.",
+      raw: "",
+      hash: "abc",
+    };
+
+    it("opens clean: loading the file is not an edit", async () => {
+      // Loading the text into the editor used to be reported back as typing: every
+      // document opened marked unsaved and parked a copy of itself as a draft.
+      window.location.hash = "#editor?path=atlas-api/spec.md";
+      const { invoke } = mockMarascaApi({
+        "doc:read": SPEC,
+        "draft:load": null,
+        "doc:pathPreview": () => "atlas-api/spec.md",
+      });
+      render(<Editor />);
+      await screen.findByRole("heading", { name: "Spec" });
+      await act(() => new Promise((r) => setTimeout(r, 0)));
+
+      expect(invoke).not.toHaveBeenCalledWith("window:setEdited", true);
+      expect(document.title).not.toContain("•");
+    });
+
+    it("puts back unsaved text left from last time, over the file's", async () => {
+      window.location.hash = "#editor?path=atlas-api/spec.md";
+      mockMarascaApi({
+        "doc:read": SPEC,
+        "draft:load": { ...PARKED, body: "# Spec\n\nTyped before the crash." },
+        "doc:pathPreview": () => "atlas-api/spec.md",
+      });
+      render(<Editor />);
+
+      await screen.findByText("Typed before the crash.");
+      await act(() => new Promise((r) => setTimeout(r, 0)));
+      expect(screen.queryByText("The text on disk.")).toBeNull();
+    });
+
+    it("sends back what it loaded, so a change made since can be noticed", async () => {
+      window.location.hash = "#editor?path=atlas-api/spec.md";
+      vi.spyOn(window, "close").mockImplementation(() => undefined);
+      const { invoke } = mockMarascaApi({
+        "doc:read": SPEC,
+        "draft:load": null,
+        "doc:pathPreview": () => "atlas-api/spec.md",
+        "doc:save": () => new Promise(() => undefined),
+      });
+      render(<Editor />);
+      await screen.findByRole("heading", { name: "Spec" });
+      await act(() => new Promise((r) => setTimeout(r, 0)));
+      fireEvent.click(screen.getByRole("button", { name: /Save without committing/ }));
+
+      await waitFor(() => expect(docSaves(invoke)).toHaveLength(1));
+      expect(docSaves(invoke)[0][1]).toMatchObject({ baseHash: "abc" });
+    });
   });
 
   describe("a document that can't be read", () => {

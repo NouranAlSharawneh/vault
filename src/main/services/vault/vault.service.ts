@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { EventEmitter } from "node:events";
 import { promises as fs, existsSync } from "node:fs";
 import { dirname, join } from "node:path";
@@ -76,6 +77,7 @@ export class VaultService extends EventEmitter {
   async open(): Promise<IndexSnapshot> {
     await fs.mkdir(this.root, { recursive: true });
     if (!(await this.git.isRepo())) await GitService.init(this.root, this.config.branch);
+    await this.git.clearStaleLock();
     await this.git.ensureIdentity(GIT_IDENTITY.name, GIT_IDENTITY.email);
     await this.ensureScaffold();
     const snap = await this.index.load();
@@ -88,7 +90,16 @@ export class VaultService extends EventEmitter {
 
   async close(): Promise<void> {
     this.syncEngine.stop();
+    // Let a save or a push already under way finish, so a quit or a reopen never cuts a
+    // commit in half — but not for ever: a network call can hang.
+    await Promise.race([this.git.exclusive(async () => undefined), delay(CLOSE_WAIT_MS)]);
     await this.index.close();
+    this.removeAllListeners();
+  }
+
+  /** Push what is waiting, for a quit. */
+  async flush(): Promise<void> {
+    await this.syncEngine.flush();
   }
 
   private async ensureScaffold(): Promise<void> {
@@ -105,19 +116,43 @@ export class VaultService extends EventEmitter {
   async read(relPath: string): Promise<DocContent> {
     const raw = await fs.readFile(assertInside(this.root, relPath), "utf8");
     const { body } = parseDoc(raw);
-    const meta = this.index.get(relPath) ?? (await this.index.refreshFile(relPath));
+    // Read afresh with the text rather than from the index, which trails the disk by the
+    // watcher's debounce: the editor loaded the new body with the old tags, and its save
+    // wrote the old tags back.
+    const meta = (await this.index.refreshFile(relPath)) ?? this.index.get(relPath);
     if (!meta) throw new Error(`Not in index: ${relPath}`);
 
-    return { meta, body, raw };
+    return { meta, body, raw, hash: fingerprint(raw) };
   }
 
   pathFor(project: string, title: string): string {
     return `${projectSlug(project)}/${slugify(title)}.md`;
   }
 
-  /** Path preview for the editor footer. */
-  previewPath(project: string, title: string): string {
-    return this.pathFor(project, title || "untitled");
+  /** Path preview for the editor footer: where a save would really land, `-2` and all. */
+  previewPath(project: string, title: string, existingPath?: string): string {
+    return this.targetFor(project, title || "untitled", existingPath);
+  }
+
+  /**
+   * Where a document with this project and title belongs. One that lives outside its
+   * project's folder — nested in `research/2024/`, or at the vault root — stays where it
+   * is unless its title or project really changed: the first save of such a note, or
+   * starring it, used to move it into the canonical folder.
+   */
+  private targetFor(project: string, title: string, existingPath?: string): string {
+    const wanted = this.pathFor(project, title);
+    const prior = existingPath ? this.index.get(existingPath) : undefined;
+    if (
+      existingPath &&
+      prior &&
+      folderOf(existingPath) !== folderOf(wanted) &&
+      projectSlug(project) === prior.projectSlug &&
+      slugify(title) === slugify(prior.title)
+    )
+      return existingPath;
+
+    return this.uniquePath(wanted, existingPath);
   }
 
   /** The wanted path, or the next free `-2` variant of it. Part of VaultContext. */
@@ -130,21 +165,19 @@ export class VaultService extends EventEmitter {
    * README into the same commit → update index → schedule push.
    */
   async save(req: SaveRequest): Promise<SaveResult> {
-    if (req.existingPath) assertInside(this.root, req.existingPath);
-    const title = (req.frontmatter.title || inferTitle(req.body) || "Untitled").trim();
-    const { before, created, extra } = await this.readExisting(req);
-    const fm: Frontmatter = {
-      title,
-      project: (req.frontmatter.project ?? "").trim(),
-      tags: [
-        ...new Set(req.frontmatter.tags.map((t) => t.replace(/^#/, "").trim()).filter(Boolean)),
-      ],
-      created: created ?? new Date().toISOString(),
-      source: req.frontmatter.source,
-    };
-    if (req.frontmatter.starred) fm.starred = true;
+    return this.git.exclusive(() => this.saveNow(req));
+  }
 
-    const target = this.uniquePath(this.pathFor(fm.project, fm.title), req.existingPath);
+  /** `save`, for callers already holding the repo. */
+  private async saveNow(req: SaveRequest): Promise<SaveResult> {
+    if (req.existingPath) assertInside(this.root, req.existingPath);
+    await this.leaveStaleRebase();
+    const title = (req.frontmatter.title || inferTitle(req.body) || "Untitled").trim();
+    const existing = await this.readExisting(req);
+    const { before, extra } = existing;
+    const fm = frontmatterFor(req, title, existing);
+
+    const target = this.targetFor(fm.project, fm.title, req.existingPath);
     const abs = join(this.root, target);
     await fs.mkdir(dirname(abs), { recursive: true });
 
@@ -152,11 +185,11 @@ export class VaultService extends EventEmitter {
     // second Marasca window. Its version is committed before ours lands on top, so it is
     // one entry back in the history drawer rather than gone. We do not refuse the save:
     // the user is mid-thought, and their text is the one thing that must not be lost.
-    const preservedExternalEdit = await this.preserveExternalEdit(req, title);
+    const preservedExternalEdit = await this.preserveExternalEdit(req, title, before);
 
     const isNew = !req.existingPath;
     const moved = !!req.existingPath && req.existingPath !== target;
-    if (moved) await this.git.mv(req.existingPath!, target);
+    if (moved) await this.moveForSave(req.existingPath!, target, req.commit);
 
     let body = req.body;
     let assets: string[] = [];
@@ -173,14 +206,46 @@ export class VaultService extends EventEmitter {
     if (moved) this.index.remove(req.existingPath!);
 
     const verb = isNew ? "add" : moved ? "move" : "update";
-    const committed =
-      req.commit && (await this.commitSave([target, ...assets], `${verb}: ${title}`));
+    const { committed, commitError } = req.commit
+      ? await this.tryCommitSave([target, ...assets], `${verb}: ${title}`)
+      : { committed: false, commitError: undefined };
     this.emit("index", this.index.snapshot());
     // A commit that found nothing staged means the file already read this way in git —
     // even if an earlier local-only save had changed it, that is what was just recorded.
-    const changed = req.commit ? committed : rewritten;
+    const changed = req.commit && !commitError ? committed : rewritten;
 
-    return { path: target, meta, committed, changed, assets, preservedExternalEdit };
+    return {
+      path: target,
+      hash: fingerprint(text),
+      meta,
+      committed,
+      changed,
+      assets,
+      preservedExternalEdit,
+      ...(commitError ? { commitError } : {}),
+    };
+  }
+
+  /**
+   * Move the file a save is renaming. A missing source is not an error — it was trashed,
+   * renamed in Finder or removed by a pull while the editor had it open, and the new text
+   * is about to be written at the target anyway; asking git to move it failed with "bad
+   * source", every time, until the window was closed. A save that won't commit moves the
+   * file without staging anything, so the rename can't ride along in some later commit.
+   */
+  private async moveForSave(from: string, to: string, commit: boolean): Promise<void> {
+    if (!existsSync(join(this.root, from))) return;
+    if (commit) await this.git.mv(from, to);
+    else await fs.rename(join(this.root, from), join(this.root, to));
+  }
+
+  /**
+   * A rebase left over from a crash, with nothing of ours in it yet: committing onto its
+   * detached HEAD is how saves used to vanish. The branch it would restore holds every
+   * commit made before it started, and the next pull redoes it properly.
+   */
+  private async leaveStaleRebase(): Promise<void> {
+    if (this.git.rebaseInProgress()) await this.git.abortRebase();
   }
 
   /**
@@ -190,16 +255,37 @@ export class VaultService extends EventEmitter {
   private async readExisting(req: SaveRequest): Promise<ExistingDoc> {
     const path = req.existingPath;
     if (!path || !existsSync(join(this.root, path))) {
-      return { before: null, created: req.frontmatter.created, extra: {} };
+      return { before: null, created: req.frontmatter.created, extra: {}, starred: undefined };
     }
     const before = await fs.readFile(join(this.root, path), "utf8");
     const prev = parseDoc(before);
+    // Starring is a commit of its own, made from the main window while an editor may have
+    // this document open with the old flag. When the file moved on since the editor
+    // loaded it, the file's star is the newer one.
+    const movedOn = !!req.baseHash && fingerprint(before) !== req.baseHash;
 
     return {
       before,
-      created: req.frontmatter.created ?? prev.frontmatter?.created,
+      created: req.frontmatter.created || prev.frontmatter?.created,
       extra: prev.extra,
+      starred: movedOn ? !!prev.frontmatter?.starred : undefined,
     };
+  }
+
+  /**
+   * The file is written. If the commit fails now, the caller still has to learn where it
+   * went: before, it kept the old path, so a retry wrote a `-2` copy beside a new doc, or
+   * asked git to move a renamed one from a path that was already empty.
+   */
+  private async tryCommitSave(
+    paths: string[],
+    message: string,
+  ): Promise<{ committed: boolean; commitError: string | undefined }> {
+    try {
+      return { committed: await this.commitSave(paths, message), commitError: undefined };
+    } catch (e) {
+      return { committed: false, commitError: e instanceof Error ? e.message : String(e) };
+    }
   }
 
   /** Commit a save and queue its push. False when git found nothing new to record. */
@@ -215,35 +301,55 @@ export class VaultService extends EventEmitter {
    * editor loaded it. Returns true only when there was a real change to keep — a touched
    * file with identical contents stages nothing, and an empty commit is not worth making.
    */
-  private async preserveExternalEdit(req: SaveRequest, title: string): Promise<boolean> {
-    if (!req.existingPath || !req.baseMtime) return false;
-    const abs = join(this.root, req.existingPath);
-    if (!existsSync(abs)) return false;
-    const { mtimeMs } = await fs.stat(abs);
-    // Filesystems round mtimes differently; only a clearly later write counts.
-    if (mtimeMs <= req.baseMtime + MTIME_SLACK_MS) return false;
-    const changed = (await this.git.git.status()).files.some((f) => f.path === req.existingPath);
-    if (!changed) return false;
-    await this.git.commitPaths([req.existingPath], `external: ${title}`);
+  private async preserveExternalEdit(
+    req: SaveRequest,
+    title: string,
+    before: string | null,
+  ): Promise<boolean> {
+    // A save that won't commit has nothing to commit the other version with — and saying
+    // "kept in history" would be untrue. That text stays in the file's own history.
+    if (!req.commit || !req.existingPath || before === null) return false;
+    if (req.baseHash) {
+      if (fingerprint(before) === req.baseHash) return false;
+    } else {
+      if (!req.baseMtime) return false;
+      const { mtimeMs } = await fs.stat(join(this.root, req.existingPath));
+      // Filesystems round mtimes differently; only a clearly later write counts.
+      if (mtimeMs <= req.baseMtime + MTIME_SLACK_MS) return false;
+    }
+    const uncommitted = (await this.git.git.status()).files.some(
+      (f) => f.path === req.existingPath,
+    );
+    // Committed already — a pull brought it, or a star toggle wrote it. It is in history,
+    // so nothing needs keeping; but the save is still landing on top of a version the
+    // editor never saw, and that is said rather than done quietly.
+    if (uncommitted) await this.git.commitPaths([req.existingPath], `external: ${title}`);
 
     return true;
   }
 
   async setStarred(relPath: string, starred: boolean): Promise<DocMeta> {
-    const { body, meta } = await this.read(relPath);
-    const res = await this.save({
-      body,
-      frontmatter: { ...pickFrontmatter(meta), starred },
-      existingPath: relPath,
-      commit: true,
-    });
+    return this.git.exclusive(async () => {
+      const { body, meta } = await this.read(relPath);
+      const res = await this.saveNow({
+        body,
+        frontmatter: { ...pickFrontmatter(meta), starred },
+        existingPath: relPath,
+        commit: true,
+      });
 
-    return res.meta;
+      return res.meta;
+    });
   }
 
   /** PRD Q5: move to `.trash/` (scanner skips it) rather than `git rm`. */
   async trash(relPath: string): Promise<TrashedDoc> {
+    return this.git.exclusive(() => this.trashNow(relPath));
+  }
+
+  private async trashNow(relPath: string): Promise<TrashedDoc> {
     assertInside(this.root, relPath);
+    await this.leaveStaleRebase();
     const dest = this.uniquePath(`${TRASH_DIR}/${relPath}`);
     await fs.mkdir(dirname(join(this.root, dest)), { recursive: true });
     const meta = this.index.get(relPath) ?? (await this.index.readMeta(relPath));
@@ -273,11 +379,11 @@ export class VaultService extends EventEmitter {
   }
 
   async restoreFromTrash(path: string): Promise<SaveResult> {
-    return restoreFromTrash(this, path);
+    return this.git.exclusive(() => restoreFromTrash(this, path));
   }
 
   async purgeTrash(path?: string): Promise<{ removed: number; assets: string[] }> {
-    return purgeTrash(this, path);
+    return this.git.exclusive(() => purgeTrash(this, path));
   }
 
   // ---- history ------------------------------------------------------------------
@@ -291,26 +397,33 @@ export class VaultService extends EventEmitter {
   async atCommit(relPath: string, sha: string): Promise<string> {
     assertInside(this.root, relPath);
 
-    return atCommit(this.git, relPath, sha);
+    return atCommit(this.git, relPath, assertSha(sha));
   }
 
   async diff(relPath: string, sha: string): Promise<string> {
     assertInside(this.root, relPath);
 
-    return diff(this.git, relPath, sha);
+    return diff(this.git, relPath, assertSha(sha));
   }
 
-  /** Bring an old version back as a new commit; the history is never rewritten. */
+  /**
+   * Bring an old version's text back as a new commit; the history is never rewritten.
+   * The details — title, project, tags, the star — stay as they are today. Each of those
+   * is a commit too, so restoring "the version before my edit" also unstarred the doc, or
+   * renamed and moved it back to where it lived months ago.
+   */
   async restore(relPath: string, sha: string): Promise<SaveResult> {
-    const { frontmatter, body } = parseDoc(await this.atCommit(relPath, sha));
-    const fm = frontmatter ?? this.index.get(relPath);
-    if (!fm) throw new Error("Nothing to restore");
+    return this.git.exclusive(async () => {
+      const { frontmatter, body } = parseDoc(await this.atCommit(relPath, sha));
+      const fm = this.index.get(relPath) ?? frontmatter;
+      if (!fm) throw new Error("Nothing to restore");
 
-    return this.save({
-      body,
-      frontmatter: pickFrontmatter(fm),
-      existingPath: relPath,
-      commit: true,
+      return this.saveNow({
+        body,
+        frontmatter: pickFrontmatter(fm),
+        existingPath: relPath,
+        commit: true,
+      });
     });
   }
 
@@ -321,13 +434,13 @@ export class VaultService extends EventEmitter {
   }
 
   async renameProject(from: string, to: string): Promise<{ moved: number }> {
-    return renameProject(this, from, to);
+    return this.git.exclusive(() => renameProject(this, from, to));
   }
 
   // ---- README index -----------------------------------------------------------------
 
-  async writeReadme(): Promise<void> {
-    await writeReadme(this.root, this.index.snapshot());
+  async writeReadme(): Promise<boolean> {
+    return writeReadme(this.root, this.index.snapshot());
   }
 
   // ---- views & templates --------------------------------------------------------
@@ -337,11 +450,11 @@ export class VaultService extends EventEmitter {
   }
 
   async saveView(view: SavedView): Promise<SavedView[]> {
-    return this.views.save(view);
+    return this.git.exclusive(() => this.views.save(view));
   }
 
   async deleteView(name: string): Promise<SavedView[]> {
-    return this.views.remove(name);
+    return this.git.exclusive(() => this.views.remove(name));
   }
 
   async listTemplates(): Promise<Template[]> {
@@ -384,9 +497,67 @@ export class VaultService extends EventEmitter {
     return conflicts(this);
   }
 
+  /**
+   * One pair at a time, and never beside a save or a pull. Two answers in flight at once
+   * — both cards clicked — could send both versions to the trash.
+   */
   async resolveConflict(copyPath: string, choice: ConflictChoice): Promise<void> {
-    await resolveConflict(this, copyPath, choice, pickFrontmatter);
+    await this.git.exclusive(() =>
+      resolveConflict(
+        {
+          index: this.index,
+          read: (p) => this.read(p),
+          save: (r) => this.saveNow(r),
+          trash: (p) => this.trashNow(p),
+          restoreFromTrash: (p) => restoreFromTrash(this, p),
+          refreshSyncStatus: () => this.refreshSyncStatus(),
+        },
+        copyPath,
+        choice,
+        pickFrontmatter,
+      ),
+    );
   }
+}
+
+/** The metadata a save writes: the request's, with what the file itself decides kept. */
+function frontmatterFor(req: SaveRequest, title: string, existing: ExistingDoc): Frontmatter {
+  const fm: Frontmatter = {
+    title,
+    project: (req.frontmatter.project ?? "").trim(),
+    tags: [...new Set(req.frontmatter.tags.map((t) => t.replace(/^#/, "").trim()).filter(Boolean))],
+    created: existing.created || new Date().toISOString(),
+    source: req.frontmatter.source,
+  };
+  if (existing.starred ?? req.frontmatter.starred) fm.starred = true;
+
+  return fm;
+}
+
+function folderOf(relPath: string): string {
+  return relPath.includes("/") ? dirname(relPath) : "";
+}
+
+/** How long a closing vault waits for work already under way before letting go. */
+const CLOSE_WAIT_MS = 5_000;
+
+function delay(ms: number): Promise<void> {
+  return new Promise((r) => setTimeout(r, ms).unref?.());
+}
+
+/** A short, stable fingerprint of a document's text. */
+function fingerprint(raw: string): string {
+  return createHash("sha1").update(raw).digest("hex");
+}
+
+/**
+ * A commit id from the renderer, before it reaches a git command line: anything else —
+ * `--output=…` above all — would be read by git as an option.
+ */
+function assertSha(sha: string): string {
+  if (!/^[0-9a-f]{7,40}$/i.test(sha)) throw new Error(`Not a commit: ${sha}`);
+
+  return sha;
 }
 
 function pickFrontmatter(m: Frontmatter): Frontmatter {

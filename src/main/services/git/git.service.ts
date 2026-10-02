@@ -1,11 +1,15 @@
-import { existsSync, mkdirSync } from "node:fs";
-import { dirname } from "node:path";
+import { existsSync, mkdirSync, readFileSync, rmSync, statSync } from "node:fs";
+import { dirname, join } from "node:path";
 import { simpleGit, type SimpleGit, type SimpleGitOptions } from "simple-git";
 import { DEFAULT_BRANCH } from "@shared/constants";
 import { relativeTime } from "@shared/helpers";
 import type { CommitInfo } from "@shared/types";
 import { gitBinary } from "./git-status.service";
 import type { AheadBehind, ChangedFile, ConflictSide, TokenProvider } from "./git.types";
+import { RepoLock } from "./repo-lock";
+
+/** An `index.lock` older than this, found while the vault opens, was left by a crash. */
+const STALE_LOCK_MS = 60_000;
 
 /** The characters simple-git accepts in a binary path without being told it's deliberate. */
 const PLAIN_BINARY = /^([a-z]:)?([a-z0-9/.\\_~-]+)$/i;
@@ -23,6 +27,9 @@ function gitOptions(baseDir?: string): Partial<SimpleGitOptions> {
     ...(baseDir ? { baseDir } : {}),
     binary,
     unsafe: { allowUnsafeCustomBinary: !PLAIN_BINARY.test(binary) },
+    // Paths come back as written, not octal-escaped: an Arabic title was printed as
+    // `"_inbox/\330\271…"`, so history, restore and the unpushed marker never matched it.
+    config: ["core.quotepath=false"],
   };
 }
 
@@ -32,12 +39,24 @@ function gitOptions(baseDir?: string): Partial<SimpleGitOptions> {
  */
 export class GitService {
   readonly git: SimpleGit;
+  /**
+   * One at a time for every operation that takes more than one git command. simple-git
+   * already runs single commands in turn; a save is `add → commit → write README → add →
+   * amend`, and a push or pull landing in the middle of that rewrote a pushed commit or
+   * folded a save into someone else's rebase.
+   */
+  private readonly lock = new RepoLock();
 
   constructor(
     readonly root: string,
     private readonly tokenProvider: TokenProvider,
   ) {
     this.git = simpleGit({ ...gitOptions(root), maxConcurrentProcesses: 1, trimmed: true });
+  }
+
+  /** Run `work` once nothing else is changing the repo. See `lock`. */
+  exclusive<T>(work: () => Promise<T>): Promise<T> {
+    return this.lock.run(work);
   }
 
   private static authArgsFor(token: string | null): string[] {
@@ -66,6 +85,31 @@ export class GitService {
     await simpleGit(gitOptions()).clone(url, dest, args);
   }
 
+  /** True when the remote answers and has no branches at all — a repo made but never pushed. */
+  static async remoteIsEmpty(url: string, token: string | null): Promise<boolean> {
+    try {
+      const out = await simpleGit(gitOptions()).raw([
+        ...GitService.authArgsFor(token),
+        "ls-remote",
+        "--heads",
+        url,
+      ]);
+
+      return !out.trim();
+    } catch {
+      return false;
+    }
+  }
+
+  /** The `origin` URL of the repo at `dir`, or null when it has none. */
+  static async originOf(dir: string): Promise<string | null> {
+    try {
+      return (await simpleGit(gitOptions(dir)).remote(["get-url", "origin"]))?.trim() || null;
+    } catch {
+      return null;
+    }
+  }
+
   static async init(dest: string, branch = DEFAULT_BRANCH): Promise<void> {
     mkdirSync(dest, { recursive: true });
     if (!existsSync(`${dest}/.git`)) await simpleGit(gitOptions(dest)).init(["-b", branch]);
@@ -76,6 +120,20 @@ export class GitService {
       return await this.git.checkIsRepo();
     } catch {
       return false;
+    }
+  }
+
+  /**
+   * Remove an `index.lock` a crash or a power cut left behind. Nothing of ours is running
+   * git while the vault opens, and a lock that old belongs to no one: left there, every
+   * save, pull and push failed with "Unable to create index.lock: File exists".
+   */
+  async clearStaleLock(maxAgeMs = STALE_LOCK_MS): Promise<void> {
+    const lock = join(this.root, ".git", "index.lock");
+    try {
+      if (Date.now() - statSync(lock).mtimeMs > maxAgeMs) rmSync(lock, { force: true });
+    } catch {
+      /* no lock */
     }
   }
 
@@ -95,10 +153,29 @@ export class GitService {
 
   async currentBranch(): Promise<string> {
     try {
-      return (await this.git.revparse(["--abbrev-ref", "HEAD"])).trim() || "main";
+      const name = (await this.git.revparse(["--abbrev-ref", "HEAD"])).trim();
+      // Mid-rebase HEAD is detached and git answers "HEAD": the branch being rebased is
+      // written down in the rebase's own state. Pushing "HEAD" failed, and counting
+      // against `origin/HEAD` called every commit in the repo unpushed.
+      if (name === "HEAD") return this.rebasingBranch() ?? DEFAULT_BRANCH;
+
+      return name || DEFAULT_BRANCH;
     } catch {
-      return "main";
+      return DEFAULT_BRANCH;
     }
+  }
+
+  private rebasingBranch(): string | null {
+    for (const dir of ["rebase-merge", "rebase-apply"]) {
+      try {
+        const ref = readFileSync(join(this.root, ".git", dir, "head-name"), "utf8").trim();
+        if (ref.startsWith("refs/heads/")) return ref.slice("refs/heads/".length);
+      } catch {
+        /* not this kind of rebase */
+      }
+    }
+
+    return null;
   }
 
   async hasRemote(): Promise<boolean> {
@@ -162,6 +239,22 @@ export class GitService {
     await this.git.mv(from, to);
   }
 
+  /**
+   * `git add -A` limited to these paths, skipping any that neither exist nor are tracked —
+   * git refuses the whole command over one pathspec that matches nothing.
+   */
+  async stage(paths: string[]): Promise<void> {
+    if (!paths.length) return;
+    const tracked = (await this.git.raw(["ls-files", "-z", "--", ...paths]))
+      .split("\0")
+      .filter(Boolean);
+    const live = paths.filter(
+      (p) =>
+        existsSync(join(this.root, p)) || tracked.some((t) => t === p || t.startsWith(`${p}/`)),
+    );
+    if (live.length) await this.git.raw(["add", "-A", "--", ...live]);
+  }
+
   async aheadBehind(): Promise<AheadBehind> {
     try {
       const branch = await this.currentBranch();
@@ -214,6 +307,30 @@ export class GitService {
     }
   }
 
+  /**
+   * Paths the autostash could not put back after a pull that otherwise succeeded. git
+   * exits 0 here, leaves conflict markers in the file and the edit in `stash@{0}`, and
+   * every later commit fails on the unmerged path. Only meaningful with no rebase running.
+   */
+  async autostashConflicts(): Promise<string[]> {
+    return this.rebaseInProgress() ? [] : this.conflictedPaths();
+  }
+
+  /** Drop the stash git kept after a conflicted autostash, once its text is back on disk. */
+  async dropAutostash(): Promise<void> {
+    try {
+      const top = await this.git.raw(["stash", "list", "-1", "--format=%gs"]);
+      if (/autostash/i.test(top)) await this.git.raw(["stash", "drop", "--quiet"]);
+    } catch {
+      /* no stash */
+    }
+  }
+
+  /** Put a conflicted path's index back to HEAD, leaving whatever is on disk alone. */
+  async unstage(path: string): Promise<void> {
+    await this.git.raw(["reset", "-q", "--", path]);
+  }
+
   async abortRebase(): Promise<void> {
     try {
       await this.git.rebase(["--abort"]);
@@ -263,10 +380,14 @@ export class GitService {
    */
   private static STAGE = { remote: 2, mine: 3 } as const;
 
-  /** One side of a conflicted file, read from the index. `null` = that side deleted it. */
-  async conflictSide(path: string, side: ConflictSide): Promise<string | null> {
+  /**
+   * One side of a conflicted file, read from the index as bytes. `null` = that side
+   * deleted it. Bytes, not text: the instance trims its output, which stripped a doc's
+   * leading indent and turned an image into mojibake when it was written back.
+   */
+  async conflictSide(path: string, side: ConflictSide): Promise<Buffer | null> {
     try {
-      return await this.git.raw(["show", `:${GitService.STAGE[side]}:${path}`]);
+      return await this.git.showBuffer([`:${GitService.STAGE[side]}:${path}`]);
     } catch {
       return null;
     }
@@ -326,8 +447,9 @@ export class GitService {
     return commits;
   }
 
+  /** A file's text at a commit, untrimmed — a restore must bring back every byte. */
   async show(path: string, sha: string): Promise<string> {
-    return this.git.show([`${sha}:${path}`]);
+    return (await this.git.showBuffer([`${sha}:${path}`])).toString("utf8");
   }
 
   /**

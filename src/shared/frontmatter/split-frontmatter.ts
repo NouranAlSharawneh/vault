@@ -44,3 +44,13 @@ function splitHead(raw: string): SplitResult | null {
 export function splitFrontmatter(raw: string): SplitResult {
   return splitTail(raw) ?? splitHead(raw) ?? { yaml: null, body: raw, position: null };
 }
+
+/**
+ * Every place a metadata block could be, trailing first. A file can look like it has
+ * one at either end without really having one — a note that ends on a YAML example, a
+ * document that opens with a `---` rule — so the parser tries each in turn and keeps the
+ * first that reads as metadata, rather than trusting the first that merely matched.
+ */
+export function frontmatterCandidates(raw: string): SplitResult[] {
+  return [splitTail(raw), splitHead(raw)].filter((c): c is SplitResult => c !== null);
+}

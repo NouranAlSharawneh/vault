@@ -1,6 +1,6 @@
-import { promises as fs, existsSync } from "node:fs";
-import { basename, extname, isAbsolute, join, resolve } from "node:path";
-import { ASSETS_DIR } from "@shared/constants";
+import { promises as fs, existsSync, statSync } from "node:fs";
+import { basename, extname, isAbsolute, join, relative, resolve } from "node:path";
+import { ASSET_MAX_BYTES, ASSETS_DIR } from "@shared/constants";
 import { slugify } from "@shared/helpers";
 import type { AssetImport } from "@shared/types";
 import type { ImportedAssets } from "./assets.types";
@@ -8,26 +8,45 @@ import type { ImportedAssets } from "./assets.types";
 /**
  * Copy referenced files into `<docFolder>/assets/` (slugified, de-duplicated names) and
  * return how the body should be rewritten. Refs that don't exist are skipped, not fatal.
+ *
+ * A ref that already resolves inside the document's own folder is left alone: it is
+ * where it belongs, and copying it made `x-2.png` beside `x.png` on every save of a
+ * document that was already in the vault. Anything over GitHub's limit is skipped too.
+ * If a copy fails part-way, the files already copied are taken back out, so a retry
+ * does not find them in the way and name its own copies `-2`.
  */
 export async function importAssets(
   root: string,
   docFolder: string,
   req: AssetImport,
 ): Promise<ImportedAssets> {
-  const dir = join(root, docFolder, ASSETS_DIR);
+  const home = join(root, docFolder);
+  const dir = join(home, ASSETS_DIR);
   const map: Record<string, string> = {};
   const paths: string[] = [];
-  for (const ref of req.refs) {
-    const src = isAbsolute(ref) ? ref : resolve(req.baseDir, ref);
-    if (!existsSync(src)) continue;
-    await fs.mkdir(dir, { recursive: true });
-    const name = uniqueName(dir, basename(ref));
-    await fs.copyFile(src, join(dir, name));
-    map[ref] = `${ASSETS_DIR}/${name}`;
-    paths.push(`${docFolder}/${ASSETS_DIR}/${name}`);
+  try {
+    for (const ref of req.refs) {
+      const src = isAbsolute(ref) ? ref : resolve(req.baseDir, ref);
+      if (!existsSync(src) || isWithin(home, src)) continue;
+      if (statSync(src).size > ASSET_MAX_BYTES) continue;
+      await fs.mkdir(dir, { recursive: true });
+      const name = uniqueName(dir, basename(ref));
+      await fs.copyFile(src, join(dir, name));
+      map[ref] = `${ASSETS_DIR}/${name}`;
+      paths.push(`${docFolder}/${ASSETS_DIR}/${name}`);
+    }
+  } catch (e) {
+    await Promise.all(paths.map((p) => fs.rm(join(root, p), { force: true })));
+    throw e;
   }
 
   return { map, paths };
+}
+
+function isWithin(dir: string, path: string): boolean {
+  const rel = relative(dir, path);
+
+  return !!rel && !rel.startsWith("..") && !isAbsolute(rel);
 }
 
 function uniqueName(dir: string, original: string): string {

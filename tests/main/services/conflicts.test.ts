@@ -224,12 +224,32 @@ describe("sync conflicts", { timeout: 30_000 }, () => {
     expect(readFileSync(join(mine, DOC), "utf8")).toContain("Second of mine.");
   });
 
+  it("puts back an uncommitted edit the pull's autostash couldn't, and asks about GitHub's", async () => {
+    // git exits 0 here, leaves conflict markers in the file and the edit in the stash, and
+    // every commit after it fails on the unmerged path.
+    await commitAndPush(other, DOC, doc("Rate limiting", "Theirs, pushed."), "their edit");
+    await vault.open();
+    writeFileSync(join(mine, DOC), doc("Rate limiting", "Mine, never committed."));
+    await vault.pull();
+
+    const text = readFileSync(join(mine, DOC), "utf8");
+    expect(text).toContain("Mine, never committed.");
+    expect(text).not.toContain("<<<<<<<");
+    const g = simpleGit({ baseDir: mine });
+    expect((await g.status()).conflicted).toEqual([]);
+    expect((await g.stashList()).total).toBe(0);
+    const pairs = await vault.conflicts();
+    expect(pairs).toHaveLength(1);
+    expect(readFileSync(join(mine, pairs[0].theirs.path), "utf8")).toContain("Theirs, pushed.");
+  });
+
   it("leaves no rebase behind when the fetch itself fails", async () => {
     await raceOnTheSameDoc(doc("Rate limiting", "Mine."), doc("Rate limiting", "Theirs."));
     rmSync(origin, { recursive: true, force: true });
     const { conflicts } = await vault.pull();
     expect(conflicts).toHaveLength(0);
     expect(vault.git.rebaseInProgress()).toBe(false);
-    expect(["error", "offline"]).toContain(vault.status().state);
+    // A push queued behind the pull may still be running; it fails the same way.
+    await vi.waitFor(() => expect(["error", "offline"]).toContain(vault.status().state));
   });
 });

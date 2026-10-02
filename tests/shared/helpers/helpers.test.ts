@@ -16,6 +16,20 @@ describe("slugify", () => {
     expect(slugify("  ")).toBe("untitled");
     expect(slugify("Café déjà")).toBe("cafe-deja");
   });
+
+  it("keeps letters of every script, so different names get different folders", () => {
+    const names = ["Проект", "日本語", "שלום", "Ελληνικά", "مشروع"];
+    const slugs = names.map(slugify);
+    expect(new Set(slugs).size).toBe(names.length);
+    expect(slugs).not.toContain("untitled");
+    expect(slugify("Проект план")).toBe("проект-план");
+  });
+
+  it("writes Arabic in the composed form git records, and never halves a surrogate pair", () => {
+    expect(slugify("أحمد")).toBe("أحمد".normalize("NFC"));
+    // 𠮷 is one letter in two UTF-16 units; the cut is by letter.
+    expect(slugify("𠮷".repeat(100))).toBe("𠮷".repeat(80));
+  });
 });
 
 describe("projectSlug", () => {

@@ -213,11 +213,15 @@ export function registerIpcHandlers(): void {
   handle("doc:save", async (req) => {
     const vault = session.requireVault();
     const res = await vault.save(req);
-    Object.assign(vault.config, {
-      lastProject: req.frontmatter.project || null,
-      lastSource: req.frontmatter.source,
-    });
-    updateSettings({ vault: vault.config });
+    // Only something new says what to suggest next time. Re-saving an old document from
+    // another project used to change the capture sheet's default to that project.
+    if (!req.existingPath) {
+      Object.assign(vault.config, {
+        lastProject: req.frontmatter.project || null,
+        lastSource: req.frontmatter.source,
+      });
+      updateSettings({ vault: vault.config });
+    }
 
     return res;
   });
@@ -237,7 +241,9 @@ export function registerIpcHandlers(): void {
   handle("doc:history", (p) => session.requireVault().history(p));
   handle("doc:restore", (p, sha) => session.requireVault().restore(p, sha));
   handle("doc:diff", (p, sha) => session.requireVault().diff(p, sha));
-  handle("doc:pathPreview", (project, title) => session.requireVault().previewPath(project, title));
+  handle("doc:pathPreview", (project, title, existingPath) =>
+    session.requireVault().previewPath(project, title, existingPath),
+  );
 
   // ---- projects
   handle("project:rename", (from, to) => session.requireVault().renameProject(from, to));

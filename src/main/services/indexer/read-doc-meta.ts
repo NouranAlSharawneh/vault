@@ -32,14 +32,19 @@ export async function readDocMeta(root: string, relPath: string): Promise<DocMet
     size: st.size,
     words: small ? countWords(body) : Math.round(st.size / 6),
   };
+  const born = new Date(st.birthtimeMs || st.mtimeMs).toISOString();
+  // A file with no metadata still lives in a folder, and that folder is its project — the
+  // same rule the frontmatter branch below applies. Left empty, it was listed as a second
+  // "Inbox" and its first save or star moved it into `_inbox/`.
+  const folderProject = folderSlug !== INBOX_SLUG ? unslug(folderSlug) : "";
   if (!frontmatter) {
     return {
       ...base,
       title: titleFromPath(relPath, body),
-      project: "",
+      project: folderProject,
       projectSlug: folderSlug,
       tags: [],
-      created: new Date(st.birthtimeMs || st.mtimeMs).toISOString(),
+      created: born,
       source: "other",
       orphan: true,
     };
@@ -51,7 +56,8 @@ export async function readDocMeta(root: string, relPath: string): Promise<DocMet
     projectSlug: slug === INBOX_SLUG ? folderSlug : slug,
     orphan: false,
   };
-  if (!meta.project && folderSlug !== INBOX_SLUG) meta.project = unslug(folderSlug);
+  if (!meta.project) meta.project = folderProject;
+  if (!meta.created) meta.created = born;
 
   return meta;
 }

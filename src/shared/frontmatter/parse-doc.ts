@@ -3,7 +3,7 @@ import { inferTitle } from "../helpers/infer-title";
 import { toSource } from "../helpers/source";
 import type { ConflictMark, Frontmatter } from "../types";
 import type { ParsedDoc } from "./frontmatter.types";
-import { splitFrontmatter } from "./split-frontmatter";
+import { frontmatterCandidates } from "./split-frontmatter";
 
 function asString(v: unknown): string | null {
   if (typeof v === "string") return v;
@@ -31,25 +31,48 @@ function asTags(v: unknown): string[] {
   return [];
 }
 
-const NONE = (body: string): ParsedDoc => ({ frontmatter: null, body, extra: {} });
+/** Keys Marasca writes. A trailing block with none of them is someone's YAML example. */
+const OWN_KEYS = ["title", "project", "tags", "created", "source", "starred", "conflict"];
 
-/** Parse a whole document. Tolerant: any YAML mess yields `frontmatter: null`. */
-export function parseDoc(raw: string): ParsedDoc {
-  const { yaml, body } = splitFrontmatter(raw);
-  if (yaml === null) return NONE(body);
-  let data: unknown;
+/** The YAML as a mapping, or null when it doesn't parse to one. */
+function readMapping(yaml: string | null): Record<string, unknown> | null {
+  if (yaml === null) return null;
   try {
-    data = parseYaml(yaml);
+    const data: unknown = parseYaml(yaml);
+
+    return data && typeof data === "object" && !Array.isArray(data)
+      ? (data as Record<string, unknown>)
+      : null;
   } catch {
-    return NONE(body);
+    return null;
   }
-  if (!data || typeof data !== "object" || Array.isArray(data)) return NONE(body);
-  const d = data as Record<string, unknown>;
+}
+
+/**
+ * Parse a whole document. Tolerant: when no block reads as metadata the document has
+ * none, and its body is the whole file. Returning the text with a broken block cut out
+ * instead meant the next save wrote the file back without it — that text was gone.
+ */
+export function parseDoc(raw: string): ParsedDoc {
+  for (const candidate of frontmatterCandidates(raw)) {
+    const data = readMapping(candidate.yaml);
+    if (!data) continue;
+    if (candidate.position === "bottom" && !OWN_KEYS.some((k) => k in data)) continue;
+
+    return fromMapping(data, candidate.body);
+  }
+
+  return { frontmatter: null, body: raw, extra: {} };
+}
+
+function fromMapping(d: Record<string, unknown>, body: string): ParsedDoc {
   const fm: Frontmatter = {
     title: asString(d.title) ?? inferTitle(body) ?? "Untitled",
     project: asString(d.project) ?? "",
     tags: asTags(d.tags),
-    created: asString(d.created) ?? new Date(0).toISOString(),
+    // Empty when the file never said. The reader fills it from the file's birth time;
+    // stamping 1970 here got written back into the file on the next save.
+    created: asString(d.created) ?? "",
     source: toSource(d.source),
   };
   if (d.starred === true) fm.starred = true;

@@ -5,6 +5,8 @@ export interface MarkdownEditorProps {
   onSubmit?: () => void;
   placeholder?: string;
   autoFocus?: boolean;
+  /** No typing, e.g. while a save is on its way. */
+  readOnly?: boolean;
   dark?: boolean;
   className?: string;
 }

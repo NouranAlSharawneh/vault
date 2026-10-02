@@ -37,13 +37,21 @@ export async function resolveConflict(
     // The version from GitHub wins: it takes the original's path, and the original goes
     // to the trash where it can still be brought back.
     const original = await host.read(mark.of).catch(() => null);
-    if (original) await host.trash(mark.of);
-    await host.save({
-      body: copy.body,
-      frontmatter: pickFrontmatter(original?.meta ?? copy.meta),
-      existingPath: copyPath,
-      commit: true,
-    });
+    const trashed = original ? await host.trash(mark.of) : null;
+    try {
+      await host.save({
+        body: copy.body,
+        frontmatter: pickFrontmatter(original?.meta ?? copy.meta),
+        existingPath: copyPath,
+        commit: true,
+      });
+    } catch (e) {
+      // Put the original back. Otherwise the pair can't be found again — its twin is
+      // gone from its path — and the sheet said "nothing to review" over a doc that had
+      // vanished.
+      if (trashed) await host.restoreFromTrash(trashed.path).catch(() => undefined);
+      throw e;
+    }
   } else if (choice === "mine") {
     await host.trash(copyPath);
   } else {
