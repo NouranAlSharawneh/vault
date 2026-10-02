@@ -1,5 +1,9 @@
-import { cleanup } from "@testing-library/react";
+import { cleanup, configure } from "@testing-library/react";
 import { afterEach } from "vitest";
+
+// findBy/waitFor give up after 1s by default. CodeMirror-heavy tests run alongside the
+// git-backed suites and can take longer than that under load, without anything wrong.
+configure({ asyncUtilTimeout: 3000 });
 
 // Node 25+ ships its own global `localStorage`, which is undefined without
 // --localstorage-file and shadows the one jsdom provides. Hand jsdom's back.

@@ -6,7 +6,7 @@ export { isEditableTarget } from "./is-editable-target";
 export { formatBytes } from "./format-bytes";
 export { parentDir } from "./parent-dir";
 export { shortPath } from "./short-path";
-export { toAccelerator, acceleratorLabel } from "./accelerator";
+export { toAccelerator, acceleratorLabel, isModifierOnly } from "./accelerator";
 export { svgIntrinsicWidth } from "./svg-intrinsic-width";
 export { relaxMermaidWidth } from "./relax-mermaid-width";
 export { describeToken } from "./describe-token";

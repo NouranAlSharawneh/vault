@@ -18,6 +18,19 @@ if (window.location.hash.startsWith("#capture")) {
 // title bar never renders at the wrong inset and shifts.
 document.documentElement.classList.toggle("is-mac", IS_MAC);
 
+// A file dropped anywhere nothing takes it is not an instruction to leave the app:
+// Chromium's default is to navigate the window to it. Text dragged into a field is
+// untouched — only drags that carry files are stopped here.
+const carriesFiles = (e: DragEvent) => !!e.dataTransfer?.types.includes("Files");
+window.addEventListener("dragover", (e) => {
+  if (!carriesFiles(e) || e.defaultPrevented) return;
+  e.preventDefault();
+  e.dataTransfer!.dropEffect = "none";
+});
+window.addEventListener("drop", (e) => {
+  if (carriesFiles(e)) e.preventDefault();
+});
+
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <ErrorBoundary>

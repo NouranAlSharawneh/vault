@@ -9,7 +9,12 @@ describe("compareVersions", () => {
     ["1.0.0", "0.99.99", 1],
     ["0.0.10", "0.0.9", 1], // numeric, not string, order
     ["v0.0.1", "0.0.1", 0],
-    ["0.0.2-beta.1", "0.0.2", 0],
+    // A prerelease comes before its release, and betas count up.
+    ["0.0.2-beta.1", "0.0.2", -1],
+    ["0.0.2", "0.0.2-beta.1", 1],
+    ["0.0.2-beta.2", "0.0.2-beta.10", -1],
+    ["0.0.2-alpha", "0.0.2-beta", -1],
+    ["0.0.3-beta.1", "0.0.2", 1],
   ])("%s vs %s", (a, b, sign) => {
     expect(Math.sign(compareVersions(a, b))).toBe(sign);
   });

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { COPIED_FEEDBACK_MS } from "@/constants";
 import type { GitAction } from "@/helpers/describe-git.types";
 import { api, fire } from "@/lib/api";
 import { useApp } from "@/stores/app";
@@ -35,7 +36,11 @@ export function useGitActions() {
         return settle(action, api("git:clearPath"), "Couldn’t look for git");
       case "copy":
         return fire(
-          navigator.clipboard.writeText(XCODE_LICENSE_COMMAND).then(() => setCopied(true)),
+          navigator.clipboard.writeText(XCODE_LICENSE_COMMAND).then(() => {
+            // "Copied" is a moment, not a state: it used to say so for good.
+            setCopied(true);
+            setTimeout(() => setCopied(false), COPIED_FEEDBACK_MS);
+          }),
           "Couldn’t copy the command",
         );
     }

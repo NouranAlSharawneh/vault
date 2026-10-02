@@ -30,12 +30,21 @@ export function useDeviceFlow() {
     };
   }, [attempt]);
 
+  const terminal = status === "expired" || status === "denied" || status === "error";
+  const finished = terminal || status === "ok";
+
+  // Counts down only while there is a code to wait on; it used to keep ticking under
+  // "Code expired" and "Approved!".
   useEffect(() => {
-    if (!session) return;
+    if (!session || finished) return;
     const t = setInterval(() => setSecondsLeft((l) => Math.max(0, l - 1)), 1000);
 
     return () => clearInterval(t);
-  }, [session]);
+  }, [session, finished]);
+
+  // The clock can run out before GitHub's next answer says so.
+  const shownStatus: DevicePollStatus =
+    session && !finished && secondsLeft === 0 ? "expired" : status;
 
   const restart = useCallback(() => {
     setError(null);
@@ -44,7 +53,12 @@ export function useDeviceFlow() {
     setAttempt((n) => n + 1);
   }, []);
 
-  const terminal = status === "expired" || status === "denied" || status === "error";
-
-  return { session, status, error, secondsLeft, terminal, restart };
+  return {
+    session,
+    status: shownStatus,
+    error,
+    secondsLeft,
+    terminal: terminal || shownStatus === "expired",
+    restart,
+  };
 }

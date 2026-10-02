@@ -16,6 +16,12 @@ describe("describeToken", () => {
     );
   });
 
+  it("doesn't promise a pasted token never expires — GitHub decides that", () => {
+    expect(
+      describeToken({ present: true, expiresAt: null, canRefresh: false }, NOW, "pat"),
+    ).toContain("set on GitHub");
+  });
+
   it("warns when an expiring token has no way to renew itself", () => {
     // This is the case that forces a fresh authorization every single lapse.
     expect(describeToken({ present: true, expiresAt: hours(7), canRefresh: false }, NOW)).toBe(

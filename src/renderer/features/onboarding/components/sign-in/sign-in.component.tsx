@@ -69,8 +69,9 @@ export function SignIn({ onBack, onLocal }: SignInProps) {
         <Button variant="subtle" onClick={onBack}>
           Back
         </Button>
+        {/* The same words as Welcome's link, for the same choice. */}
         <Button variant="outline" onClick={onLocal}>
-          Skip for now
+          Start local, connect later
         </Button>
       </div>
     </Card>

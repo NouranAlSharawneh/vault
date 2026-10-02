@@ -71,6 +71,14 @@ export async function detectGit(options: DetectGitOptions = {}): Promise<GitStat
 async function detectCustom(binary: string): Promise<GitStatus> {
   if (!existsSync(binary))
     return { state: "custom-invalid", binary, reason: "There's no file at that path any more." };
+  // Apple's /usr/bin/git is a stub until the Command Line Tools are in: running it pops
+  // macOS's install dialog. Picking it by hand skipped the check the automatic path makes.
+  if (binary === APPLE_GIT && !(await xcodeDeveloperDir()))
+    return {
+      state: "custom-invalid",
+      binary,
+      reason: "That's Apple's placeholder — install the Command Line Tools first.",
+    };
 
   return (
     (await probe(binary, "custom")) ?? {

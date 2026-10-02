@@ -25,6 +25,16 @@ To release: add a section for the new version here, run `npm run release -- <pat
 - Notes in nested folders, or at the top of the vault, stay where they are when saved or starred.
 - A crash that left git's lock file behind no longer blocks every save.
 - Resolving a conflict can't send both versions to the trash.
+- **Dropping a file on a window no longer replaces the app with the file.** Windows stay on Marasca, links only open web and mail addresses, and only Marasca's own page can talk to the app.
+- **The capture shortcut can't take over ordinary typing.** It needs ⌃ or ⌘ (⌥Space and function keys still work), ⇧⇥ leaves the recorder instead of becoming the shortcut, and the recorder says why a combination was refused. Pressing the same shortcut again retries it once the other app lets go.
+- **⌘, and ⌘K work from any window,** and the capture shortcut with no vault open shows the vault's own screen instead of starting setup over.
+- **Settings:** an error shows under the setting that failed, a changed shortcut is confirmed, Esc or ⌘[ goes back, an expired session offers "Sign in again", the repository dot follows the sync state, pasted tokens aren't described as never expiring, and emptying the trash says plainly that earlier versions stay in git history.
+- **Reset asks every open document about unsaved changes first,** pushes what's waiting, and lists what it forgets.
+- **Signing in with GitHub:** cancelling and starting again no longer opens two browser tabs, "Approved" keeps a spinner until you're signed in (and says so if that fails), the countdown stops when the code is used or expires, and signing in again resumes pushing straight away.
+- **Setup:** "Start local" means local even when you're signed in, a folder you picked stays picked, a repo name you already own is offered instead of failing, public repos are flagged before you capture into them, and a mistyped token gets a plain explanation. Signing in from Settings leads to the repo picker (or straight back to the vault when it's already connected), and you can Cancel back to your vault at any step.
+- The update check tells "rate limited" from "offline", and knows a beta comes before its release.
+- Settings are written so a crash can't leave half a file, and an unreadable one is kept as `config.json.bak`.
+- The error screen can be dragged, copied from, and — off the main page — left for the vault.
 
 ## [0.0.2] - 2026-09-28
 

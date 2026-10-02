@@ -17,7 +17,10 @@ export async function confirmPurge(
   trashed: TrashedDoc[],
   parent: BrowserWindow | null = null,
 ): Promise<boolean> {
-  const IRREVERSIBLE = "This is the one thing in Marasca you cannot undo.";
+  // Said as it is: a purge is a commit that removes the files, so earlier versions stay
+  // in git history — on GitHub too. "For good" let someone believe a pasted secret was gone.
+  const IRREVERSIBLE =
+    "Marasca can’t bring them back, but earlier versions stay in the git history, on GitHub as well.";
   if (path) {
     // The title is only for the wording — a path the listing does not know about is
     // still a delete, and must not be described as emptying the whole trash.
@@ -26,7 +29,7 @@ export async function confirmPurge(
     return ask(parent, {
       button: "Delete forever",
       message: title ? `Delete “${title}” forever?` : "Delete this document forever?",
-      detail: `The file and any images only it used are removed from the vault for good. ${IRREVERSIBLE}`,
+      detail: `The file and any images only it used are deleted from the vault. ${IRREVERSIBLE}`,
     });
   }
   if (!trashed.length) return true;
@@ -35,7 +38,7 @@ export async function confirmPurge(
   return ask(parent, {
     button: "Empty trash",
     message: "Empty the trash?",
-    detail: `${n} ${n === 1 ? "document" : "documents"} and any images only they used are removed from the vault for good. ${IRREVERSIBLE}`,
+    detail: `${n} ${n === 1 ? "document" : "documents"} and any images only they used are deleted from the vault. ${IRREVERSIBLE}`,
   });
 }
 

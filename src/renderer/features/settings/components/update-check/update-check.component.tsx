@@ -29,7 +29,7 @@ export function UpdateCheck({ version }: UpdateCheckProps) {
     state.phase === "done" && state.result.status === "available" ? state.result : null;
 
   return (
-    <SettingRow label="Marasca" description={describe(state, version)}>
+    <SettingRow label="Version" description={describe(state, version)}>
       {available && (
         <Button
           variant="primary"

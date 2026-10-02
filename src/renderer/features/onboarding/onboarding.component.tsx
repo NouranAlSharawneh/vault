@@ -1,4 +1,6 @@
-import { Dot, Spinner } from "@/components/ui";
+import { useEffect, useState } from "react";
+import { Button, Dot, Spinner } from "@/components/ui";
+import { isEditableTarget } from "@/helpers";
 import { useApp } from "@/stores/app";
 import { Done } from "./components/done/done.component";
 import { FirstScan } from "./components/first-scan/first-scan.component";
@@ -9,38 +11,91 @@ import { useOnboardingStep } from "./hooks/use-onboarding-step.hook";
 
 /** Five screens, target ninety seconds. Success = one document saved. */
 export function Onboarding() {
-  const { step, setStep, signedIn, user } = useOnboardingStep();
+  const { step, setStep, signedIn, user, auth, hasVault } = useOnboardingStep();
   const installing = useApp((s) => s.gitStatus?.state === "installing");
+  // "Start local" from Welcome: the picker opens on keeping it on this Mac, even when
+  // signed in — it used to open on "Create a new private repo".
+  const [preferLocal, setPreferLocal] = useState(false);
+  // Came here from a vault that already exists (Settings, a banner): there is always a
+  // way back to it, so changing your mind doesn't mean finishing the flow.
+  const canLeave = hasVault && step !== "scan" && step !== "done";
+  useEffect(() => {
+    if (!canLeave) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== "Escape" || e.defaultPrevented || isEditableTarget(e.target)) return;
+      window.location.hash = "main";
+    };
+    window.addEventListener("keydown", onKey);
+
+    return () => window.removeEventListener("keydown", onKey);
+  }, [canLeave]);
 
   return (
     <div className="flex h-full flex-col bg-paper">
-      <div className="flex h-10 shrink-0 items-center justify-end gap-4 px-4 drag">
-        {/* Welcome shows the whole card; later steps keep the install in sight here. */}
-        {installing && step !== "welcome" && (
-          <div className="flex items-center gap-1.5 text-xs text-ink-3" role="status">
-            <Spinner className="text-warn-2" /> Installing Apple's tools…
-          </div>
-        )}
-        {user && (
-          <div className="flex items-center gap-1.5 text-xs text-ink-3 no-drag">
-            <Dot tone="bg-ok" size={6} /> Signed in as {user.login}
-          </div>
-        )}
+      <div className="flex h-12 shrink-0 items-center justify-between gap-4 pr-4 pl-titlebar drag">
+        <div className="no-drag">
+          {canLeave && (
+            <Button variant="ghost" size="sm" onClick={() => (window.location.hash = "main")}>
+              Cancel
+            </Button>
+          )}
+        </div>
+        <div className="flex items-center gap-4">
+          {/* Welcome shows the whole card; the repo step shows its own; the rest keep the
+              install in sight here. */}
+          {installing && step !== "welcome" && step !== "repo" && (
+            <div className="flex items-center gap-1.5 text-xs text-ink-3" role="status">
+              <Spinner className="text-warn-2" /> Installing Apple's tools…
+            </div>
+          )}
+          {/* Signed in only while the session is good: an expired one keeps the account
+              name, and this used to say "Signed in" in green on the screen that signs you
+              back in. */}
+          {user && (
+            <div className="flex items-center gap-1.5 text-xs text-ink-3 no-drag">
+              {signedIn ? (
+                <>
+                  <Dot tone="bg-ok" size={6} /> Signed in as {user.login}
+                </>
+              ) : auth.status === "expired" ? (
+                <>
+                  <Dot tone="bg-warn" size={6} /> Session expired · {user.login}
+                </>
+              ) : null}
+            </div>
+          )}
+        </div>
       </div>
       <div className="flex flex-1 items-start justify-center overflow-y-auto px-6 pb-10">
         <div className="mt-8 w-full max-w-130 animate-fade-in" key={step}>
           {step === "welcome" && (
             <Welcome
-              onNext={() => setStep(signedIn ? "repo" : "signin")}
-              onLocal={() => setStep("repo")}
+              onNext={() => {
+                setPreferLocal(false);
+                setStep(signedIn ? "repo" : "signin");
+              }}
+              onLocal={() => {
+                setPreferLocal(true);
+                setStep("repo");
+              }}
             />
           )}
           {step === "signin" && (
-            <SignIn onBack={() => setStep("welcome")} onLocal={() => setStep("repo")} />
+            <SignIn
+              onBack={() => setStep("welcome")}
+              onLocal={() => {
+                setPreferLocal(true);
+                setStep("repo");
+              }}
+            />
           )}
           {/* Back goes to welcome, not sign-in: signed in, sign-in would bounce straight here. */}
           {step === "repo" && (
-            <RepoPicker onDone={() => setStep("scan")} onBack={() => setStep("welcome")} />
+            <RepoPicker
+              preferLocal={preferLocal}
+              onDone={() => setStep("scan")}
+              onBack={() => setStep("welcome")}
+            />
           )}
           {step === "scan" && (
             <FirstScan onDone={() => setStep("done")} onBack={() => setStep("repo")} />

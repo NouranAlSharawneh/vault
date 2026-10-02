@@ -1,4 +1,4 @@
-import { readFileSync, writeFileSync } from "node:fs";
+import { copyFileSync, existsSync, readFileSync, renameSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { DEFAULT_HOTKEY, LEGACY_HOTKEYS } from "@shared/constants";
 import type { AppSettings } from "./settings.types";
@@ -27,6 +27,16 @@ export function getSettings(): AppSettings {
   try {
     cache = migrate({ ...DEFAULTS, ...JSON.parse(readFileSync(configPath(), "utf8")) });
   } catch {
+    // Unreadable is not the same as absent. Keep a copy before the defaults take over:
+    // the next write replaced the only record of which vault this was.
+    const path = configPath();
+    if (existsSync(path)) {
+      try {
+        copyFileSync(path, `${path}.bak`);
+      } catch {
+        /* nothing more to keep */
+      }
+    }
     cache = { ...DEFAULTS };
   }
 
@@ -34,8 +44,13 @@ export function getSettings(): AppSettings {
 }
 
 export function updateSettings(patch: Partial<AppSettings>): AppSettings {
-  cache = { ...getSettings(), ...patch };
-  writeFileSync(configPath(), JSON.stringify(cache, null, 2));
+  const next = { ...getSettings(), ...patch };
+  // Written beside and renamed over, so a quit mid-write never leaves half a file; and
+  // only remembered once it is on disk, so memory and disk can't disagree.
+  const path = configPath();
+  writeFileSync(`${path}.tmp`, JSON.stringify(next, null, 2));
+  renameSync(`${path}.tmp`, path);
+  cache = next;
 
   return cache;
 }

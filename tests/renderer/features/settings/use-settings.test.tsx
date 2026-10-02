@@ -42,7 +42,9 @@ describe("useSettings", () => {
     await act(async () => {
       await result.current.update({ hotkey: "Alt+Space" });
     });
-    expect(result.current.error).toBe("Alt+Space is taken by another app");
+    // Said under the setting that failed, not under whichever row shows errors.
+    expect(result.current.errorFor("hotkey")).toBe("Alt+Space is taken by another app");
+    expect(result.current.errorFor("pushDebounceMs")).toBeNull();
     expect(useApp.getState().config?.hotkey).toBe("Control+Alt+V");
   });
 
@@ -61,7 +63,7 @@ describe("useSettings", () => {
     await act(() => result.current.emptyTrash());
     expect(invoke).toHaveBeenCalledWith("trash:purge");
     expect(useToast.getState().toasts.at(-1)?.message).toContain(
-      "deleted 2 docs and 1 image forever",
+      "deleted 2 docs and 1 image from the vault",
     );
   });
 

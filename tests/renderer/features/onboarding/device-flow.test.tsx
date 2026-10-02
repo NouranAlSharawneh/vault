@@ -34,14 +34,15 @@ describe("DeviceFlow — rejection states", () => {
     expect(container.querySelector(".animate-spin-fast")).toBeNull();
   });
 
-  it("ok stops the spinner", async () => {
+  it("ok keeps a spinner while the account is looked up — approved is not signed in yet", async () => {
+    // With the spinner gone and nothing after it, a failed lookup left "Approved!" on
+    // screen for good.
     const { emit } = mockMarascaApi({ "auth:deviceStart": session });
     const { container } = render(<DeviceFlow onBack={() => undefined} />);
     await screen.findByText("W");
-    expect(container.querySelector(".animate-spin-fast")).not.toBeNull();
     act(() => emit("auth:deviceStatus", { status: "ok" }));
     expect(screen.getByText(DEVICE_FLOW_STATUS_TEXT.ok)).toBeTruthy();
-    expect(container.querySelector(".animate-spin-fast")).toBeNull();
+    expect(container.querySelector(".animate-spin-fast")).not.toBeNull();
   });
 
   it("slow_down keeps waiting (not a failure)", async () => {
@@ -50,19 +51,19 @@ describe("DeviceFlow — rejection states", () => {
     await screen.findByText("W");
     act(() => emit("auth:deviceStatus", { status: "slow_down" }));
     expect(screen.getByText(DEVICE_FLOW_STATUS_TEXT.slow_down)).toBeTruthy();
-    expect(screen.getByRole("button", { name: "Cancel" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Use another method" })).toBeTruthy();
   });
 });
 
 describe("DeviceFlow — a way out of every state", () => {
-  it("while asking for a code: Cancel and Use another method", async () => {
+  it("while asking for a code: one way out, Use another method", async () => {
+    // Cancel and "Use another method" did the same thing; one of them is enough.
     mockMarascaApi({ "auth:deviceStart": () => new Promise(() => undefined) });
     const onBack = vi.fn();
     render(<DeviceFlow onBack={onBack} />);
     expect(await screen.findByText("Asking GitHub for a code…")).toBeTruthy();
-    await userEvent.click(screen.getByRole("button", { name: "Cancel" }));
     await userEvent.click(screen.getByRole("button", { name: "Use another method" }));
-    expect(onBack).toHaveBeenCalledTimes(2);
+    expect(onBack).toHaveBeenCalledTimes(1);
   });
 
   it("when no code comes back: the reason, Try again and Use another method", async () => {

@@ -1,7 +1,6 @@
-import { BrowserWindow, shell } from "electron";
+import { BrowserWindow } from "electron";
 import { MAIN_WINDOW, PAPER_BG, TRAFFIC_LIGHTS } from "@shared/constants";
 import type { DocReveal, SavedNotice } from "@shared/types";
-import { fire } from "../lib/fire";
 import { COMMON_WINDOW_OPTIONS, IS_MAC, loadRoute } from "./load-route";
 
 let mainWin: BrowserWindow | null = null;
@@ -35,11 +34,6 @@ export function openMainWindow(route?: string): BrowserWindow {
     vibrancy: IS_MAC ? "sidebar" : undefined,
   });
   mainWin.once("ready-to-show", () => mainWin?.show());
-  mainWin.webContents.setWindowOpenHandler(({ url }) => {
-    fire(shell.openExternal(url), "opening a link");
-
-    return { action: "deny" };
-  });
   mainWin.on("closed", () => (mainWin = null));
   loadRoute(mainWin, route ?? "main");
 

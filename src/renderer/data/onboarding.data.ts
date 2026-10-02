@@ -19,11 +19,13 @@ export const GITHUB_SCOPES: ScopeData[] = [
   {
     granted: true,
     title: "Push commits to its default branch",
-    description: "Each saved document is one commit on main.",
+    description: "Each saved document is one commit on that repo's default branch.",
   },
   {
     granted: false,
-    title: "Never: your other repos, your org, your profile",
+    // Said as what Marasca won't do, not as a permission GitHub holds back — the scope
+    // above does reach every repo.
+    title: "Marasca never touches your other repos, orgs or profile",
     description: "Nothing leaves your machine except commits to the vault repo.",
   },
 ];

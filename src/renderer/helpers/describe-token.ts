@@ -1,13 +1,22 @@
-import type { TokenStatus } from "@shared/types";
+import type { AuthMethod, TokenStatus } from "@shared/types";
 
 /**
  * Plain English for what is stored, so "GitHub signed you out" can be understood rather
  * than guessed at. A token that expires and cannot be refreshed is the case that forces
  * a fresh authorization every time it lapses.
  */
-export function describeToken(status: TokenStatus | null, now = Date.now()): string | null {
+export function describeToken(
+  status: TokenStatus | null,
+  now = Date.now(),
+  method: AuthMethod | null = null,
+): string | null {
   if (!status?.present) return null;
   if (status.expiresAt === null) {
+    // A pasted token's expiry is set on GitHub and never told to Marasca. Fine-grained
+    // tokens do expire; saying this one doesn't was a promise nobody could keep.
+    if (method === "pat")
+      return "Personal access token. Its expiry is set on GitHub — when it lapses, paste a new one.";
+
     return "This token doesn't expire — a sign-out would mean it was revoked.";
   }
   const left = status.expiresAt - now;

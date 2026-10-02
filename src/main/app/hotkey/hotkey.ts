@@ -2,19 +2,17 @@ import { globalShortcut } from "electron";
 import type { HotkeyStatus } from "@shared/types";
 import { fire } from "../../lib/fire";
 import { readClipboard } from "../../services/capture/capture.service";
-import {
-  hideCaptureWindow,
-  isCaptureVisible,
-  openMainWindow,
-  showCaptureWindow,
-} from "../../windows";
+import { hideCaptureWindow, isCaptureVisible, showCaptureWindow } from "../../windows";
+import { showMainWindow } from "../session/launch-route";
 import { session } from "../session/session";
 
 /** ⌃⌥V (configurable): show the capture sheet pre-filled from the clipboard, or hide it. */
 export function toggleCapture(): void {
   if (isCaptureVisible()) return hideCaptureWindow("dismiss");
+  // No vault open: show whatever the app would open on. A vault that failed to open
+  // belongs on its "couldn't open" screen, not in a first-run setup that starts over.
   if (!session.vault) {
-    openMainWindow("onboarding");
+    showMainWindow();
 
     return;
   }

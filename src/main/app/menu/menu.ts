@@ -4,7 +4,7 @@ import { DEFAULT_HOTKEY } from "@shared/constants";
 import { appMenu, APP_REPO } from "../../data/menu.data";
 import { fire } from "../../lib/fire";
 import { openOnGitHub } from "../../network/github";
-import { IS_MAC, openEditorWindow } from "../../windows";
+import { getMainWindow, IS_MAC, openEditorWindow, openMainWindow } from "../../windows";
 import { toggleCapture } from "../hotkey/hotkey";
 import { showMainWindow } from "../session/launch-route";
 import { resetApp } from "../session/reset-app";
@@ -25,7 +25,24 @@ function run(action: MenuAction): () => void {
       return () => openOnGitHub(APP_REPO);
     case "resetApp":
       return () => fire(resetApp(), "resetting Marasca");
+    // Both used to go to whichever window had focus, and only the main window listens:
+    // from an editor, or with the main window closed, they did nothing.
+    case "openSettings":
+      return () => openMainWindow("settings");
+    case "search":
+      return searchFromAnywhere;
   }
+}
+
+function searchFromAnywhere(): void {
+  const main = getMainWindow();
+  if (main && BrowserWindow.getFocusedWindow() === main) {
+    main.webContents.send("shortcut", "search");
+
+    return;
+  }
+  const win = openMainWindow();
+  if (!win.webContents.isLoading()) win.webContents.send("shortcut", "search");
 }
 
 function toItem(item: MenuItemData): Electron.MenuItemConstructorOptions {

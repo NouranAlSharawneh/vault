@@ -1,10 +1,11 @@
+import { existsSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
 import { app, BrowserWindow, dialog, ipcMain, shell } from "electron";
 import type { InvokeChannel, IpcInvoke } from "@shared/ipc";
+import type { DevicePollStatus } from "@shared/types";
 import { APP_REPO } from "../../data/menu.data";
 import { fire } from "../../lib/fire";
-import { NetworkError } from "../../network/axios";
 import {
   createRepo,
   listRepos,
@@ -38,11 +39,14 @@ import {
   setEditorPath,
   takeEditorSeed,
   whileCaptureDialogOpen,
+  isAppUrl,
+  isSafeExternal,
 } from "../../windows";
 import { hotkeyStatus, registerHotkey } from "../hotkey/hotkey";
 import { buildAppMenu } from "../menu/menu";
 import { resetApp } from "../session/reset-app";
 import { session } from "../session/session";
+import { sanitizeConfigPatch } from "./config-patch";
 import { confirmPurge } from "./confirm-purge";
 import type { IpcHandler, IpcSenderHandler } from "./ipc.types";
 import { setupVault } from "./setup-vault";
@@ -55,12 +59,18 @@ function handle<C extends InvokeChannel>(channel: C, fn: IpcHandler<C>): void {
 /** `handle`, for the few handlers that need the window that asked — to parent a dialog to it. */
 function handleFrom<C extends InvokeChannel>(channel: C, fn: IpcSenderHandler<C>): void {
   ipcMain.handle(channel, async (event, ...args: unknown[]) => {
+    // Only the app's own page speaks to main. Anything a window was navigated to still
+    // carries the preload, so the bridge alone proves nothing about who is calling.
+    if (!isAppUrl(event.senderFrame?.url ?? "")) throw new Error("Not allowed");
     try {
       const sender = BrowserWindow.fromWebContents(event.sender);
 
       return await fn(sender, ...(args as Parameters<IpcInvoke[C]>));
     } catch (e) {
-      if (e instanceof NetworkError && e.isAuth) session.markAuthExpired();
+      // A 401 is not marked "signed out" here. The network layer already asks the session
+      // to check — which refreshes a token that can be refreshed — and marking it first
+      // flashed the banner for those, and turned a mistyped token at sign-in into an
+      // "expired" session for someone who had never signed in.
       throw new Error(e instanceof Error ? e.message : String(e), { cause: e });
     }
   });
@@ -86,10 +96,12 @@ export function registerIpcHandlers(): void {
   handle("app:checkForUpdates", () => checkForUpdates(APP_REPO, app.getVersion()));
   handle("app:platform", () => process.platform);
   handle("hotkey:status", () => hotkeyStatus());
-  handle("app:openExternal", (url) => {
+  handle("app:openExternal", async (url) => {
     // Web pages and mail drafts only: anything else (file:, custom schemes) could launch
-    // an arbitrary app from a link in a pasted document.
-    if (/^(?:https?:\/\/|mailto:)/i.test(url)) fire(shell.openExternal(url), "opening a link");
+    // an arbitrary app from a link in a pasted document. Said, not ignored, so the caller's
+    // "couldn't open" reaches the user.
+    if (!isSafeExternal(url)) throw new Error("Only web and mail links open from Marasca");
+    await shell.openExternal(url);
   });
 
   // ---- auth
@@ -104,15 +116,28 @@ export function registerIpcHandlers(): void {
   handle("auth:deviceStart", async () => {
     const clientId = getOAuthConfig()?.clientId;
     if (!clientId) throw new Error("No GitHub OAuth client ID configured. Paste a token instead.");
+    // This attempt's own controller, held before the wait. Read after it, a Cancel and a
+    // new start in between left this attempt polling on the new one's signal — a second
+    // browser tab, and a stray "expired" fifteen minutes later.
     deviceAbort?.abort();
-    deviceAbort = new AbortController();
+    const controller = new AbortController();
+    deviceAbort = controller;
+    const { signal } = controller;
     const { deviceCode, ...publicSession } = await startDeviceFlow(clientId);
+    if (signal.aborted) throw new Error("Cancelled");
     fire(shell.openExternal(publicSession.verificationUri), "opening GitHub");
-    const { signal } = deviceAbort;
-    void pollDeviceFlow(clientId, deviceCode, publicSession.interval, signal, (status) =>
-      broadcast("auth:deviceStatus", { status }),
-    )
-      .then((token) => session.signIn(token, "device"))
+    const say = (status: DevicePollStatus) => {
+      if (!signal.aborted) broadcast("auth:deviceStatus", { status });
+    };
+    void pollDeviceFlow(clientId, deviceCode, publicSession.interval, signal, say)
+      .then((token) =>
+        // The poller reports its own ends. Signing in after "Approved!" did not, so a
+        // failed user lookup left the card on "Approved!" with nothing ever happening.
+        session.signIn(token, "device").catch((e: unknown) => {
+          say("error");
+          throw e;
+        }),
+      )
       .catch((e: unknown) => {
         if (!signal.aborted) console.warn("device flow failed", e);
       });
@@ -175,13 +200,21 @@ export function registerIpcHandlers(): void {
 
     return config;
   });
-  handle("vault:updateConfig", (patch) => {
+  handle("vault:updateConfig", (raw) => {
     const current = getSettings().vault;
     if (!current) throw new Error("No vault");
+    const patch = sanitizeConfigPatch(raw);
     const next = { ...current, ...patch };
-    if (patch.hotkey && patch.hotkey !== current.hotkey && !registerHotkey(patch.hotkey)) {
-      registerHotkey(current.hotkey);
-      throw new Error(`${patch.hotkey} is taken by another app or isn't a valid shortcut.`);
+    // The same shortcut again is a retry: another app may have let go of it since. Only
+    // a different one used to be registered, so "not active" stuck until a relaunch.
+    const retry = patch.hotkey === current.hotkey && !hotkeyStatus().active;
+    if (
+      patch.hotkey &&
+      (patch.hotkey !== current.hotkey || retry) &&
+      !registerHotkey(patch.hotkey)
+    ) {
+      if (!retry) registerHotkey(current.hotkey);
+      throw new Error("That shortcut is taken by another app, or macOS won’t allow it.");
     }
     updateSettings({ vault: next });
     if (session.vault) Object.assign(session.vault.config, next);
@@ -199,7 +232,11 @@ export function registerIpcHandlers(): void {
     // The folder is worth showing most when the vault inside it would not open.
     const root = session.vault?.root ?? getSettings().vault?.root;
     if (!root) throw new Error("No vault is set up");
-    shell.showItemInFolder(join(root, p ?? ""));
+    // Finder does nothing at all for a path that isn't there, which is exactly when this
+    // is pressed from "couldn't open the vault". Say so instead.
+    const target = join(root, p ?? "");
+    if (!existsSync(target)) throw new Error(`${target} isn’t there any more`);
+    shell.showItemInFolder(target);
   });
   handle("vault:reopen", async () => {
     const vault = await session.reopenVault();

@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 const dir = { path: "" };
 vi.mock("electron", () => ({ app: { getPath: () => dir.path } }));
 
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { DEFAULT_HOTKEY } from "@shared/constants";
@@ -57,6 +57,22 @@ describe("settings store", () => {
     const { getSettings } = await load();
 
     expect(getSettings().onboarded).toBe(false);
+  });
+
+  it("keeps a copy of a config it couldn't read, before the defaults replace it", async () => {
+    writeFileSync(join(dir.path, "config.json"), "{ this is not json");
+    const { getSettings, updateSettings } = await load();
+    getSettings();
+    updateSettings({ onboarded: true });
+
+    expect(readFileSync(join(dir.path, "config.json.bak"), "utf8")).toBe("{ this is not json");
+  });
+
+  it("leaves nothing half-written beside the config", async () => {
+    const { updateSettings } = await load();
+    updateSettings({ onboarded: true });
+
+    expect(existsSync(join(dir.path, "config.json.tmp"))).toBe(false);
   });
 
   it("fills in keys a config written by an older build never had", async () => {
