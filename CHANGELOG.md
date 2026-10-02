@@ -4,6 +4,12 @@ All notable changes to Marasca. The format follows [Keep a Changelog](https://ke
 
 To release: add a section for the new version here, run `npm run release -- <patch|minor|major>`, then `git push --follow-tags`. The tag builds the DMG and opens a draft release with this section as its notes.
 
+## [Unreleased]
+
+### Fixed
+
+- **Marasca stays in the Dock while it's open.** A little after launch the Dock icon could vanish, and stay gone until the next capture brought it back. The capture sheet, so it could float over full-screen apps, had Electron turn Marasca into a menu-bar-only app, and macOS applied that once Marasca wasn't in front. Capturing also no longer briefly switches to the Dock and back to put the icon back.
+
 ## [0.0.5] - 2026-10-02
 
 ### Added
