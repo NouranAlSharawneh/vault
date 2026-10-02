@@ -147,6 +147,10 @@ export const MARASCA_REPO_DESCRIPTION = "Markdown vault — captured with Marasc
 export const MARASCA_REPO_MARK = /captured with Marasca/i;
 /** Settings starts warning about a pasted token this long before GitHub retires it. */
 export const TOKEN_EXPIRY_WARN_MS = 7 * 24 * 60 * 60_000;
+/** The quiet update check: a little after launch, so it doesn't compete with opening the
+ *  vault, then every six hours — well inside GitHub's 60 unsigned requests an hour. */
+export const UPDATE_FIRST_CHECK_MS = 15_000;
+export const UPDATE_CHECK_EVERY_MS = 6 * 60 * 60_000;
 /** Documents under "Recent" in the menu bar item. */
 export const TRAY_RECENT_COUNT = 5;
 /** A resize or a move is saved once it settles. */

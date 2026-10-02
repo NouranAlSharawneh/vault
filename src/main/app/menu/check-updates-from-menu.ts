@@ -1,8 +1,7 @@
-import { app, BrowserWindow, dialog, shell } from "electron";
+import { BrowserWindow, dialog, shell } from "electron";
 import type { UpdateCheck } from "@shared/types";
-import { APP_REPO } from "../../data/menu.data";
 import { NetworkError } from "../../network/axios";
-import { checkForUpdates } from "../../services/updates/check-for-updates";
+import { refreshUpdateStatus } from "../updates/update-watch";
 
 /** What the dialog says for each answer; `download` when there is something to fetch. */
 export function updateMessage(r: UpdateCheck): { message: string; detail: string; url?: string } {
@@ -28,7 +27,8 @@ export async function checkForUpdatesFromMenu(): Promise<void> {
     parent ? dialog.showMessageBox(parent, o) : dialog.showMessageBox(o);
   let answer;
   try {
-    answer = updateMessage(await checkForUpdates(APP_REPO, app.getVersion()));
+    // The same check the watch makes, so the gear's dot agrees with the dialog.
+    answer = updateMessage(await refreshUpdateStatus());
   } catch (e) {
     const limited = e instanceof NetworkError && e.status === 403;
     await show({

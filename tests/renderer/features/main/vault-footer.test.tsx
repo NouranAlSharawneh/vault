@@ -1,7 +1,8 @@
 // @vitest-environment jsdom
-import { fireEvent, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { VaultFooter } from "@/features/main/components/vault-footer/vault-footer.component";
+import { useApp } from "@/stores/app";
 import type { VaultConfig } from "@shared/types";
 import { mockMarascaApi } from "../../helpers/mock-marasca-api";
 
@@ -39,5 +40,23 @@ describe("VaultFooter", () => {
     expect(screen.getByText("Local vault")).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: /in Finder/ }));
     expect(invoke).toHaveBeenCalledWith("vault:revealInFinder");
+  });
+
+  it("wears a cherry dot on the gear while a newer Marasca is out, and says which", () => {
+    mockMarascaApi();
+    useApp.setState({
+      update: { status: "available", current: "0.0.2", latest: "0.0.3", url: "https://x" },
+    });
+    const { container } = render(<VaultFooter config={config} onSettings={vi.fn()} />);
+    expect(container.querySelector("[data-update-dot]")).toBeTruthy();
+    expect(
+      screen.getByRole("button", { name: "settings, Marasca 0.0.3 is available" }),
+    ).toBeTruthy();
+
+    act(() =>
+      useApp.setState({ update: { status: "up-to-date", current: "0.0.3", latest: "0.0.3" } }),
+    );
+    expect(container.querySelector("[data-update-dot]")).toBeNull();
+    useApp.setState({ update: null });
   });
 });

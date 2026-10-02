@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { type FocusEvent, useEffect, useRef, useState } from "react";
 import { cx } from "@/helpers";
 import type { TooltipProps } from "./tooltip.types";
 
@@ -39,6 +39,24 @@ export function Tooltip({
   };
   // A tooltip left behind by an unmounted button would hang around forever.
   useEffect(() => () => clearTimeout(timer.current), []);
+  // Nor by a window that lost focus under it: the pointer that left never says so.
+  useEffect(() => {
+    if (!open) return;
+    window.addEventListener("blur", hide);
+
+    return () => window.removeEventListener("blur", hide);
+  }, [open]);
+
+  /** Keyboard focus only. A click focuses the button too, and the label then appeared
+   *  under the pointer that had just pressed it — and stayed, when the click opened a
+   *  window (New), since the pointer never left. */
+  const showForKeys = (e: FocusEvent<HTMLSpanElement>) => {
+    try {
+      if ((e.target as Element).matches(":focus-visible")) show();
+    } catch {
+      show();
+    }
+  };
 
   /**
    * Nudge the label back on screen. The last button in a toolbar sits close enough to the
@@ -47,12 +65,15 @@ export function Tooltip({
    */
   const place = (el: HTMLSpanElement | null) => {
     if (!el) return;
-    el.style.marginLeft = "0px";
+    // A label pinned by its right edge moves with its right margin; a left margin did
+    // nothing to it, so an end-aligned label near the left edge hung out of the window.
+    const side = align === "end" ? "marginRight" : "marginLeft";
+    el.style[side] = "0px";
     const box = el.getBoundingClientRect();
     const over = box.right - (window.innerWidth - EDGE);
     const under = EDGE - box.left;
-    if (over > 0) el.style.marginLeft = `${-over}px`;
-    else if (under > 0) el.style.marginLeft = `${under}px`;
+    const shift = over > 0 ? -over : under > 0 ? under : 0;
+    el.style[side] = `${side === "marginRight" ? -shift : shift}px`;
   };
 
   return (
@@ -61,7 +82,7 @@ export function Tooltip({
       onPointerEnter={show}
       onPointerLeave={hide}
       onPointerDown={hide}
-      onFocus={show}
+      onFocus={showForKeys}
       onBlur={hide}
     >
       {children}

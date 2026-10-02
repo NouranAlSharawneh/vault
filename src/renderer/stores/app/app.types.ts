@@ -1,4 +1,5 @@
 import type {
+  UpdateCheck,
   AuthState,
   GitStatus,
   IndexSnapshot,
@@ -25,6 +26,9 @@ export interface AppState {
   platform: string;
   /** Whether git can run; null until main has answered. */
   gitStatus: GitStatus | null;
+  /** The last update check's answer; null until one has come back. "available" puts a
+   *  dot on the Settings gear. */
+  update: UpdateCheck | null;
   boot: () => Promise<void>;
   /** Ask main to open the configured vault again, then load it as boot would. */
   reopenVault: () => Promise<void>;

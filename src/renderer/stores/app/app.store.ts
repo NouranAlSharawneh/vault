@@ -39,16 +39,18 @@ export const useApp = create<AppState>((set) => ({
   trash: [],
   platform: "darwin",
   gitStatus: null,
+  update: null,
 
   boot: async () => {
-    const [auth, config, platform, gitStatus] = await Promise.all([
+    const [auth, config, platform, gitStatus, update] = await Promise.all([
       api("auth:state").catch(() => ({ status: "signed-out", user: null, method: null }) as const),
       api("vault:config").catch(() => null),
       api("app:platform").catch(() => "darwin"),
       api("git:status").catch(() => null),
+      api("app:updateStatus").catch(() => null),
     ]);
     const vault = config ? await loadVault(() => api("vault:index")) : {};
-    set({ auth, config, platform, gitStatus, ...vault, ready: true });
+    set({ auth, config, platform, gitStatus, update, ...vault, ready: true });
   },
 
   reopenVault: async () => {

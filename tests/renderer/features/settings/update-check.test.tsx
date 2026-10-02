@@ -3,6 +3,7 @@ import userEvent from "@testing-library/user-event";
 // @vitest-environment jsdom
 import { describe, expect, it } from "vitest";
 import { UpdateCheck } from "@/features/settings/components/update-check/update-check.component";
+import { useApp } from "@/stores/app";
 import type { UpdateCheck as UpdateCheckResult } from "@shared/types";
 import { mockMarascaApi } from "../../helpers/mock-marasca-api";
 
@@ -16,6 +17,17 @@ function setup(answer: UpdateCheckResult | Error) {
 }
 
 describe("UpdateCheck", () => {
+  it("offers the version the background check found, without asking again", () => {
+    // The gear's dot sent you here: the download is waiting, not one more click away.
+    useApp.setState({
+      update: { status: "available", current: "0.0.1", latest: "0.0.2", url: "https://x" },
+    });
+    const { invoke } = setup({ status: "up-to-date", current: "0.0.1", latest: "0.0.1" });
+    expect(screen.getByRole("button", { name: /Download 0.0.2/ })).toBeTruthy();
+    expect(invoke).not.toHaveBeenCalled();
+    useApp.setState({ update: null });
+  });
+
   it("shows this version and doesn't touch the network until asked", () => {
     const { invoke } = setup({ status: "up-to-date", current: "0.0.1", latest: "0.0.1" });
     expect(screen.getByText("You’re on version 0.0.1.")).toBeTruthy();

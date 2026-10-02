@@ -73,6 +73,7 @@ export const INVOKE_CHANNELS = [
   "window:setEdited",
   "app:version",
   "app:checkForUpdates",
+  "app:updateStatus",
   "app:platform",
   "hotkey:status",
   "app:openExternal",
@@ -97,6 +98,7 @@ export const EVENT_CHANNELS = [
   "editor:docGone",
   "shortcut",
   "navigate",
+  "app:updateStatus",
 ] as const satisfies readonly EventChannel[];
 
 /**

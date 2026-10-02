@@ -43,6 +43,21 @@ describe("Tooltip", () => {
     vi.useRealTimers();
   });
 
+  it("goes when its window loses focus, which a pointer that left never reports", () => {
+    // Clicking New opened an editor over the library, and "New document ⌘N" stayed up.
+    vi.useFakeTimers();
+    render(
+      <Tooltip label="New document">
+        <button>n</button>
+      </Tooltip>,
+    );
+    rest(screen.getByText("n").parentElement!);
+    expect(screen.getByRole("tooltip")).toBeTruthy();
+    fireEvent.blur(window);
+    expect(screen.queryByRole("tooltip")).toBeNull();
+    vi.useRealTimers();
+  });
+
   it("slides back in rather than hanging off the window edge", () => {
     vi.useFakeTimers();
     render(
@@ -59,6 +74,26 @@ describe("Tooltip", () => {
     try {
       rest(host);
       expect(screen.getByRole("tooltip").style.marginLeft).toBe(`-${overrun}px`);
+    } finally {
+      Element.prototype.getBoundingClientRect = real;
+    }
+    vi.useRealTimers();
+  });
+
+  it("slides an end-aligned label back in from the left edge too", () => {
+    // Pinned by its right edge, it ignored the left margin the nudge used to set.
+    vi.useFakeTimers();
+    render(
+      <Tooltip label="Settings — Marasca 0.0.3 is available" align="end">
+        <button>g</button>
+      </Tooltip>,
+    );
+    const real = Element.prototype.getBoundingClientRect;
+    Element.prototype.getBoundingClientRect = () => ({ right: 200, left: -20 }) as DOMRect;
+    try {
+      rest(screen.getByText("g").parentElement!);
+      // 8px from the edge: moved right by 28, which a right margin does by going negative.
+      expect(screen.getByRole("tooltip").style.marginRight).toBe("-28px");
     } finally {
       Element.prototype.getBoundingClientRect = real;
     }

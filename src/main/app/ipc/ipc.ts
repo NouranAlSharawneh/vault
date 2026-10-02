@@ -5,7 +5,7 @@ import { app, BrowserWindow, clipboard, dialog, ipcMain, Notification, shell } f
 import { DEFAULT_HOTKEY } from "@shared/constants";
 import type { InvokeChannel, IpcInvoke } from "@shared/ipc";
 import type { DevicePollStatus } from "@shared/types";
-import { APP_REPO, appMenu } from "../../data/menu.data";
+import { appMenu } from "../../data/menu.data";
 import { fire } from "../../lib/fire";
 import {
   createRepo,
@@ -24,7 +24,6 @@ import {
   onGitStatus,
   refreshGitStatus,
 } from "../../services/git/git-status.service";
-import { checkForUpdates } from "../../services/updates/check-for-updates";
 import { clearDraft, loadDraft, saveDraft } from "../../store/draft.store";
 import { getOAuthConfig } from "../../store/oauth-config";
 import { getSettings, updateSettings } from "../../store/settings.store";
@@ -56,6 +55,7 @@ import { resetApp } from "../session/reset-app";
 import { session } from "../session/session";
 import { nudgeSync } from "../session/sync-watch";
 import { shortcutGroups } from "../shortcuts/shortcut-groups";
+import { refreshUpdateStatus, updateStatus } from "../updates/update-watch";
 import { sanitizeConfigPatch } from "./config-patch";
 import { confirmPurge } from "./confirm-purge";
 import type { IpcHandler, IpcSenderHandler } from "./ipc.types";
@@ -103,7 +103,8 @@ let deviceAbort: AbortController | null = null;
 
 export function registerIpcHandlers(): void {
   handle("app:version", () => app.getVersion());
-  handle("app:checkForUpdates", () => checkForUpdates(APP_REPO, app.getVersion()));
+  handle("app:checkForUpdates", () => refreshUpdateStatus());
+  handle("app:updateStatus", () => updateStatus());
   handle("app:platform", () => process.platform);
   handle("app:loginItem", () => loginItemState());
   handle("app:setLoginItem", (open) => setLoginItem(open));

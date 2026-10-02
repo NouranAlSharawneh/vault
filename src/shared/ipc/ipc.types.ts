@@ -166,6 +166,8 @@ export interface IpcInvoke {
   "app:version": () => string;
   /** Compare this build with the newest published release on GitHub. */
   "app:checkForUpdates": () => UpdateCheck;
+  /** The last update check's answer, from the background watch or a check by hand. */
+  "app:updateStatus": () => UpdateCheck | null;
   "app:platform": () => NodeJS.Platform;
   /** Whether the capture shortcut is really bound, or another app is holding it. */
   "hotkey:status": () => HotkeyStatus;
@@ -204,6 +206,8 @@ export interface IpcEvents {
   "index:changed": IndexSnapshot;
   "index:progress": ScanProgress;
   "sync:status": SyncStatus;
+  /** A check found something different: a new version, or none any more. */
+  "app:updateStatus": UpdateCheck;
   "auth:state": AuthState;
   "git:status": GitStatus;
   "auth:deviceStatus": { status: DevicePollStatus };

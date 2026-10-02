@@ -1,11 +1,19 @@
 import { useCallback, useState } from "react";
 import { errorMessage } from "@/helpers";
 import { api } from "@/lib/api";
+import { useApp } from "@/stores/app";
 import type { UpdateCheckState } from "../update-check.types";
 
-/** On demand, not on open: Settings shouldn't hit the network just because it was shown. */
+/**
+ * On demand, not on open: Settings shouldn't hit the network just because it was shown.
+ * It starts from what the background check last heard, so the version the gear's dot
+ * announced is offered for download straight away.
+ */
 export function useUpdateCheck() {
-  const [state, setState] = useState<UpdateCheckState>({ phase: "idle" });
+  const known = useApp((s) => s.update);
+  const [state, setState] = useState<UpdateCheckState>(() =>
+    known ? { phase: "done", result: known } : { phase: "idle" },
+  );
 
   const check = useCallback(async () => {
     setState({ phase: "checking" });

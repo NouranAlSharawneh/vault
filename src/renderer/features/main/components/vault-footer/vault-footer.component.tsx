@@ -3,6 +3,7 @@ import { Button, GitHubMark, Tooltip } from "@/components/ui";
 import { MOD_KEY } from "@/constants";
 import { shortPath } from "@/helpers";
 import { api, fire } from "@/lib/api";
+import { useApp } from "@/stores/app";
 import type { VaultFooterProps } from "./vault-footer.types";
 
 /**
@@ -12,6 +13,8 @@ import type { VaultFooterProps } from "./vault-footer.types";
  * folder for a local vault. Settings is the only icon; rescan lives in ⌘K and Settings.
  */
 export function VaultFooter({ config, onSettings }: VaultFooterProps) {
+  const update = useApp((s) => s.update);
+  const newer = update?.status === "available" ? update.latest : null;
   const [owner, name] = config.remote?.split("/") ?? [];
   const remote = !!config.remote;
 
@@ -45,17 +48,27 @@ export function VaultFooter({ config, onSettings }: VaultFooterProps) {
           </span>
         </button>
       </Tooltip>
-      {/* ⌘, and the palette reach Settings too, but neither is something you can see. */}
+      {/* ⌘, and the palette reach Settings too, but neither is something you can see. A
+          cherry dot says a newer Marasca is out; the download is in Settings ▸ Updates. */}
       <Button
         variant="ghost"
-        className="w-7 shrink-0 justify-center px-0"
+        size="icon"
+        className="relative shrink-0"
         onClick={onSettings}
-        tooltip="Settings"
+        tooltip={newer ? `Settings — Marasca ${newer} is available` : "Settings"}
         tooltipKeys={`${MOD_KEY},`}
         tooltipSide="top"
-        aria-label="settings"
+        aria-label={newer ? `settings, Marasca ${newer} is available` : "settings"}
       >
         <Settings size={14} />
+        {newer && (
+          <span
+            aria-hidden
+            data-update-dot
+            // The ring is the footer's own ground, so the dot reads as set into the gear.
+            className="absolute top-1 right-1 h-2 w-2 rounded-full bg-cherry ring-2 ring-paper-2"
+          />
+        )}
       </Button>
     </div>
   );

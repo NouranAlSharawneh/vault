@@ -14,6 +14,7 @@ import { showMainWindow } from "./app/session/launch-route";
 import { session } from "./app/session/session";
 import { watchForReconnect } from "./app/session/sync-watch";
 import { createTray, destroyTray } from "./app/tray/tray";
+import { stopWatchingForUpdates, watchForUpdates } from "./app/updates/update-watch";
 import { fire } from "./lib/fire";
 import { configureNetwork } from "./network/axios";
 import { pruneStaged, setStagingDir } from "./services/assets";
@@ -93,6 +94,7 @@ const boot = app.whenReady().then(async () => {
   getCaptureWindow(); // pre-warm so the sheet appears instantly
   createTray();
   watchForReconnect();
+  watchForUpdates();
   // Started by the login item: no window. The menu bar item and the shortcut are there.
   if (!openedAtLogin()) showMainWindow();
   if (!IS_MAC) filesIn(process.argv).forEach(openFromOutside);
@@ -127,6 +129,7 @@ app.on("will-quit", (e) => {
   globalShortcut.unregisterAll();
   // The menu bar item goes with the app; one left behind answers nothing.
   destroyTray();
+  stopWatchingForUpdates();
   if (shutDown) return;
   shutDown = true;
   e.preventDefault();
