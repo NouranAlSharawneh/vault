@@ -7,6 +7,9 @@ import { Annotation, Compartment, EditorState, Transaction } from "@codemirror/s
 import { EditorView, keymap, placeholder as placeholderExt, drawSelection } from "@codemirror/view";
 import { tags } from "@lezer/highlight";
 import { useEffect, useRef } from "react";
+import { countWords } from "@shared/helpers";
+import { imagePasteDrop } from "../extensions/images";
+import { writing } from "../extensions/writing";
 import type { MarkdownEditorProps } from "../markdown-editor.types";
 
 const mdHighlight = HighlightStyle.define([
@@ -112,6 +115,11 @@ const vaultTheme = EditorView.theme({
     color: "var(--color-ink)",
   },
   ".cm-searchMatch": { backgroundColor: "var(--color-cherry-tint-2)" },
+  // The bracket that closes the one at the cursor, in the selection's own tint.
+  "&.cm-focused .cm-matchingBracket": {
+    backgroundColor: "var(--color-cherry-tint-2)",
+    outline: "none",
+  },
   ".cm-searchMatch-selected": { backgroundColor: "var(--color-warn)" },
 });
 
@@ -125,8 +133,34 @@ const FromValue = Annotation.define<boolean>();
 
 type Options = Pick<
   MarkdownEditorProps,
-  "value" | "onChange" | "onSubmit" | "placeholder" | "autoFocus" | "readOnly"
+  | "value"
+  | "onChange"
+  | "onSubmit"
+  | "placeholder"
+  | "autoFocus"
+  | "readOnly"
+  | "onImage"
+  | "onSelectionWords"
 >;
+
+/**
+ * The smallest change that turns `from` into `to`: the text they share at both ends is
+ * left alone. Replacing the whole document to apply a save's rewritten links threw the
+ * cursor to the end of it.
+ */
+export function minimalChange(from: string, to: string) {
+  let start = 0;
+  const max = Math.min(from.length, to.length);
+  while (start < max && from.charCodeAt(start) === to.charCodeAt(start)) start++;
+  let end = 0;
+  while (
+    end < max - start &&
+    from.charCodeAt(from.length - 1 - end) === to.charCodeAt(to.length - 1 - end)
+  )
+    end++;
+
+  return { from: start, to: from.length - end, insert: to.slice(start, to.length - end) };
+}
 
 /** Mounts a CodeMirror 6 markdown editor into the returned ref and keeps it in sync with `value`. */
 export function useCodeMirror({
@@ -136,14 +170,20 @@ export function useCodeMirror({
   placeholder,
   autoFocus,
   readOnly = false,
+  onImage,
+  onSelectionWords,
 }: Options) {
   const host = useRef<HTMLDivElement>(null);
   const view = useRef<EditorView | null>(null);
   const onChangeRef = useRef(onChange);
   const onSubmitRef = useRef(onSubmit);
+  const onImageRef = useRef(onImage);
+  const onSelectionRef = useRef(onSelectionWords);
   useEffect(() => {
     onChangeRef.current = onChange;
     onSubmitRef.current = onSubmit;
+    onImageRef.current = onImage;
+    onSelectionRef.current = onSelectionWords;
   });
 
   const editable = useRef(new Compartment());
@@ -170,6 +210,8 @@ export function useCodeMirror({
         markdown({ base: markdownLanguage, codeLanguages: languages }),
         syntaxHighlighting(mdHighlight),
         placeholderExt(placeholder ?? ""),
+        writing,
+        imagePasteDrop(() => onImageRef.current),
         keymap.of([
           {
             key: "Mod-Enter",
@@ -186,6 +228,12 @@ export function useCodeMirror({
         highlightSelectionMatches(),
         keymap.of([...defaultKeymap, ...historyKeymap, ...searchKeymap, indentWithTab]),
         editable.current.of(EditorState.readOnly.of(readOnly)),
+        // How many words are selected, for the count beside the pane's label.
+        EditorView.updateListener.of((u) => {
+          if (!u.selectionSet && !u.docChanged) return;
+          const { from, to } = u.state.selection.main;
+          onSelectionRef.current?.(from === to ? 0 : countWords(u.state.sliceDoc(from, to)));
+        }),
         EditorView.updateListener.of((u) => {
           if (!u.docChanged) return;
           if (u.transactions.every((t) => t.annotation(FromValue))) return;
@@ -211,7 +259,7 @@ export function useCodeMirror({
     const current = v.state.doc.toString();
     if (current === value) return;
     v.dispatch({
-      changes: { from: 0, to: current.length, insert: value },
+      changes: minimalChange(current, value),
       // Neither an edit to report nor a step to undo: ⌘Z straight after opening used to
       // "undo" the load and leave an empty document.
       annotations: [FromValue.of(true), Transaction.addToHistory.of(false)],
@@ -226,5 +274,5 @@ export function useCodeMirror({
     });
   }, [readOnly]);
 
-  return host;
+  return { host, view };
 }

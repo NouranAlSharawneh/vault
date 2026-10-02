@@ -90,6 +90,13 @@ To release: add a section for the new version here, run `npm run release -- <pat
 
 - **⌘S saves and keeps the editor open.** The footer then says "Saved"; ⌘↵ still saves and closes.
 - **Find and replace in the editor** (⌘F, then ⌘G for the next match), with other copies of the selected word highlighted.
+- **Paste or drop an image into the editor.** It shows in the preview straight away, and the save copies it into the document's `assets/` folder — whichever project the document ends up in — and points the link there. Nothing lands in the vault until you save.
+- **Formatting keys:** ⌘B bold, ⌘I italic, ⌘E inline code and ⇧⌘K link wrap the selection, and take the marks off again. Brackets and quotes close themselves, and the partner of the bracket at the cursor is shown.
+- **The title sits at the top of the editor**, in the reader's type, and says when saving will rename or move the file.
+- **Star a document from the editor**, beside its project, source and tags.
+- **Focus mode (⌥⌘P)** folds the preview away and gives the text the window; it is remembered for the next document.
+- **Jump to a heading (⇧⌘O):** the document's outline, filtered as you type.
+- The markdown pane says the length and reading time — or how much is selected — and its **?** lists every key the editor answers to.
 
 ## [0.0.2] - 2026-09-28
 

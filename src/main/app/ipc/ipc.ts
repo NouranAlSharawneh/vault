@@ -13,7 +13,7 @@ import {
   pollDeviceFlow,
   startDeviceFlow,
 } from "../../network/github";
-import { resolveAssets } from "../../services/assets";
+import { resolveAssets, stageImage } from "../../services/assets";
 import { readClipboard } from "../../services/capture/capture.service";
 import {
   currentGitStatus,
@@ -348,4 +348,5 @@ export function registerIpcHandlers(): void {
   handle("window:openEditor", (p) => void openEditorWindow(p ? { path: p } : {}));
   handleFrom("editor:seed", (sender) => takeEditorSeed(sender));
   handleFrom("editor:setPath", (sender, p) => setEditorPath(sender, p));
+  handle("editor:stageImage", (name, bytes) => stageImage(name, bytes));
 }

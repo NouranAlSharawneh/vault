@@ -1,6 +1,6 @@
 export { cx } from "./cx";
 export { plural, pluralWord } from "./plural";
-export { readTime } from "./read-time";
+export { readMinutes, readTime } from "./read-time";
 export { errorMessage } from "./error-message";
 export { isEditableTarget } from "./is-editable-target";
 export { formatBytes } from "./format-bytes";
@@ -19,3 +19,7 @@ export { pixelRuns } from "./pixel-runs";
 export { describeGit } from "./describe-git";
 export { describePull, describePush } from "./describe-sync";
 export { plainError } from "./plain-error";
+export { headingsOf } from "./headings";
+export { renameHint } from "./rename-hint";
+export type { RenameHint } from "./rename-hint";
+export type { Heading } from "./headings";

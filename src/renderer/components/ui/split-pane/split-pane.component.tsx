@@ -17,6 +17,7 @@ export function SplitPane({
   storageKey,
   handle = "line",
   label = "Resize panes",
+  collapsed = false,
   className,
 }: SplitPaneProps) {
   const { ratio, bounds, dragging, container, onPointerDown, onKeyDown, reset } = useSplitDrag({
@@ -33,10 +34,14 @@ export function SplitPane({
       ref={container}
       className={cx("flex min-h-0 min-w-0", dragging && "cursor-col-resize select-none", className)}
     >
-      <div className="flex min-h-0 min-w-0 flex-col" style={{ width: `${ratio * 100}%` }}>
+      <div
+        className="flex min-h-0 min-w-0 flex-col"
+        style={{ width: collapsed ? "100%" : `${ratio * 100}%` }}
+      >
         {left}
       </div>
       <div
+        hidden={collapsed}
         role="separator"
         tabIndex={0}
         aria-label={label}
@@ -55,7 +60,9 @@ export function SplitPane({
           dragging && (handle === "line" ? "bg-cherry-3" : "bg-cherry-tint-2"),
         )}
       />
-      <div className="flex min-h-0 min-w-0 flex-1 flex-col">{right}</div>
+      <div hidden={collapsed} className="flex min-h-0 min-w-0 flex-1 flex-col">
+        {right}
+      </div>
     </div>
   );
 }

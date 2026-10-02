@@ -132,6 +132,12 @@ export interface SaveResult {
   preservedExternalEdit?: boolean;
   /** Repo-relative paths of assets copied in with this save. */
   assets?: string[];
+  /**
+   * The body as written, when copying images in rewrote its links (a pasted image's
+   * `paste-<id>.png` became `assets/paste-<id>.png`). The editor carries on from this
+   * text: kept on the old links, its next save imported the same images again.
+   */
+  body?: string;
   meta: DocMeta;
   committed: boolean;
   /**

@@ -3,4 +3,5 @@ export { findAssetRoot } from "./find-asset-root";
 export { rootsFromHits, spotlightRoots } from "./spotlight";
 export { importAssets } from "./import-assets";
 export { orphanedAssets } from "./orphaned-assets";
+export { pruneStaged, setStagingDir, stageImage, stagedImagePath } from "./staged-images";
 export type { ImportedAssets } from "./assets.types";

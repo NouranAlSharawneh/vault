@@ -5,6 +5,12 @@ export interface AssetPlanOptions {
   project: string;
   /** Folder of the file the text came from, when known (a `.md` copied in Finder). */
   sourceDir?: string | null;
+  /**
+   * The saved document's own folder. Images found there are already where they belong:
+   * not listed, and not copied — a pasted image, once saved, used to come back as
+   * "1 image referenced … copy" under a path in the vault.
+   */
+  homeDir?: string | null;
 }
 
 export interface AssetPlan {

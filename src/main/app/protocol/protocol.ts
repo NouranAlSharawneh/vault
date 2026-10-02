@@ -2,6 +2,7 @@ import { existsSync } from "node:fs";
 import { pathToFileURL } from "node:url";
 import { net, protocol } from "electron";
 import { ASSET_SCHEME } from "@shared/constants";
+import { stagedImagePath } from "../../services/assets";
 import { insideVault } from "../../services/fs/paths";
 import { session } from "../session/session";
 import { resolveAssetRequest } from "./resolve-asset-request";
@@ -24,6 +25,7 @@ export function registerAssetProtocol(): void {
       new URL(request.url),
       existsSync,
       insideVault,
+      stagedImagePath,
     );
     if ("deny" in where) return new Response(null, { status: where.deny });
     try {

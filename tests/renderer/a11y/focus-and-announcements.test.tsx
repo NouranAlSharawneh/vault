@@ -80,7 +80,6 @@ describe("the editor's metadata", () => {
     render(
       <MetadataBar
         meta={meta}
-        inferredTitle=""
         onChange={onChange}
         projects={["Atlas API"]}
         tags={[]}

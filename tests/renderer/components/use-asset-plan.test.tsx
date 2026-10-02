@@ -176,4 +176,46 @@ describe("useAssetPlan", () => {
     expect(noDir.result.current.request).toBeUndefined();
     expect(noDir.result.current.stranded).toBe(3);
   });
+
+  it("sends a pasted image with the save, without listing it or asking for its folder", async () => {
+    // A new document has no folder: an image pasted into it was the one thing main could
+    // find, and the plan dropped it for want of a base folder.
+    const ref = "paste-0a1b2c3d4e5f.png";
+    mockMarascaApi({
+      "assets:resolve": (): AssetResolution => ({
+        baseDir: null,
+        detected: false,
+        refs: [{ ref, name: ref, status: "found", bytes: 2048 }],
+      }),
+    });
+    useApp.setState({ config: { ...config, assetDirs: {} } });
+    const { result } = renderHook(() =>
+      useAssetPlan({ body: `# X\n\n![image](${ref})\n`, project: "" }),
+    );
+    await waitFor(() => expect(result.current.request).toEqual({ baseDir: "", refs: [ref] }));
+    expect(result.current.refs).toEqual([]);
+    expect(result.current.stranded).toBe(0);
+  });
+
+  it("says nothing about images already in the document's own folder, but still sends a new paste", async () => {
+    const home = "/v/atlas-api";
+    const ref = "paste-0a1b2c3d4e5f.png";
+    mockMarascaApi({
+      "assets:resolve": (): AssetResolution => ({
+        baseDir: home,
+        detected: false,
+        refs: [
+          { ref: "assets/shot.png", name: "shot.png", status: "found", bytes: 900 },
+          { ref, name: ref, status: "found", bytes: 2048 },
+        ],
+      }),
+    });
+    useApp.setState({ config: { ...config, assetDirs: {} } });
+    const body = `# X\n\n![a](assets/shot.png)\n![b](${ref})\n`;
+    const { result } = renderHook(() =>
+      useAssetPlan({ body, project: "Atlas API", sourceDir: home, homeDir: home }),
+    );
+    await waitFor(() => expect(result.current.request).toEqual({ baseDir: home, refs: [ref] }));
+    expect(result.current.refs).toEqual([]);
+  });
 });

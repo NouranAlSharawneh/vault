@@ -24,7 +24,7 @@ export function AssetPanel({ plan, dark, className }: AssetPanelProps) {
   );
   // Said while it happens: the panel used to stay hidden until the search came back, and
   // a save pressed meanwhile went ahead as if there were no images at all.
-  if (plan.pending)
+  if (plan.pending && plan.lookingFor)
     return (
       <div className={cx(frame, "flex items-center gap-2", muted)} role="status">
         <Spinner /> Looking for {plural(plan.lookingFor, "image")}…

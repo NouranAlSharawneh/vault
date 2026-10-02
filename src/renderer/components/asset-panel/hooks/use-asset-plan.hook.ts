@@ -3,7 +3,7 @@ import { ASSET_RESOLVE_DEBOUNCE_MS } from "@/constants";
 import { api } from "@/lib/api";
 import { useApp } from "@/stores/app";
 import { ASSET_MAX_BYTES, ASSET_WARN_BYTES, INBOX_SLUG } from "@shared/constants";
-import { findAssetRefs, projectSlug } from "@shared/helpers";
+import { findAssetRefs, isPastedRef, projectSlug } from "@shared/helpers";
 import type { AssetImport, AssetRef, AssetResolution } from "@shared/types";
 import type { AssetPlan, AssetPlanOptions } from "../asset-panel.types";
 
@@ -19,7 +19,7 @@ const SETTLE_WAIT_MS = 3000;
  * Everything chosen here belongs to one body. The capture sheet is never unmounted, so a
  * folder picked, or an image skipped, for one clip used to carry over to the next.
  */
-export function useAssetPlan({ body, project, sourceDir }: AssetPlanOptions): AssetPlan {
+export function useAssetPlan({ body, project, sourceDir, homeDir }: AssetPlanOptions): AssetPlan {
   const config = useApp((s) => s.config);
   const setConfig = useApp((s) => s.setConfig);
   const slug = projectSlug(project) || INBOX_SLUG;
@@ -66,8 +66,8 @@ export function useAssetPlan({ body, project, sourceDir }: AssetPlanOptions): As
 
   const settled = paths.length > 0 && resolved.key === key;
   const pending = paths.length > 0 && !settled;
-  const refs = settled ? resolved.refs : [];
   const baseDir = settled ? resolved.baseDir : asked;
+  const { refs, pasted } = sortRefs(settled ? resolved.refs : [], !!homeDir && baseDir === homeDir);
 
   const chooseFolder = useCallback(async () => {
     const dir = await api("assets:chooseFolder", baseDir ?? undefined);
@@ -99,8 +99,7 @@ export function useAssetPlan({ body, project, sourceDir }: AssetPlanOptions): As
   );
 
   const going = refs.filter(included);
-  const request: AssetImport | undefined =
-    baseDir && going.length ? { baseDir, refs: going.map((r) => r.ref) } : undefined;
+  const request = importRequest(baseDir, going, pasted);
 
   // A save pressed before the images have been looked for waits for the answer (briefly),
   // so it can't go ahead with links that are about to be found missing.
@@ -125,7 +124,7 @@ export function useAssetPlan({ body, project, sourceDir }: AssetPlanOptions): As
     baseDir,
     detected: settled && resolved.detected,
     pending,
-    lookingFor: pending ? paths.length : 0,
+    lookingFor: pending ? paths.filter((p) => !isPastedRef(p)).length : 0,
     excluded: refs.filter((r) => r.status === "found" && !included(r)).map((r) => r.ref),
     found: refs.filter((r) => r.status === "found").length,
     missing: refs.filter((r) => r.status === "missing").length,
@@ -141,4 +140,33 @@ export function useAssetPlan({ body, project, sourceDir }: AssetPlanOptions): As
 
 function missing(ref: string): AssetRef {
   return { ref, name: ref.split("/").pop() ?? ref, status: "missing", bytes: 0 };
+}
+
+/**
+ * The refs the panel lists and chooses among, and the pasted images that simply go.
+ * Found in the document's own folder (`atHome`), an image is already in place: nothing
+ * to say or copy. Images pasted into the editor are its own: always copied in, never
+ * listed or offered a folder — they have one, in app data, until the save.
+ */
+function sortRefs(all: AssetRef[], atHome: boolean): { refs: AssetRef[]; pasted: string[] } {
+  const pasted = all.filter((r) => isPastedRef(r.ref));
+
+  return {
+    refs: all.filter((r) => !isPastedRef(r.ref) && !(atHome && r.status === "found")),
+    pasted: pasted
+      .filter((r) => r.status === "found" && r.bytes <= ASSET_MAX_BYTES)
+      .map((r) => r.ref),
+  };
+}
+
+/** What the save copies in. Nothing but pasted images can be found without a folder, so
+ *  a new document with only those still sends them. */
+function importRequest(
+  baseDir: string | null,
+  going: AssetRef[],
+  pasted: string[],
+): AssetImport | undefined {
+  const refs = [...(baseDir ? going.map((r) => r.ref) : []), ...pasted];
+
+  return refs.length ? { baseDir: baseDir ?? "", refs } : undefined;
 }

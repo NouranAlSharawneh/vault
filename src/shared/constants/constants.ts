@@ -73,6 +73,12 @@ export const ASSET_WARN_BYTES = 10 * 1024 * 1024;
  * it until history is rewritten. Such a file is never copied into the vault.
  */
 export const ASSET_MAX_BYTES = 100 * 1024 * 1024;
+/** Image types the editor takes from a paste or a drop. */
+export const PASTED_IMAGE_EXTENSIONS = ["png", "jpg", "jpeg", "gif", "webp"] as const;
+/** The app-data folder pasted images wait in until their document is saved. */
+export const PASTED_DIR = "pasted-images";
+/** Pasted images nobody saved are cleared out after this long. */
+export const PASTED_MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000;
 /** The largest file the capture sheet will take from Finder. */
 export const CAPTURE_FILE_MAX_BYTES = 2 * 1024 * 1024;
 

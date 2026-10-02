@@ -208,6 +208,9 @@ export function useEditorDraft(untitledKey: string | null) {
         });
         setState((s) => ({
           ...s,
+          // Links the save rewrote (a pasted image now in `assets/`) come back with it, as
+          // long as nothing was typed meanwhile — the text is read-only while a save is out.
+          body: res.body !== undefined && s.body === sent.body ? res.body : s.body,
           // Where the file is now, even when the commit after it failed: a retry has to
           // carry on from here, not write a second copy or move it from where it was.
           existingPath: res.path,

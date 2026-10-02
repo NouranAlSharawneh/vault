@@ -145,6 +145,11 @@ export interface IpcInvoke {
   "editor:seed": () => EditorDraft | null;
   /** The asking editor window now holds this document, so opening it again focuses it. */
   "editor:setPath": (path: string | null) => void;
+  /**
+   * An image pasted or dropped into the editor: kept in app data until the document is
+   * saved, which copies it into the document's `assets/`. Answers the name to link it by.
+   */
+  "editor:stageImage": (name: string, bytes: Uint8Array) => string;
   /** macOS: mark the sending window as having unsaved changes (the dot in its close button). */
   "window:setEdited": (edited: boolean) => void;
   "app:version": () => string;
