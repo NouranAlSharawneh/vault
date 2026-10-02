@@ -27,6 +27,9 @@ export type ReaderView = "preview" | "markdown" | "split";
 /** The reader's trash actions; at most one runs at a time. */
 export type TrashAction = "trash" | "restore" | "purge";
 
+/** What can be done to several documents at once. */
+export type BulkAction = "star" | "unstar" | "trash";
+
 export interface FilteredDocs {
   docs: DocMeta[];
   /** Human label for the list header, e.g. "Atlas API" or "Starred". */

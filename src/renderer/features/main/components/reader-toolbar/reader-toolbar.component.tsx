@@ -1,8 +1,18 @@
-import { BookOpen, Code, Columns2, History, Pencil, RotateCcw, Star, Trash2 } from "lucide-react";
+import {
+  BookOpen,
+  Code,
+  Columns2,
+  History,
+  ListTree,
+  Pencil,
+  RotateCcw,
+  Star,
+  Trash2,
+} from "lucide-react";
 import { Button, GitHubMark, Segmented } from "@/components/ui";
 import { MOD_KEY } from "@/constants";
 import { READER_VIEWS } from "@/data/main.data";
-import { cx, readTime } from "@/helpers";
+import { cx, githubBlobPath, readTime } from "@/helpers";
 import { api, fire } from "@/lib/api";
 import { useApp } from "@/stores/app";
 import type { ReaderToolbarProps } from "./reader-toolbar.types";
@@ -28,6 +38,8 @@ export function ReaderToolbar({
   onRestore,
   onPurge,
   trashBusy,
+  onOutline,
+  outlineOpen = false,
 }: ReaderToolbarProps) {
   const remote = useApp((s) => s.config?.remote);
   const branch = useApp((s) => s.config?.branch ?? "main");
@@ -73,6 +85,20 @@ export function ReaderToolbar({
         </div>
       ) : (
         <div className="flex shrink-0 items-center gap-0.5">
+          {onOutline && (
+            <Button
+              variant="ghost"
+              size="icon"
+              data-outline-toggle
+              className={cx(outlineOpen && "bg-paper-3 text-ink")}
+              onClick={onOutline}
+              tooltip="Outline"
+              aria-label="Outline"
+              aria-expanded={outlineOpen}
+            >
+              <ListTree size={14} />
+            </Button>
+          )}
           <Button
             variant="ghost"
             size="icon"
@@ -114,13 +140,7 @@ export function ReaderToolbar({
               disabled={!!doc.unpushed}
               onClick={() =>
                 fire(
-                  api(
-                    "github:openInBrowser",
-                    `${remote}/blob/${encodeURIComponent(branch)}/${doc.path
-                      .split("/")
-                      .map(encodeURIComponent)
-                      .join("/")}`,
-                  ),
+                  api("github:openInBrowser", githubBlobPath(remote, branch, doc.path)),
                   "Couldn’t open GitHub",
                 )
               }

@@ -14,9 +14,12 @@ import { api, fire } from "@/lib/api";
 import { useToast } from "@/stores/toast";
 import { CodeBlock, PreBlock } from "../code-block/code-block.component";
 import { DocImage } from "../doc-image/doc-image.component";
+import { LinkedHeading } from "../linked-heading/linked-heading.component";
+import type { HeadingTag } from "../linked-heading/linked-heading.types";
 import type { MarkdownProps } from "./markdown.types";
 
 const REMARK: NonNullable<Options["remarkPlugins"]> = [remarkGfm, remarkAlert];
+const LINKED: HeadingTag[] = ["h1", "h2", "h3", "h4"];
 
 /**
  * Order matters. `rehypeRaw` turns the raw HTML a README leans on back into real nodes,
@@ -42,6 +45,7 @@ export const Markdown = memo(function Markdown({
   docPath = "",
   className,
   onOpenDoc,
+  linkHeadings = false,
 }: MarkdownProps) {
   // Read when a link is clicked, not built into the renderers below: a new callback every
   // time the index changed made new `img` and `a` components, and React threw away every
@@ -78,7 +82,19 @@ export const Markdown = memo(function Markdown({
       }
     };
 
+    const headings = linkHeadings
+      ? Object.fromEntries(
+          LINKED.map((tag) => [
+            tag,
+            (props: Omit<React.ComponentProps<typeof LinkedHeading>, "as" | "docPath">) => (
+              <LinkedHeading {...props} as={tag} docPath={docPath} />
+            ),
+          ]),
+        )
+      : {};
+
     return {
+      ...headings,
       code: CodeBlock,
       pre: PreBlock,
       img: (props) => <DocImage {...props} docPath={docPath} />,
@@ -91,7 +107,7 @@ export const Markdown = memo(function Markdown({
         </a>
       ),
     };
-  }, [docPath]);
+  }, [docPath, linkHeadings]);
 
   return (
     <div className={cx("prose-doc", className)} dir="auto">

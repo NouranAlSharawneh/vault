@@ -8,4 +8,6 @@ export interface MarkdownProps {
    * clicked. Without it (the editor preview, say) such links do nothing.
    */
   onOpenDoc?: (path: string, hash?: string) => void;
+  /** Offer "copy a link to this section" on headings (the reader; not a preview). */
+  linkHeadings?: boolean;
 }

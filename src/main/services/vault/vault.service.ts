@@ -28,7 +28,7 @@ import { assertInside, freeRelPath } from "../fs/paths";
 import { GitService } from "../git/git.service";
 import { IndexerService } from "../indexer/indexer.service";
 import { conflicts, resolveConflict } from "./conflicts";
-import { atCommit, diff, history } from "./history";
+import { atCommit, compare, diff, history } from "./history";
 import { projects, renameProject } from "./projects";
 import { commitWithReadme, writeReadme } from "./readme";
 import { SyncEngine } from "./sync.service";
@@ -390,10 +390,16 @@ export class VaultService extends EventEmitter {
 
   // ---- history ------------------------------------------------------------------
 
-  async history(relPath: string): Promise<CommitInfo[]> {
+  async history(relPath: string, skip = 0): Promise<CommitInfo[]> {
     assertInside(this.root, relPath);
 
-    return history(this.git, relPath);
+    return history(this.git, relPath, Math.max(0, Math.floor(skip)));
+  }
+
+  async compare(relPath: string, sha: string): Promise<string> {
+    assertInside(this.root, relPath);
+
+    return compare(this.git, relPath, assertSha(sha));
   }
 
   async atCommit(relPath: string, sha: string): Promise<string> {

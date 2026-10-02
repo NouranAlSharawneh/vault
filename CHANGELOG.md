@@ -117,6 +117,14 @@ To release: add a section for the new version here, run `npm run release -- <pat
 - **Settings ▸ GitHub:** a Sync row with when this Mac last pushed and pulled, when it tries again, and Push now; Open on GitHub beside the repository; and a warning a week before a pasted token expires, with a way to paste a new one.
 - **Copy diagnostics** (Settings ▸ Updates): versions, git, the vault and sync state and the last error, ready to paste into an issue — no token, and paths shortened to ~.
 - **Setup:** Continue says what it will do ("Create nunu/vault", "Use nunu/notes", "Create local vault"); a vault Marasca made before is found, marked and picked for you on a second Mac; the title bar shows which step you're on; the wrong GitHub account can sign out from there; the Done screen shows the first push as it happens; and a folder iCloud also syncs gets a warning before anything is created in it.
+- **Right-click a document** for Open in Editor, Star, Reveal in Finder, Copy Path, Open on GitHub and Move to Trash.
+- **Act on several documents at once.** ⌘-click and ⇧-click pick more than one; Star and Move to Trash then take them all, and the trash can put them all back.
+- **Tags on a row filter the list** with a click, and "+N" shows the rest. Typing a title's first letters in the list jumps to it.
+- **The sidebar folds to its rail** in a narrow window, unless you set it yourself, and the library comes back on the document and scroll you left.
+- **Code blocks name their language and copy with one click.** Headings get a link to copy, the reader has an outline of its headings, and ⌘F finds within the document.
+- **⌥↑ and ⌥↓ step to the previous and next document** without leaving the reader.
+- **⌘K shows what matched**, highlighted, lists keys at its foot, can show every match in the list, and its Recent is what you opened last.
+- **History compares any version with today's**, loads past its first fifty, folds runs of metadata-only commits, and shows how many lines each commit added and removed.
 
 ## [0.0.2] - 2026-09-28
 

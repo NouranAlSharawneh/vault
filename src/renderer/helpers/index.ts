@@ -12,6 +12,8 @@ export { relaxMermaidWidth } from "./relax-mermaid-width";
 export { describeToken, tokenExpiryWarning } from "./describe-token";
 export { parseUnifiedDiff, diffStat } from "./parse-diff";
 export { classifyHref } from "./classify-href";
+export { githubBlobPath } from "./github-blob-path";
+export { findRanges } from "./find-ranges";
 export { scrollToAnchor } from "./scroll-to-anchor";
 export { describeSave } from "./describe-save";
 export { describeResolution } from "./describe-resolution";

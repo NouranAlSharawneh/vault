@@ -172,6 +172,9 @@ export const GIT_INSTALL_POLL_MS = 3_000;
 export const GIT_INSTALL_WAIT_MS = 60 * 60_000;
 /** How long a quit waits for the last push before closing anyway. */
 export const QUIT_PUSH_WAIT_MS = 5_000;
+
+/** Commits the history drawer asks for at a time; "Load more" asks for the next page. */
+export const HISTORY_PAGE = 50;
 /** What `/usr/bin/git` exits with when the Xcode licence hasn't been accepted. */
 export const GIT_LICENSE_EXIT_CODE = 69;
 /** The one command that fixes `license`; shown so it can be copied. */

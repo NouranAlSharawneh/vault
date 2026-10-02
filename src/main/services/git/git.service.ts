@@ -6,6 +6,7 @@ import { relativeTime } from "@shared/helpers";
 import type { CommitInfo } from "@shared/types";
 import { gitBinary } from "./git-status.service";
 import type { AheadBehind, ChangedFile, ConflictSide, TokenProvider } from "./git.types";
+import { LOG_SEP, parseLogPatch } from "./parse-log-patch";
 import { RepoLock } from "./repo-lock";
 
 /** An `index.lock` older than this, found while the vault opens, was left by a crash. */
@@ -445,6 +446,37 @@ export class GitService {
     }
 
     return commits;
+  }
+
+  /**
+   * A page of a file's commits with what each one did to it — lines added and removed,
+   * and whether only its metadata changed — from one `log -p` rather than a call per
+   * commit. `skip` pages further back than the first `max`.
+   */
+  async logStats(path: string, max: number, skip = 0): Promise<CommitInfo[]> {
+    const out = await this.git.raw([
+      "log",
+      `--max-count=${max}`,
+      `--skip=${skip}`,
+      "--follow",
+      "-M",
+      "-p",
+      "--unified=0",
+      `--format=${LOG_SEP}%H${LOG_SEP}%aI${LOG_SEP}%an${LOG_SEP}%s`,
+      "--",
+      path,
+    ]);
+
+    return parseLogPatch(out, path);
+  }
+
+  /**
+   * How the file on disk differs from what it was at `sha`. Both names are passed — the
+   * one it had then and the one it has now — so a document moved since reads as edited,
+   * not as one file deleted and another added.
+   */
+  async compare(paths: string[], sha: string): Promise<string> {
+    return this.git.raw(["diff", "-M", "--unified=3", sha, "--", ...paths]);
   }
 
   /** A file's text at a commit, untrimmed — a restore must bring back every byte. */

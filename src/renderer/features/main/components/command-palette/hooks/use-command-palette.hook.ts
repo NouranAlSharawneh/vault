@@ -9,10 +9,12 @@ import { PALETTE_ACTIONS, type PaletteActionKey } from "@/data/palette.data";
 import { describePull, describePush, plural } from "@/helpers";
 import { api, fire, rescanVault } from "@/lib/api";
 import { useApp } from "@/stores/app";
+import { recentOpened } from "@/stores/library";
 import { useToast } from "@/stores/toast";
-import { matchesFilters, parseQuery } from "@shared/query";
+import { matchesFilters, type ParsedQuery, parseQuery } from "@shared/query";
 import type { DocMeta, SearchHit, SyncStatus } from "@shared/types";
-import type { PaletteGroup, PaletteItem } from "../command-palette.types";
+import type { PaletteGroup, PaletteItem, PaletteListFilter } from "../command-palette.types";
+import { listFilterFor } from "../helpers/list-filter-for";
 
 interface ActionContext {
   sync: SyncStatus | null;
@@ -102,13 +104,46 @@ function textGroups(
   return out;
 }
 
-/** Filters only (e.g. `tags:spec is:starred`) or nothing typed → newest matching docs. */
+/**
+ * Nothing typed: what was last read, most recent first — topped up with the newest
+ * documents when little has been opened yet. It used to be the newest documents alone,
+ * so the one you had just left was rarely there to go back to.
+ */
+function recentDocs(docs: DocMeta[]): DocMeta[] {
+  const byPath = new Map(docs.map((d) => [d.path, d]));
+  const opened = recentOpened().flatMap((p) => byPath.get(p) ?? []);
+  const seen = new Set(opened.map((d) => d.path));
+
+  return [...opened, ...docs.filter((d) => !seen.has(d.path))].slice(0, PALETTE_MAX_RECENT);
+}
+
+/** "Show these 12 in the list", when the list can show exactly what the query found. */
+function showInListAction(
+  docs: DocMeta[],
+  parsed: ParsedQuery,
+  passes: (d: DocMeta) => boolean,
+): PaletteItem[] {
+  if (!listFilterFor(parsed)) return [];
+  const n = docs.filter(passes).length;
+
+  return n
+    ? [
+        {
+          kind: "action",
+          key: "showInList",
+          label: `Show ${plural(n, "match", "matches")} in the list`,
+        },
+      ]
+    : [];
+}
+
+/** Filters only (e.g. `tags:spec is:starred`) or nothing typed → matching docs, or Recent. */
 function filterGroups(
   docs: DocMeta[],
   searching: boolean,
   passes: (d: DocMeta) => boolean,
 ): PaletteGroup[] {
-  const filtered = docs.filter(passes).slice(0, searching ? PALETTE_MAX_DOCS : PALETTE_MAX_RECENT);
+  const filtered = searching ? docs.filter(passes).slice(0, PALETTE_MAX_DOCS) : recentDocs(docs);
 
   return filtered.length
     ? [
@@ -127,6 +162,7 @@ export function useCommandPalette(
   onTrashDoc?: () => void,
   onReviewConflicts?: () => void,
   trashTitle?: string,
+  onShowInList?: (filter: PaletteListFilter) => void,
 ) {
   const index = useApp((s) => s.index);
   const sync = useApp((s) => s.sync);
@@ -175,17 +211,20 @@ export function useCommandPalette(
         : filterGroups(docs, !!query.trim(), passes)),
     );
 
-    const visibleActions = availableActions({
-      sync,
-      hasRemote,
-      hasDoc: !!onTrashDoc,
-      trashTitle,
-      q: parsed.text.toLowerCase(),
-    });
+    const visibleActions = [
+      ...(onShowInList ? showInListAction(docs, parsed, passes) : []),
+      ...availableActions({
+        sync,
+        hasRemote,
+        hasDoc: !!onTrashDoc,
+        trashTitle,
+        q: parsed.text.toLowerCase(),
+      }),
+    ];
     if (visibleActions.length) out.push({ title: "Actions", items: visibleActions });
 
     return out;
-  }, [index, liveHits, current, query, sync, hasRemote, onTrashDoc, trashTitle]);
+  }, [index, liveHits, current, query, sync, hasRemote, onTrashDoc, trashTitle, onShowInList]);
 
   const flat = useMemo(() => groups.flatMap((g) => g.items), [groups]);
   const at = Math.min(cursor, Math.max(0, flat.length - 1));
@@ -243,9 +282,14 @@ export function useCommandPalette(
         case "rescan":
           rescanVault();
           break;
+        case "showInList": {
+          const filter = listFilterFor(parseQuery(query));
+          if (filter) onShowInList?.(filter);
+          break;
+        }
       }
     },
-    [onTrashDoc, onReviewConflicts, show, sync?.ahead],
+    [onTrashDoc, onReviewConflicts, onShowInList, query, show, sync?.ahead],
   );
 
   const choose = useCallback(
@@ -283,6 +327,8 @@ export function useCommandPalette(
 
   return {
     query,
+    /** The words typed, for showing where each result matched them. */
+    words: text.split(/\s+/).filter(Boolean),
     setQuery: updateQuery,
     groups,
     flat,

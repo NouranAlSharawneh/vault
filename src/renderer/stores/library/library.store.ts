@@ -1,11 +1,15 @@
 import { create } from "zustand";
 import type { ListFilter, ReaderView, SortOrder } from "@/features/main/main.types";
-import type { LibraryState } from "./library.types";
+import type { LibraryState, ListScroll } from "./library.types";
 
 const SORT_KEY = "library-sort";
 const VIEW_KEY = "library-view";
+const SELECTED_KEY = "library-selected";
+const SCROLL_KEY = "library-scroll";
 const SORTS: SortOrder[] = ["newest", "oldest", "title"];
 const VIEWS: ReaderView[] = ["preview", "markdown", "split"];
+/** A scroll is written once it stops moving, not on every frame of it. */
+const SCROLL_WRITE_MS = 250;
 
 export const DEFAULT_FILTER: ListFilter = {
   collection: "all",
@@ -14,31 +18,56 @@ export const DEFAULT_FILTER: ListFilter = {
   sort: "newest",
 };
 
-function stored<T extends string>(key: string, allowed: T[], fallback: T): T {
+function read(key: string): string | null {
   try {
-    const v = localStorage.getItem(key);
-
-    return allowed.includes(v as T) ? (v as T) : fallback;
+    return localStorage.getItem(key);
   } catch {
-    return fallback;
+    return null;
   }
 }
 
-function remember(key: string, value: string): void {
+function stored<T extends string>(key: string, allowed: T[], fallback: T): T {
+  const v = read(key);
+
+  return allowed.includes(v as T) ? (v as T) : fallback;
+}
+
+function storedScroll(): ListScroll | null {
   try {
-    localStorage.setItem(key, value);
+    const v = JSON.parse(read(SCROLL_KEY) ?? "null") as ListScroll | null;
+
+    return v && typeof v.key === "string" && typeof v.top === "number" ? v : null;
+  } catch {
+    return null;
+  }
+}
+
+function remember(key: string, value: string | null): void {
+  try {
+    if (value === null) localStorage.removeItem(key);
+    else localStorage.setItem(key, value);
   } catch {
     /* storage unavailable: it lasts the session */
   }
 }
 
-/** The library as it was left: fresh for a new window, with the sort and view it last had. */
-export function initialLibrary(): Pick<LibraryState, "selected" | "filter" | "view" | "scroll"> {
+let scrollWrite: ReturnType<typeof setTimeout> | undefined;
+
+/**
+ * The library as it was left — the document that was open and where the list was
+ * scrolled included, so a relaunch opens on the same page instead of the top of All
+ * documents. A remembered document that is gone by then is dropped by the list itself.
+ */
+export function initialLibrary(): Pick<
+  LibraryState,
+  "selected" | "picked" | "filter" | "view" | "scroll"
+> {
   return {
-    selected: null,
+    selected: read(SELECTED_KEY),
+    picked: [],
     filter: { ...DEFAULT_FILTER, sort: stored(SORT_KEY, SORTS, "newest") },
     view: stored(VIEW_KEY, VIEWS, "preview"),
-    scroll: null,
+    scroll: storedScroll(),
   };
 }
 
@@ -51,7 +80,13 @@ export function initialLibrary(): Pick<LibraryState, "selected" | "filter" | "vi
 export const useLibrary = create<LibraryState>((set) => ({
   ...initialLibrary(),
   setSelected: (next) =>
-    set((s) => ({ selected: typeof next === "function" ? next(s.selected) : next })),
+    set((s) => {
+      const selected = typeof next === "function" ? next(s.selected) : next;
+      if (selected !== s.selected) remember(SELECTED_KEY, selected);
+
+      return { selected };
+    }),
+  setPicked: (picked) => set({ picked }),
   setFilter: (next) =>
     set((s) => {
       const filter = typeof next === "function" ? next(s.filter) : next;
@@ -63,5 +98,9 @@ export const useLibrary = create<LibraryState>((set) => ({
     remember(VIEW_KEY, view);
     set({ view });
   },
-  setScroll: (scroll) => set({ scroll }),
+  setScroll: (scroll) => {
+    clearTimeout(scrollWrite);
+    scrollWrite = setTimeout(() => remember(SCROLL_KEY, JSON.stringify(scroll)), SCROLL_WRITE_MS);
+    set({ scroll });
+  },
 }));

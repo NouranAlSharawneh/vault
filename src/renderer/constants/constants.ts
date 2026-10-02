@@ -10,6 +10,8 @@ export const COPIED_FEEDBACK_MS = 1200;
 export const REPO_LIST_LIMIT = 50;
 export const REPO_NAME_PATTERN = /^[A-Za-z0-9._-]{1,100}$/;
 export const SIDEBAR_STORAGE_KEY = "sidebar-state";
+/** Below this window width the full sidebar shows as the rail, unless asked for. */
+export const SIDEBAR_AUTO_RAIL_PX = 1000;
 export const RECENT_DAYS = 7;
 export const PALETTE_MAX_DOCS = 8;
 export const PALETTE_MAX_TEXT = 5;

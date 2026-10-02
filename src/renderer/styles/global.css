@@ -172,6 +172,18 @@ body {
   background: var(--color-cherry-tint-2);
 }
 
+/* ⌘F in the reader: every match tinted, the current one in the find bar's warm colour.
+   Painted over the text by the browser (CSS Custom Highlights), not wrapped in elements. */
+/* The text colour is set too: in a dark code block the light text on the tint vanished. */
+::highlight(doc-find) {
+  background-color: var(--color-cherry-tint-2);
+  color: var(--color-ink);
+}
+::highlight(doc-find-current) {
+  background-color: var(--color-warn);
+  color: var(--color-ink);
+}
+
 /* Draggable title-bar region (macOS hiddenInset) */
 /* A list row off screen skips layout and paint until it scrolls near; its box is
    estimated meanwhile so the scrollbar stays honest. */

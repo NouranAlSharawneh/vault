@@ -23,4 +23,9 @@ export interface HistoryState {
   error: string | null;
   /** One commit's diff couldn't be read — said in the diff pane, the list stays usable. */
   diffError: string | null;
+  /** The last page came back full: there may be older commits to load. */
+  hasMore: boolean;
+  loadingMore: boolean;
+  /** Show everything since the selected commit, up to the file as it is now. */
+  compare: boolean;
 }

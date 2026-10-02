@@ -3,6 +3,7 @@ import {
   Download,
   FileText,
   GitMerge,
+  ListFilter,
   Pilcrow,
   Plus,
   RefreshCw,
@@ -18,6 +19,7 @@ import { PALETTE_HINTS } from "@/data/palette.data";
 import { plural } from "@/helpers";
 import { relativeTime } from "@shared/helpers";
 import type { CommandPaletteProps, PaletteItem } from "./command-palette.types";
+import { splitMatches } from "./helpers/split-matches";
 import { useCommandPalette } from "./hooks/use-command-palette.hook";
 
 const ACTION_ICONS: Record<PaletteActionKey, LucideIcon> = {
@@ -29,7 +31,25 @@ const ACTION_ICONS: Record<PaletteActionKey, LucideIcon> = {
   reviewConflicts: GitMerge,
   rescan: RefreshCw,
   settings: Settings,
+  showInList: ListFilter,
 };
+
+/** The text, with the words that found it picked out — why this result is here. */
+function Marked({ text, words }: { text: string; words: string[] }) {
+  return (
+    <>
+      {splitMatches(text, words).map((part, i) =>
+        part.match ? (
+          <mark key={i} className="bg-transparent font-semibold text-overlay-ink">
+            {part.text}
+          </mark>
+        ) : (
+          part.text
+        ),
+      )}
+    </>
+  );
+}
 
 function itemKey(item: PaletteItem): string {
   return item.kind === "action" ? `action:${item.key}` : `${item.kind}:${item.doc.path}`;
@@ -42,8 +62,16 @@ export function CommandPalette({
   onTrashDoc,
   trashTitle,
   onReviewConflicts,
+  onShowInList,
 }: CommandPaletteProps) {
-  const p = useCommandPalette(onOpenDoc, onClose, onTrashDoc, onReviewConflicts, trashTitle);
+  const p = useCommandPalette(
+    onOpenDoc,
+    onClose,
+    onTrashDoc,
+    onReviewConflicts,
+    trashTitle,
+    onShowInList,
+  );
   const input = useRef<HTMLInputElement>(null);
   const rows = useRef(new Map<number, HTMLElement>());
 
@@ -178,13 +206,15 @@ export function CommandPalette({
                           ) : item.kind === "text" ? (
                             <>
                               <span className="line-clamp-1 text-sm text-overlay-ink-2">
-                                {item.snippet}
+                                <Marked text={item.snippet} words={p.words} />
                               </span>
                               <span className="text-xs text-overlay-ink-3">{item.doc.title}</span>
                             </>
                           ) : (
                             <>
-                              <span className="line-clamp-1 text-base">{item.doc.title}</span>
+                              <span className="line-clamp-1 text-base">
+                                <Marked text={item.doc.title} words={p.words} />
+                              </span>
                               <span className="text-xs text-overlay-ink-3">
                                 {item.doc.project || "Inbox"}
                                 {item.doc.tags.length
@@ -235,6 +265,19 @@ export function CommandPalette({
             </div>
           )}
         </div>
+      </div>
+      {/* The keys, said once at the foot rather than learned by trying. */}
+      <div className="flex h-8 shrink-0 items-center gap-4 border-t border-overlay-line px-4 text-2xs text-overlay-ink-3">
+        <span className="flex items-center gap-1">
+          <Kbd dark>↑</Kbd>
+          <Kbd dark>↓</Kbd> move
+        </span>
+        <span className="flex items-center gap-1">
+          <Kbd dark>↵</Kbd> open
+        </span>
+        <span className="flex items-center gap-1">
+          <Kbd dark>esc</Kbd> close
+        </span>
       </div>
     </DialogShell>
   );

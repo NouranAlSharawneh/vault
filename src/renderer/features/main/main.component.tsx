@@ -5,7 +5,7 @@ import { SplitPane } from "@/components/ui";
 import { cx, describeSave } from "@/helpers";
 import { api, fire, on } from "@/lib/api";
 import { useApp } from "@/stores/app";
-import { useLibrary } from "@/stores/library";
+import { recordOpened, useLibrary } from "@/stores/library";
 import { useToast } from "@/stores/toast";
 import type { DocReveal } from "@shared/types";
 import { CommandPalette } from "./components/command-palette/command-palette.component";
@@ -17,12 +17,16 @@ import { SidebarRail } from "./components/sidebar-rail/sidebar-rail.component";
 import { Sidebar } from "./components/sidebar/sidebar.component";
 import { TopBar } from "./components/top-bar/top-bar.component";
 import { VaultUnavailable } from "./components/vault-unavailable/vault-unavailable.component";
+import { useAdjacentDoc } from "./hooks/use-adjacent-doc.hook";
+import { useBulkActions } from "./hooks/use-bulk-actions.hook";
+import { useDocRowMenu } from "./hooks/use-doc-row-menu.hook";
 import { reconcileSelection, useDocumentFilter } from "./hooks/use-document-filter.hook";
 import { isTrashed, useDocument } from "./hooks/use-document.hook";
 import { useHotkeyWarning } from "./hooks/use-hotkey-warning.hook";
 import { useMainShortcuts } from "./hooks/use-main-shortcuts.hook";
 import { useSidebarState } from "./hooks/use-sidebar-state.hook";
 import { useTrashActions } from "./hooks/use-trash-actions.hook";
+import type { BulkAction, ListFilter } from "./main.types";
 
 /**
  * Top bar across the window, then navigation · document list · reader.
@@ -37,6 +41,15 @@ export function Main() {
   const sidebar = useSidebarState();
   const selected = useLibrary((s) => s.selected);
   const setSelected = useLibrary((s) => s.setSelected);
+  const picked = useLibrary((s) => s.picked);
+  const setPicked = useLibrary((s) => s.setPicked);
+  const setFilter = useLibrary((s) => s.setFilter);
+  // What a ⌘K query found, as the list: its project or Starred, and its tags.
+  const showInList = useCallback(
+    (f: Pick<ListFilter, "collection" | "project" | "tags">) =>
+      setFilter((prev) => ({ ...prev, ...f })),
+    [setFilter],
+  );
   const view = useLibrary((s) => s.view);
   const setView = useLibrary((s) => s.setView);
   const list = useDocumentFilter(index, trash, (docs) =>
@@ -55,7 +68,17 @@ export function Main() {
   // list no longer had, and ⌘⌫ trashed something you couldn't see.
   useEffect(() => {
     setSelected((s) => reconcileSelection(s, listed));
-  }, [listed, setSelected]);
+    // A picked document the list no longer shows can't be acted on unseen either.
+    const { picked: now } = useLibrary.getState();
+    if (now.length && now.some((p) => !listed.some((d) => d.path === p)))
+      setPicked(now.filter((p) => listed.some((d) => d.path === p)));
+  }, [listed, setSelected, setPicked]);
+
+  // ⌘K's Recent is what was read, most recent first.
+  const openedPath = doc?.meta.path;
+  useEffect(() => {
+    if (openedPath) recordOpened(openedPath);
+  }, [openedPath]);
 
   /** The document after `path` in the list, or before it at the end: where a removal lands. */
   const neighbour = useCallback(
@@ -67,6 +90,28 @@ export function Main() {
     [listed],
   );
   const trashActions = useTrashActions(doc?.meta ?? null, setSelected, neighbour);
+  const bulk = useBulkActions(listed, setSelected, setPicked);
+  const onRowMenu = useDocRowMenu({
+    listed,
+    picked,
+    inTrash,
+    select: setSelected,
+    pick: setPicked,
+    bulk,
+  });
+  const onBulk = useCallback(
+    (action: BulkAction) =>
+      fire(action === "trash" ? bulk.trash(picked) : bulk.star(picked, action === "star")),
+    [bulk, picked],
+  );
+  const selectOne = useCallback(
+    (path: string) => {
+      setPicked([]);
+      setSelected(path);
+    },
+    [setPicked, setSelected],
+  );
+  useAdjacentDoc(listed, selected, selectOne);
 
   /**
    * Select a document, dropping back to All documents only when the current list doesn't
@@ -182,7 +227,11 @@ export function Main() {
     setHistoryOpen((open) => !open);
   }, [canShowHistory, historyOpen]);
   const openSettings = useCallback(() => (window.location.hash = "settings"), []);
-  const trashNow = useCallback(() => fire(trashActions.trash()), [trashActions]);
+  // ⌘⌫ takes every picked document, or the one in the reader.
+  const trashNow = useCallback(
+    () => fire(picked.length > 1 ? bulk.trash(picked) : trashActions.trash()),
+    [trashActions, bulk, picked],
+  );
   useHotkeyWarning(openSettings);
   useMainShortcuts({
     onSearch: openPalette,
@@ -206,8 +255,8 @@ export function Main() {
   }, [showHistory, paletteOpen, conflictsOpen]);
 
   const star = useCallback(() => {
-    if (doc) fire(api("doc:setStarred", doc.meta.path, !doc.meta.starred));
-  }, [doc]);
+    if (doc) fire(bulk.star([doc.meta.path], !doc.meta.starred));
+  }, [doc, bulk]);
 
   if (!config)
     return (
@@ -245,6 +294,11 @@ export function Main() {
             docs={list.docs}
             selected={selected}
             onSelect={setSelected}
+            picked={picked}
+            onPick={setPicked}
+            onBulk={onBulk}
+            onRowMenu={onRowMenu}
+            onTag={list.toggleTag}
             onOpen={(path) => fire(api("window:openEditor", path), "Couldn’t open the editor")}
             sort={list.filter.sort}
             onSort={list.setSort}
@@ -339,6 +393,7 @@ export function Main() {
           // Trash acts on the doc in the reader, so the action is offered with its title or not at all.
           {...(doc && !inTrash ? { onTrashDoc: trashNow, trashTitle: doc.meta.title } : {})}
           onReviewConflicts={() => setConflictsOpen(true)}
+          onShowInList={showInList}
         />
       )}
     </div>

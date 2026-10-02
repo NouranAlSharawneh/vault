@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useLayoutEffect, useRef, type KeyboardEvent } from "react";
+import { useEffect, useLayoutEffect, useRef } from "react";
 import { Button, Empty } from "@/components/ui";
 import { acceleratorLabel, plural } from "@/helpers";
 import { useLibrary } from "@/stores/library";
@@ -8,18 +8,21 @@ import { useNow } from "../../hooks/use-now.hook";
 import { DocumentRow } from "../document-row/document-row.component";
 import { ListHeader } from "../list-header/list-header.component";
 import { TagFilter } from "../tag-filter/tag-filter.component";
+import { SelectionBar } from "./components/selection-bar/selection-bar.component";
 import type { DocumentListProps } from "./document-list.types";
+import { useListSelection } from "./hooks/use-list-selection.hook";
 
 const byCreated = (d: DocMeta) => d.created;
-/** How far Page Up / Page Down move the selection. */
-const PAGE = 10;
+const NONE: string[] = [];
 
 const rowId = (path: string) => `doc-${encodeURIComponent(path)}`;
 
 /**
  * The document list: one listbox, one Tab stop. ↑/↓, Home/End and Page Up/Down move the
- * selection, Enter opens it in the editor, and the selected row is kept in view. Every row
- * used to be its own Tab stop — two thousand of them in a big vault — with no arrow keys.
+ * selection, Enter opens it in the editor, letters jump to a title, and the selected row
+ * is kept in view. ⌘- and ⇧-click (and ⇧-arrows) pick several for acting on together.
+ * Every row used to be its own Tab stop — two thousand of them in a big vault — with no
+ * arrow keys.
  */
 export function DocumentList({
   title,
@@ -29,6 +32,11 @@ export function DocumentList({
   docs,
   selected,
   onSelect,
+  picked = NONE,
+  onPick,
+  onBulk,
+  onRowMenu,
+  onTag,
   onOpen,
   sort,
   onSort,
@@ -52,41 +60,31 @@ export function DocumentList({
     el.scrollTop = saved?.key === scrollKey ? saved.top : 0;
   }, [scrollKey]);
 
+  const multi = !!onPick && collection !== "trash";
+  const { activate, onKeyDown, active } = useListSelection({
+    docs,
+    selected,
+    picked,
+    onSelect,
+    onPick: onPick ?? (() => undefined),
+    onOpen,
+    multi,
+  });
+  const pickedSet = new Set(picked);
+
   // Whatever selects a document from outside the list — the palette, a reveal, a trash —
   // brings its row into view. Twice: rows off screen are skipped until they scroll near
   // and stand in at an estimated height, so the first jump lands close, and the second,
   // with the real heights around it laid out, lands on it.
   useEffect(() => {
-    if (!selected) return;
+    if (!active) return;
     const reveal = () =>
-      document.getElementById(rowId(selected))?.scrollIntoView({ block: "nearest" });
+      document.getElementById(rowId(active))?.scrollIntoView({ block: "nearest" });
     reveal();
     const frame = requestAnimationFrame(reveal);
 
     return () => cancelAnimationFrame(frame);
-  }, [selected]);
-
-  const onKeyDown = useCallback(
-    (e: KeyboardEvent<HTMLDivElement>) => {
-      if (!docs.length) return;
-      const at = docs.findIndex((d) => d.path === selected);
-      const move = (i: number) => {
-        e.preventDefault();
-        onSelect(docs[Math.min(docs.length - 1, Math.max(0, i))].path);
-      };
-      if (e.key === "ArrowDown") move(at + 1);
-      else if (e.key === "ArrowUp") move(at < 0 ? 0 : at - 1);
-      else if (e.key === "Home") move(0);
-      else if (e.key === "End") move(docs.length - 1);
-      else if (e.key === "PageDown") move(at + PAGE);
-      else if (e.key === "PageUp") move(at - PAGE);
-      else if (e.key === "Enter" && selected) {
-        e.preventDefault();
-        onOpen(selected);
-      }
-    },
-    [docs, selected, onSelect, onOpen],
-  );
+  }, [active]);
 
   return (
     <section className="flex h-full flex-col">
@@ -98,6 +96,14 @@ export function DocumentList({
         sortable={sortable}
       />
       <TagFilter tags={activeTags} onRemove={onRemoveTag} onClear={onClearTags} />
+      {multi && picked.length > 1 && onBulk && (
+        <SelectionBar
+          count={picked.length}
+          allStarred={docs.filter((d) => pickedSet.has(d.path)).every((d) => d.starred)}
+          onBulk={onBulk}
+          onClear={() => onPick?.([])}
+        />
+      )}
       <div
         ref={scroller}
         // The ring goes on the selected row, not round the whole list.
@@ -107,9 +113,10 @@ export function DocumentList({
           ? {
               role: "listbox",
               "aria-label": title,
+              "aria-multiselectable": multi || undefined,
               "data-doc-list": true,
               tabIndex: 0,
-              "aria-activedescendant": selected ? rowId(selected) : undefined,
+              "aria-activedescendant": active ? rowId(active) : undefined,
               onKeyDown,
             }
           : {})}
@@ -133,9 +140,12 @@ export function DocumentList({
             id={rowId(d.path)}
             doc={d}
             selected={selected === d.path}
+            picked={pickedSet.has(d.path)}
             when={relativeTime(dateOf(d), now)}
-            onSelect={onSelect}
+            onActivate={activate}
             onOpen={onOpen}
+            onMenu={onRowMenu}
+            onTag={onTag}
           />
         ))}
       </div>

@@ -96,7 +96,11 @@ describe("CommandPalette", () => {
     // Titles match at once, from the index; the text hits follow when the search answers.
     await waitFor(() => expect(screen.getByText("In text")).toBeTruthy());
     expect(screen.getByText("Documents")).toBeTruthy();
-    expect(screen.getByText("…we rate-limit inside…")).toBeTruthy();
+    // The words that matched are picked out, so the snippet is split across elements.
+    const snippet = screen.getByText(
+      (_, el) => el?.tagName === "SPAN" && el.textContent === "…we rate-limit inside…",
+    );
+    expect(snippet.querySelector("mark")?.textContent?.toLowerCase()).toBe("rate");
     await userEvent.keyboard("{Enter}");
     expect(onOpen).toHaveBeenCalledWith("a");
   });

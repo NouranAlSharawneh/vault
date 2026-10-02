@@ -186,6 +186,27 @@ export interface CommitInfo {
    * the historical one or it looks up a file that did not exist yet.
    */
   path: string;
+  /** Lines this commit added to and removed from the document (history only). */
+  added?: number;
+  removed?: number;
+  /** Only the metadata block changed — a star, a tag, a new project — not the text. */
+  metaOnly?: boolean;
+}
+
+/** What a right-click on a document row can do. Main does "reveal" and "copyPath" itself. */
+export type DocRowAction = "open" | "star" | "unstar" | "trash" | "reveal" | "copyPath" | "github";
+
+/** What the row menu needs to know to offer the right things, for one row or a selection. */
+export interface DocRowMenuInput {
+  /** The row right-clicked; with `count > 1` it stands for the whole selection. */
+  path: string;
+  count: number;
+  /** Every document in the selection is starred, so the item offers Unstar. */
+  starred: boolean;
+  /** There is a GitHub page to open (a remote, and the document has been pushed). */
+  github: boolean;
+  /** The row is in the trash: it can be revealed or copied, not starred or trashed. */
+  trashed: boolean;
 }
 
 export interface ProjectSummary {
