@@ -36,6 +36,11 @@ export interface AppState {
   boot: () => Promise<void>;
   /** Ask main to open the configured vault again, then load it as boot would. */
   reopenVault: () => Promise<void>;
+  /**
+   * Ask where the vault folder is now and open it from there. Resolves with the new
+   * config, or null when nothing was chosen; rejects with why a folder was refused.
+   */
+  relocateVault: () => Promise<VaultConfig | null>;
   refreshIndex: () => Promise<void>;
   refreshTrash: () => Promise<void>;
   setConfig: (config: VaultConfig | null) => void;

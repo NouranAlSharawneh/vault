@@ -4,6 +4,7 @@ import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { VaultUnavailable } from "@/features/main/components/vault-unavailable/vault-unavailable.component";
 import { useApp } from "@/stores/app";
+import { useToast } from "@/stores/toast";
 import type { VaultConfig } from "@shared/types";
 import { mockMarascaApi } from "../../helpers/mock-marasca-api";
 
@@ -51,6 +52,40 @@ describe("VaultUnavailable", () => {
 
     await userEvent.click(screen.getByRole("button", { name: "Set up again" }));
     expect(window.location.hash).toBe("#onboarding?connect");
+  });
+});
+
+describe("VaultUnavailable — when the folder was moved", () => {
+  const gone = "The folder isn’t there any more. It may have been moved, renamed or deleted.";
+  const moved = { ...config, root: "/Users/nunu/Files/vault" };
+
+  it("asks where it went, and opens the vault from there", async () => {
+    const { invoke } = mockMarascaApi({
+      "vault:relocate": moved,
+      "vault:index": { docs: [], projects: [], tags: [], orphans: 0, headSha: null, scannedAt: 1 },
+      "trash:list": [],
+    });
+    useApp.setState({ config, vaultError: gone });
+    render(<VaultUnavailable />);
+
+    await userEvent.click(screen.getByRole("button", { name: "Locate…" }));
+
+    expect(invoke).toHaveBeenCalledWith("vault:relocate");
+    await vi.waitFor(() => expect(useApp.getState().vaultError).toBeNull());
+    expect(useApp.getState().config).toEqual(moved);
+  });
+
+  it("says why a folder was refused, and stays put", async () => {
+    const refusal = "“Files” isn’t your vault: it has no git history.";
+    mockMarascaApi({ "vault:relocate": new Error(refusal) });
+    useApp.setState({ config, vaultError: gone });
+    render(<VaultUnavailable />);
+
+    await userEvent.click(screen.getByRole("button", { name: "Locate…" }));
+
+    await vi.waitFor(() => expect(useToast.getState().toasts.at(-1)?.message).toBe(refusal));
+    expect(useApp.getState().config).toBe(config);
+    expect(screen.getByText(gone)).toBeTruthy();
   });
 });
 

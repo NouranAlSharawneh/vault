@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { acceleratorLabel, errorMessage, plural } from "@/helpers";
+import { acceleratorLabel, errorMessage, plural, shortPath } from "@/helpers";
 import { api, fire } from "@/lib/api";
 import { useApp } from "@/stores/app";
 import { useToast } from "@/stores/toast";
@@ -27,6 +27,8 @@ export function useSettings() {
   const trash = useApp((s) => s.trash);
   const setConfig = useApp((s) => s.setConfig);
   const refreshTrash = useApp((s) => s.refreshTrash);
+  const relocateVault = useApp((s) => s.relocateVault);
+  const root = config?.root;
   const show = useToast((s) => s.show);
   const [state, setState] = useState<SettingsState>({ error: null, busy: null });
   const [token, setToken] = useState<TokenStatus | null>(null);
@@ -102,6 +104,18 @@ export function useSettings() {
     }
   }, [refreshTrash, show]);
 
+  const relocate = useCallback(async () => {
+    setState({ error: null, busy: "root" });
+    try {
+      const next = await relocateVault();
+      setState({ error: null, busy: null });
+      // Cancelling, or choosing the folder it is already in, changed nothing to announce.
+      if (next && next.root !== root) show(`Vault folder is now ${shortPath(next.root)}`);
+    } catch (e) {
+      setState({ error: { field: "root", message: errorMessage(e) }, busy: null });
+    }
+  }, [relocateVault, root, show]);
+
   /** The message for one setting, if the last write to it failed. */
   const errorFor = useCallback(
     (field: SettingsState["busy"]) => (state.error?.field === field ? state.error.message : null),
@@ -131,6 +145,7 @@ export function useSettings() {
     projectNames: new Map((index?.projects ?? []).map((p) => [p.slug, p.name])),
     errorFor,
     update,
+    relocate,
     forgetAssetDir,
     emptyTrash,
     signOut,

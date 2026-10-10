@@ -1,4 +1,5 @@
 import { cleanup, render, screen, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 // @vitest-environment jsdom
 import { describe, expect, it } from "vitest";
 import { Settings } from "@/features/settings/settings.component";
@@ -86,5 +87,34 @@ describe("Settings layout", () => {
     renderSettings();
     expect(screen.getByText("~/Projects/atlas/img")).toBeTruthy();
     expect(screen.getAllByText("Forget")).toHaveLength(1);
+  });
+});
+
+describe("Settings — the vault folder", () => {
+  it("offers to change it, beside showing and rescanning it", () => {
+    renderSettings();
+    const row = screen.getByRole("group", { name: "Vault folder" });
+    expect(within(row).getByText("~/Documents/vault")).toBeTruthy();
+    expect(
+      within(row)
+        .getAllByRole("button")
+        .map((b) => b.getAttribute("aria-label") ?? b.textContent?.trim()),
+    ).toEqual(["Show in Finder", "Change…", "Rescan the folder"]);
+  });
+
+  it("says why a chosen folder was refused, under the folder it still uses", async () => {
+    renderSettings();
+    const { invoke } = mockMarascaApi({
+      "vault:relocate": new Error("“Files” is a git repo for nunu/site, not nunu/vault2."),
+    });
+    const row = screen.getByRole("group", { name: "Vault folder" });
+
+    await userEvent.click(within(row).getByRole("button", { name: "Change…" }));
+
+    expect(invoke).toHaveBeenCalledWith("vault:relocate");
+    expect(
+      await within(row).findByText("“Files” is a git repo for nunu/site, not nunu/vault2."),
+    ).toBeTruthy();
+    expect(within(row).getByText("~/Documents/vault")).toBeTruthy();
   });
 });

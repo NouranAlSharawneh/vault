@@ -1,6 +1,6 @@
 import { existsSync } from "node:fs";
 import { homedir } from "node:os";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import { app, BrowserWindow, clipboard, dialog, ipcMain, Notification, shell } from "electron";
 import { DEFAULT_HOTKEY } from "@shared/constants";
 import type { InvokeChannel, IpcInvoke } from "@shared/ipc";
@@ -61,6 +61,7 @@ import { refreshUpdateStatus, updateStatus } from "../updates/update-watch";
 import { sanitizeConfigPatch } from "./config-patch";
 import { confirmPurge } from "./confirm-purge";
 import type { IpcHandler, IpcSenderHandler } from "./ipc.types";
+import { relocateVault } from "./relocate-vault";
 import { setupVault } from "./setup-vault";
 
 /** Typed `ipcMain.handle` that normalises errors so the renderer sees a plain message. */
@@ -273,6 +274,25 @@ export function registerIpcHandlers(): void {
     registerHotkey(vault.config.hotkey);
 
     return vault.index.snapshot();
+  });
+  handleFrom("vault:relocate", async (sender) => {
+    const root = getSettings().vault?.root;
+    if (!root) throw new Error("No vault is set up");
+    // Beside where it was: a rename, or a move one folder over, is the usual case.
+    const beside = dirname(root);
+    const picked = await pickPath(sender, {
+      title: "Choose your vault folder",
+      message: "Choose the folder your vault is in now.",
+      buttonLabel: "Use This Folder",
+      properties: ["openDirectory"],
+      defaultPath: existsSync(beside) ? beside : homedir(),
+    });
+    if (!picked) return null;
+    const config = await relocateVault(session, picked);
+    // Not bound yet when the folder was already gone at launch: there was no vault then.
+    registerHotkey(config.hotkey);
+
+    return config;
   });
 
   // ---- docs

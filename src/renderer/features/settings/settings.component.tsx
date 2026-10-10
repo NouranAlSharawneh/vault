@@ -58,6 +58,7 @@ export function Settings() {
   }
   const assetDirs = Object.entries(config.assetDirs ?? {});
   const hotkeyError = s.errorFor("hotkey");
+  const rootError = s.errorFor("root");
   const foldersError = s.errorFor("assetDirs");
 
   return (
@@ -123,7 +124,12 @@ export function Settings() {
           <SettingGroup title="Storage">
             <SettingRow
               label="Vault folder"
-              description={<PathText path={shortPath(config.root)} className="block" />}
+              description={
+                <>
+                  <PathText path={shortPath(config.root)} className="block" />
+                  {rootError && <span className="block text-cherry">{rootError}</span>}
+                </>
+              }
             >
               <Button
                 variant="outline"
@@ -132,6 +138,14 @@ export function Settings() {
                 }
               >
                 <FolderOpen size={12} /> Show in Finder
+              </Button>
+              <Button
+                variant="outline"
+                tooltip="Moved or renamed the folder? Choose where it is now"
+                loading={s.busy === "root"}
+                onClick={() => fire(s.relocate())}
+              >
+                Change…
               </Button>
               <Button
                 variant="outline"
