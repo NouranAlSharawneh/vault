@@ -59,6 +59,14 @@ export const useApp = create<AppState>((set) => ({
     set(await loadVault(() => api("vault:reopen")));
   },
 
+  relocateVault: async () => {
+    const config = await api("vault:relocate");
+    if (!config) return null;
+    set({ config, ...(await loadVault(() => api("vault:index"))) });
+
+    return config;
+  },
+
   refreshIndex: async () => {
     set({ index: await api("vault:index"), vaultError: null });
   },

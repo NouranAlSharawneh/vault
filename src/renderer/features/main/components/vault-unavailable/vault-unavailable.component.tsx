@@ -15,7 +15,9 @@ export function VaultUnavailable() {
   const config = useApp((s) => s.config);
   const vaultError = useApp((s) => s.vaultError);
   const reopenVault = useApp((s) => s.reopenVault);
+  const relocateVault = useApp((s) => s.relocateVault);
   const [trying, setTrying] = useState(false);
+  const [locating, setLocating] = useState(false);
   const gitStatus = useApp((s) => s.gitStatus);
   const gitReady = gitStatus?.state === "ready";
   const blockedOnGit = !!vaultError?.includes(GIT_NOT_READY);
@@ -65,6 +67,12 @@ export function VaultUnavailable() {
       "Couldn’t open the vault",
     );
   };
+  // The folder was moved or renamed while Marasca was closed: say where it went. A
+  // refused folder says why in its own words, which is the useful part.
+  const locate = () => {
+    setLocating(true);
+    fire(relocateVault().finally(() => setLocating(false)));
+  };
 
   return (
     <Empty
@@ -75,6 +83,9 @@ export function VaultUnavailable() {
         <div className="flex items-center gap-2">
           <Button variant="primary" loading={trying} onClick={tryAgain}>
             Try again
+          </Button>
+          <Button loading={locating} onClick={locate}>
+            Locate…
           </Button>
           <Button
             onClick={() => fire(api("vault:revealInFinder"), "Couldn’t show the vault in Finder")}

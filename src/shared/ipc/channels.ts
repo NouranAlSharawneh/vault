@@ -27,6 +27,7 @@ export const INVOKE_CHANNELS = [
   "vault:revealInFinder",
   "vault:folderWarning",
   "vault:reopen",
+  "vault:relocate",
   "doc:read",
   "doc:save",
   "doc:trash",

@@ -94,3 +94,41 @@ describe("reopenVault", () => {
     expect(useApp.getState().vaultError).toBe("The folder isn’t there any more.");
   });
 });
+
+describe("relocateVault", () => {
+  const moved = { ...config, root: "/Users/nunu/Files/vault" };
+
+  it("takes the new folder and loads the vault from it", async () => {
+    const { invoke } = mockMarascaApi({ ...answers, "vault:relocate": moved });
+    useApp.setState({ config, vaultError: "The folder isn’t there any more." });
+
+    await expect(useApp.getState().relocateVault()).resolves.toBe(moved);
+
+    expect(invoke).toHaveBeenCalledWith("vault:relocate");
+    expect(useApp.getState().config).toBe(moved);
+    expect(useApp.getState().vaultError).toBeNull();
+    expect(useApp.getState().index).toBe(index);
+    expect(useApp.getState().sync).toBe(sync);
+  });
+
+  it("changes nothing when no folder was chosen", async () => {
+    const { invoke } = mockMarascaApi({ ...answers, "vault:relocate": null });
+    useApp.setState({ config, vaultError: "The folder isn’t there any more." });
+
+    await expect(useApp.getState().relocateVault()).resolves.toBeNull();
+
+    expect(invoke).not.toHaveBeenCalledWith("vault:index");
+    expect(useApp.getState().config).toBe(config);
+    expect(useApp.getState().vaultError).toBe("The folder isn’t there any more.");
+  });
+
+  it("hands on why a folder was refused, and keeps the vault it had", async () => {
+    mockMarascaApi({ ...answers, "vault:relocate": new Error("“Files” isn’t your vault") });
+    useApp.setState({ config, index });
+
+    await expect(useApp.getState().relocateVault()).rejects.toThrow("“Files” isn’t your vault");
+
+    expect(useApp.getState().config).toBe(config);
+    expect(useApp.getState().index).toBe(index);
+  });
+});

@@ -4,6 +4,12 @@ All notable changes to Marasca. The format follows [Keep a Changelog](https://ke
 
 To release: add a section for the new version here, run `npm run release -- <patch|minor|major>`, then `git push --follow-tags`. The tag builds the DMG and opens a draft release with this section as its notes.
 
+## [Unreleased]
+
+### Added
+
+- **Move the vault folder without setting Marasca up again.** Move or rename the folder in Finder, then go to Settings ▸ Storage ▸ Vault folder ▸ **Change…** and choose where it is now. When Marasca opens and finds the folder gone, the same choice is there as **Locate…**. Marasca only takes the folder that really is this vault — the same GitHub repo, or for a local vault one it has kept documents in — and says why it won't take another. Nothing is moved, copied or cloned, and the capture shortcut, image folders and every other setting stay as they were. Until now this took a Reset, or editing Marasca's config file by hand.
+
 ## [0.0.6] - 2026-10-02
 
 ### Fixed

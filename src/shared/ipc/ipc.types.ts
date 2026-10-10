@@ -79,6 +79,12 @@ export interface IpcInvoke {
   "vault:folderWarning": (path: string) => string | null;
   /** Open the configured vault again after it failed to open at launch. */
   "vault:reopen": () => IndexSnapshot;
+  /**
+   * Ask where the vault folder is now, after it was moved or renamed in Finder, and open
+   * it from there. Null when the dialog was cancelled; a folder that isn't this vault
+   * rejects with why.
+   */
+  "vault:relocate": () => VaultConfig | null;
 
   "doc:read": (path: string) => DocContent;
   "doc:save": (req: SaveRequest) => SaveResult;

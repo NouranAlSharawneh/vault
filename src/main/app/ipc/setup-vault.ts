@@ -9,6 +9,7 @@ import {
 import type { GitHubRepo, VaultConfig } from "@shared/types";
 import { refreshGitStatus } from "../../services/git/git-status.service";
 import { GitService } from "../../services/git/git.service";
+import { repoName } from "../../services/git/repo-name";
 import { getSettings, updateSettings } from "../../store/settings.store";
 import { loadToken } from "../../store/token.store";
 import type { session as appSession } from "../session/session";
@@ -99,11 +100,4 @@ function hasFiles(dir: string): boolean {
   } catch {
     return false;
   }
-}
-
-/** `owner/name` from any GitHub remote URL, lower-cased; null when it isn't one. */
-function repoName(url: string): string | null {
-  const m = /github\.com[/:]([^/]+\/[^/]+?)(?:\.git)?\/?$/i.exec(url.trim());
-
-  return m ? m[1].toLowerCase() : null;
 }
